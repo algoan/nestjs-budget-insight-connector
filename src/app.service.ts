@@ -8,5 +8,5 @@ export class AppService {
   /**
    * GET Hello
    */
-  public getHello = (): string => 'Hello World!';
+  public getPing = (): string => 'ok';
 }

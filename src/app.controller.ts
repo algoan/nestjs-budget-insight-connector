@@ -1,4 +1,4 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, HttpCode, HttpStatus } from '@nestjs/common';
 import { AppService } from './app.service';
 
 /**
@@ -11,8 +11,9 @@ export class AppController {
   /**
    * GET / Hello
    */
-  @Get()
-  public getHello(): string {
-    return this.appService.getHello();
+  @Get('/ping')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  public getPing(): string {
+    return this.appService.getPing();
   }
 }
