@@ -1,4 +1,6 @@
-{
-  "singleQuote": true,
-  "trailingComma": "all"
-}
+# .prettierrc
+printWidth: 120
+singleQuote: true
+trailingComma: all
+parser: typescript
+arrowParens: always
