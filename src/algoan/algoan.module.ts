@@ -6,5 +6,6 @@ import { AlgoanService } from './algoan.service';
  */
 @Module({
   providers: [AlgoanService],
+  exports: [AlgoanService],
 })
 export class AlgoanModule {}

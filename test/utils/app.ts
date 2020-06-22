@@ -1,5 +1,5 @@
 import * as assert from 'assert';
-import { INestApplication } from '@nestjs/common';
+import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { TestingModule, Test } from '@nestjs/testing';
 import * as nock from 'nock';
 import { config } from 'node-config-ts';
@@ -58,6 +58,19 @@ export const buildFakeApp = async (): Promise<INestApplication> => {
     result: { id: '1', eventName: 'bankreader_link_required', target: 'http://...' },
     path: '/v1/subscriptions',
   });
+
+  /**
+   * Attach global dependencies
+   */
+  app.useGlobalPipes(
+    new ValidationPipe({
+      /**
+       * If set to true, validator will strip validated (returned)
+       * object of any properties that do not use any validation decorators.
+       */
+      whitelist: true,
+    }),
+  );
 
   await app.init();
 
