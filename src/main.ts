@@ -1,3 +1,4 @@
+import { HttpExceptionFilter } from '@algoan/nestjs-http-exception-filter';
 import { NestFactory } from '@nestjs/core';
 import { INestApplication, Logger, ValidationPipe } from '@nestjs/common';
 import { WinstonModule } from 'nest-winston';
@@ -56,6 +57,7 @@ const bootstrap = async (): Promise<void> => {
       whitelist: true,
     }),
   );
+  app.useGlobalFilters(new HttpExceptionFilter());
 
   await app.listen(port);
   logger.log(`Application is listening to port ${port}`);
