@@ -1,14 +1,47 @@
 import { NestFactory } from '@nestjs/core';
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { INestApplication, Logger, ValidationPipe } from '@nestjs/common';
+import { WinstonModule } from 'nest-winston';
+import { format, LoggerOptions, transports } from 'winston';
+
 import { AppModule } from './app.module';
+
+const logger: Logger = new Logger(__filename);
 
 /**
  * Bootstrap method
  */
 const bootstrap = async (): Promise<void> => {
   const port: number = 3000;
+  const defaultLevel: string = process.env.DEBUG_LEVEL || 'info';
+  const nodeEnv: string = process.env.NODE_ENV;
+
   const app: INestApplication = await NestFactory.create(AppModule, {
-    logger: false,
+    logger: WinstonModule.createLogger({
+      format:
+        nodeEnv === 'production'
+          ? format.json()
+          : format.combine(
+              format.colorize({
+                colors: {
+                  debug: 'blue',
+                  error: 'red',
+                  info: 'green',
+                  warn: 'yellow',
+                },
+              }),
+              format.simple(),
+              format.errors({ stack: true }),
+            ),
+      level: defaultLevel,
+      transports: [
+        new transports.Console({
+          level: defaultLevel,
+          stderrLevels: ['error'],
+          consoleWarnLevels: ['warning'],
+          silent: nodeEnv === 'test',
+        }),
+      ],
+    }),
   });
 
   /**
@@ -25,9 +58,10 @@ const bootstrap = async (): Promise<void> => {
   );
 
   await app.listen(port);
+  logger.log(`Application is listening to port ${port}`);
 };
 bootstrap().catch((err: Error): void => {
   // eslint-disable-next-line
-  console.error(`An error occurred when bootstrapping the application`, err);
+  logger.error(err, `An error occurred when bootstrapping the application`);
   process.exit(1);
 });
