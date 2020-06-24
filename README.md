@@ -19,7 +19,7 @@ A simple NestJS boilerplate written using [nestjs](https://github.com/nestjs/nes
 
 ## Code Style
 
-This project uses [ESLint](https://eslint.org/) to analyze the TypeScript code. Commit are linted too thanks to [commitlint](https://github.com/conventional-changelog/commitlint) and the [conventional commit format](https://conventionalcommits.org/).  
+This project uses [ESLint](https://eslint.org/) to analyze the TypeScript code. Commit are linted too thanks to [commitlint](https://github.com/conventional-changelog/commitlint) and the [conventional commit format](https://conventionalcommits.org/).
 
 ## Installation
 
@@ -52,6 +52,29 @@ $ npm run test:e2e
 # test coverage
 $ npm run test:cov
 ```
+
+## Listened Subscriptions
+
+This section describes the process required for each subscriptions
+
+### Bankreader Link Required
+
+When the Budget Insight user interface is not hosted by Algoan, the user needs to be redirected to an external page. The diagram below describes interactions:
+
+![bankreader_link_required](assets/bankreader_link_required.png)
+
+### Bankreader configuration required
+
+If the user interface is hosted by Algoan, the connector needs to set the plug-in for the frontend application:
+
+![bankreader_config_required](assets/bankreader_configuration_required.png)
+
+### Bankreader required
+
+When the user has finished the aggregation process, the connector has to retrieve user's banks accounts and transactions:
+
+![bankreader_required](assets/bankreader_required_1.png)
+
 
 ## Support
 

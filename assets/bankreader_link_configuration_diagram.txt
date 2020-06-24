@@ -1,0 +1,11 @@
+title Bankreader configuration required
+
+User -> Algoan: Aggregation request
+note right of User: The user wishes to synchronize his bank accounts
+Algoan -> BI connector: Send a "bankreader_configuration_required" event
+BI connector -> BI: POST /auth/jwt
+note left of BI: Generates a temporary token for the user
+BI -> BI connector: Returns a temporary JWT
+BI connector -> Algoan: PATCH /banks-users/:id
+note left of BI connector: Sends back the plug-in configuration (Sandbox URL + token)
+Algoan -> User: Starts the BI Plug-In
