@@ -38,7 +38,10 @@ jobs:
           name: Install node dependencies
           command: npm ci
       - run:
-          name: Run tests
+          name: Run unit tests
+          command: npm test
+      - run:
+          name: Run e2e tests
           command: npm run test:cov
       - save_cache:
           paths:
