@@ -1,7 +1,6 @@
 import { HttpService, Injectable } from '@nestjs/common';
 import * as moment from 'moment-timezone';
 import { AxiosResponse } from 'axios';
-import { ServiceAccount } from '@algoan/rest/dist/src/core/ServiceAccount';
 // Axios is an internal Nestjs Dependency
 import { LoggerService } from '../../../core/modules/logger/logger.service';
 import {
@@ -10,6 +9,8 @@ import {
   JWTokenResponse,
   Transaction,
   TransactionWrapper,
+  BIConfigurations,
+  BudgetInsightCredentials,
 } from '../../interfaces/budget-insight.interface';
 
 /**
@@ -37,7 +38,7 @@ export class BudgetInsightClient {
   constructor(
     private readonly httpService: HttpService,
     private readonly logger: LoggerService,
-    private readonly serviceAccount: ServiceAccount,
+    public biCredentialsMap: BudgetInsightCredentials = new Map(),
   ) {}
 
   /**
@@ -140,7 +141,7 @@ export class BudgetInsightClient {
    * Get the client config for budget insight.
    */
   public getClientConfig(serviceAccountId: string): ClientConfig {
-    const biCredentials: BIConfigurations | undefined = this.serviceAccount.biCredentialsMap.get(serviceAccountId);
+    const biCredentials: BIConfigurations | undefined = this.biCredentialsMap.get(serviceAccountId);
 
     if (biCredentials === undefined) {
       throw new Error('UNKNOWN_BI_CREDS');
@@ -191,4 +192,21 @@ export class BudgetInsightClient {
       },
     };
   };
+
+  /**
+   * Attach an Algoan service account to Budget Insight credentials
+   * @param serviceAccountClientId Service account client id
+   */
+  private mapBudgetInsightCredentials(serviceAccountId: string, serviceAccountClientId: string): void {
+    const budgetInsightCredentials: BIConfigurations[] | undefined = this.configService.getSecret(
+      'budgetInsightCredentials',
+    );
+    if (budgetInsightCredentials !== undefined) {
+      budgetInsightCredentials.forEach((value: BIConfigurations) => {
+        if (serviceAccountClientId === value.name) {
+          this.biCredentialsMap.set(serviceAccountId, value);
+        }
+      });
+    }
+  }
 }
