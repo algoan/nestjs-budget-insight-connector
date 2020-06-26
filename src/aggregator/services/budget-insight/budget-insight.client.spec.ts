@@ -1,4 +1,4 @@
-import { HttpModule } from '@nestjs/common';
+import { HttpService, HttpModule } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { ServiceAccount } from '@algoan/rest/dist/src/core/ServiceAccount';
 import { LoggerService } from '../../../core/modules/logger/logger.service';
@@ -11,6 +11,7 @@ describe('BudgetInsightClient', () => {
   let service: BudgetInsightClient;
   let logger: LoggerService;
   let serviceAccount: ServiceAccount;
+  let httpService: HttpService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -35,7 +36,7 @@ describe('BudgetInsightClient', () => {
 
   it('returns the permanent token when I register a new client', async () => {
     const token = 'token';
-    const spy = jest.spyOn(request, 'post').mockReturnValue(
+    const spy = jest.spyOn(httpService, 'post').mockReturnValue(
       Promise.resolve([
         {
           access_token: 'permToken',
@@ -58,7 +59,7 @@ describe('BudgetInsightClient', () => {
   it('returns the permanent token when I register a new client', async () => {
     const token = 'token';
     const spyLog = jest.spyOn(logger, 'error');
-    const spy = jest.spyOn(request, 'post').mockReturnValue(
+    const spy = jest.spyOn(httpService, 'post').mockReturnValue(
       Promise.reject({
         response: {
           data: {
@@ -93,7 +94,7 @@ describe('BudgetInsightClient', () => {
         type: 'sharedAccess',
       },
     };
-    const spy = jest.spyOn(request, 'post').mockReturnValue(Promise.resolve([response, {}, 201]));
+    const spy = jest.spyOn(httpService, 'post').mockReturnValue(Promise.resolve([response, {}, 201]));
 
     const jwtResponse = await service.getUserJWT('serviceAccountId');
     expect(jwtResponse).toEqual(response);
@@ -128,7 +129,7 @@ describe('BudgetInsightClient', () => {
       clientSecret: 'secret',
     });
 
-    const spy = jest.spyOn(request, 'get').mockReturnValue(Promise.resolve([sentResponse, {}, 200]));
+    const spy = jest.spyOn(httpService, 'get').mockReturnValue(Promise.resolve([sentResponse, {}, 200]));
 
     const actualResponse = await service.fetchConnection('serviceAccountId', token);
     expect(actualResponse).toEqual([makeConnection(0), makeConnection(2)]);
