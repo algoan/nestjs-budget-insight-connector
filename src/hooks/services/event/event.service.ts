@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import * as delay from 'delay';
 import { ServiceAccount } from '@algoan/rest/dist/src/core/ServiceAccount';
+import { BanksUser } from '@algoan/rest/dist/src/core/BanksUser';
 
 import { Connection, JWTokenResponse, Transaction } from '../../../aggregator/interfaces/budget-insight.interface';
 import { AggregatorService } from '../../../aggregator/services/aggregator.service';
@@ -8,12 +9,7 @@ import {
   mapBudgetInsightAccount,
   mapBudgetInsightAccountsFromOneConnection,
 } from '../../../aggregator/services/budget-insight/budget-insight.utils';
-import {
-  AccountWithTransactions,
-  BanksUser,
-  PlugIn,
-  ServiceAccount,
-} from '../../../algoan/interfaces/algoan.interface';
+import { AccountWithTransactions, PlugIn } from '../../../algoan/interfaces/algoan.interface';
 import { ConfigService } from '../../../core/modules/config/config.service';
 import { LoggerService } from '../../../core/modules/logger/logger.service';
 import { BankreaderLinkRequiredDTO } from '../../dto/bandreader-link-required.dto';
@@ -33,7 +29,7 @@ export class EventService {
    */
   constructor(
     private readonly aggregator: AggregatorService,
-    private readonly banksUserService: BanksUserService,
+    private readonly banksUserService: BanksUser,
     private readonly serviceAccount: ServiceAccount,
     private readonly logger: LoggerService,
     private readonly configService: ConfigService,
@@ -44,7 +40,7 @@ export class EventService {
    * Handle the bankreader-link-required event
    */
   public async generateRedirectUrl(serviceAccount: ServiceAccount, payload: BankreaderLinkRequiredDTO): Promise<void> {
-    let banksUser: BanksUser = await this.banksUserService.getBanksUser(serviceAccount, payload.banksUserId);
+    let banksUser: BanksUser = await this.banksUserService.getBanksUserById(payload.banksUserId);
 
     this.logger.debug(`Found BanksUser with id ${banksUser.id} and callback ${banksUser.callbackUrl}`);
 

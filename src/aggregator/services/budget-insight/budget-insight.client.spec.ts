@@ -1,6 +1,5 @@
 import { HttpService, HttpModule } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { ServiceAccount } from '@algoan/rest/dist/src/core/ServiceAccount';
 import { LoggerService } from '../../../core/modules/logger/logger.service';
 import { CoreModule } from '../../../core/core.module';
 import { AlgoanModule } from '../../../algoan/algoan.module';
@@ -10,7 +9,6 @@ import { BudgetInsightClient } from './budget-insight.client';
 describe('BudgetInsightClient', () => {
   let service: BudgetInsightClient;
   let logger: LoggerService;
-  let serviceAccount: ServiceAccount;
   let httpService: HttpService;
 
   beforeEach(async () => {
@@ -20,8 +18,7 @@ describe('BudgetInsightClient', () => {
     }).compile();
 
     service = module.get<BudgetInsightClient>(BudgetInsightClient);
-    serviceAccount = module.get<ServiceAccount>(ServiceAccount);
-    serviceAccount.biCredentialsMap.set('serviceAccountId', {
+    service.biCredentialsMap.set('serviceAccountId', {
       clientId: 'clientId',
       clientSecret: 'clientSecret',
       baseUrl: 'https://budget-insight/',
@@ -82,7 +79,7 @@ describe('BudgetInsightClient', () => {
   });
 
   it('returns the JWT token', async () => {
-    const response: object = {
+    const response = {
       jwt_token: 'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9',
       payload: {
         domain: 'algoan-testa-sandbox.biapi.pro',
@@ -106,7 +103,7 @@ describe('BudgetInsightClient', () => {
   });
 
   it('returns only active connections with accounts', async () => {
-    const makeConnection = (id: number, active: boolean = true): object => ({
+    const makeConnection = (id: number, active: boolean = true) => ({
       id,
       id_user: 0,
       id_connector: 0,
@@ -118,7 +115,7 @@ describe('BudgetInsightClient', () => {
     });
 
     const token: string = 'my_jwt_token';
-    const sentResponse: object = {
+    const sentResponse = {
       connections: [makeConnection(0), makeConnection(1, false), makeConnection(2)],
       total: 3,
     };

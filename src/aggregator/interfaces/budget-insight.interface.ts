@@ -161,3 +161,19 @@ export interface JWTokenResponse {
     domain: string;
   };
 }
+
+/**
+ * Budget Insight configurations
+ */
+export interface BIConfigurations {
+  baseUrl: string;
+  clientId: string;
+  clientSecret: string;
+  name: string;
+  webhook?: boolean;
+}
+
+/**
+ * Budget insight credentials mapped to service account ids
+ */
+export type BudgetInsightCredentials = Map<string, BIConfigurations>;

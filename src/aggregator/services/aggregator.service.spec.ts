@@ -1,6 +1,5 @@
 import { HttpModule } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { ServiceAccount } from '@algoan/rest/dist/src/core/ServiceAccount';
 import { CoreModule } from '../../core/core.module';
 import { BanksUser, UserStatus } from '../../algoan/interfaces/algoan.interface';
 import { AlgoanModule } from '../../algoan/algoan.module';
@@ -11,7 +10,6 @@ import { BudgetInsightClient } from './budget-insight/budget-insight.client';
 describe('AggregatorService', () => {
   let service: AggregatorService;
   let client: BudgetInsightClient;
-  let serviceAccount: ServiceAccount;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -20,9 +18,7 @@ describe('AggregatorService', () => {
     }).compile();
 
     service = module.get<AggregatorService>(AggregatorService);
-    client = module.get<BudgetInsightClient>(BudgetInsightClient);
-    serviceAccount = module.get<ServiceAccount>(ServiceAccount);
-    serviceAccount.biCredentialsMap.set('serviceAccountId', {
+    service.biCredentialsMap.set('serviceAccountId', {
       clientId: 'clientId',
       clientSecret: 'clientSecret',
       baseUrl: 'https://budget-insight/',
