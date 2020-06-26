@@ -113,7 +113,7 @@ export const mapBudgetInsightAccountsFromOneConnection: (connection: Connection)
  * an array of banks user transactions
  * @param transactions TransactionWrapper from Budget Insight
  */
-export const mapBudgetInsightTransactions: Function = (transactions: BiTransaction[]): Transaction[] =>
+export const mapBudgetInsightTransactions = (transactions: BiTransaction[]): Transaction[] =>
   transactions.map(
     (transaction: BiTransaction): Transaction => ({
       amount: transaction.value,
@@ -132,7 +132,7 @@ export const mapBudgetInsightTransactions: Function = (transactions: BiTransacti
  * mapDate transforms an iso date in string into a timestamp or undefined
  * @param isoDate date from budget Insight, if null returns undefined
  */
-const mapDate: Function = (isoDate: string): number =>
+const mapDate = (isoDate: string): number =>
   isoDate ? moment.tz(isoDate, 'Europe/Paris').toDate().getTime() : moment().toDate().getTime();
 
 /**
@@ -153,7 +153,7 @@ const ACCOUNT_TYPE_MAPPING: AccountTypeMapping = {
  * mapAccountType map the banksUser type from the budget Insight type
  * @param accountType BudgetInsight type
  */
-const mapAccountType: Function = (accountType: BiAccountType): AccountType =>
+const mapAccountType = (accountType: BiAccountType): AccountType =>
   ACCOUNT_TYPE_MAPPING[accountType] || AccountType.SAVINGS;
 
 /**
@@ -181,7 +181,7 @@ const TRANSACTION_TYPE_MAPPING: TransactionTypeMapping = {
  * mapAccountType map the banksUser type from the budget Insight type
  * @param transactionType BudgetInsight type
  */
-const mapTransactionType: Function = (transactionType: BiTransactionType): TransactionType =>
+const mapTransactionType = (transactionType: BiTransactionType): TransactionType =>
   TRANSACTION_TYPE_MAPPING[transactionType] || TransactionType.OTHER;
 
 /**
@@ -201,5 +201,4 @@ const OWNER_TYPE_MAPPING: OwnerTypeMapping = {
  * mapAccountType map the banksUser type from the budget Insight type
  * @param transactionType BudgetInsight type
  */
-const mapOwnerType: Function = (ownerType: BiOwnerType): OwnerType =>
-  OWNER_TYPE_MAPPING[ownerType] || OwnerType.PERSONAL;
+const mapOwnerType = (ownerType: BiOwnerType): OwnerType => OWNER_TYPE_MAPPING[ownerType] || OwnerType.PERSONAL;

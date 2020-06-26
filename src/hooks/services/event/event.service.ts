@@ -59,9 +59,7 @@ export class EventService {
    * Handle the bankreader-required event
    */
   public async synchronizeBanksUser(serviceAccount: ServiceAccount, payload: BankreaderRequiredDTO): Promise<void> {
-    const biCredentials: BIConfigurations | undefined = this.serviceAccount.biCredentialsMap.get(
-      serviceAccount.id,
-    );
+    const biCredentials: BIConfigurations | undefined = this.serviceAccount.biCredentialsMap.get(serviceAccount.id);
     const banksUser: BanksUser = await this.banksUserService.getBanksUser(serviceAccount, payload.banksUserId);
     let permanentToken: string | undefined = banksUser?.plugIn?.budgetInsightBank?.token;
 

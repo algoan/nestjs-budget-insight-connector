@@ -8,7 +8,7 @@ import { ServiceAccountCreated } from '../../dto/service-account-created.dto';
 import { AlgoanModule } from '../../../algoan/algoan.module';
 import { BanksUser, UserStatus, ServiceAccount } from '../../../algoan/interfaces/algoan.interface';
 import { AppModule } from '../../../app.module';
-import { ConnectionSyncedDTO } from '../../dto/connection-synced.dto';
+import { ConnectionSyncedDTODTO } from '../../dto/connection-synced.dto';
 import { EventService } from './event.service';
 
 describe('EventService', () => {
@@ -305,7 +305,7 @@ describe('EventService', () => {
         .spyOn(banksUserService, 'synchronizeBanksUser')
         .mockReturnValue(Promise.resolve());
 
-      const payload: ConnectionSynced = ({
+      const payload: ConnectionSyncedDTO = ({
         user: {
           signin: '2019-11-25 17:36:55',
           platform: 'sharedAccess',
@@ -452,7 +452,7 @@ describe('EventService', () => {
           id: 'connectionId',
         },
         push_type: 'partial_history',
-      } as unknown) as ConnectionSynced;
+      } as unknown) as ConnectionSyncedDTO;
 
       await eventService.patchBanksUserConnectionSync(payload);
 

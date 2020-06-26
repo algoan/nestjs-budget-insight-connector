@@ -53,8 +53,8 @@ export class BudgetInsightClient {
     this.logger.debug(`Create user with tmpToken ${tmpToken} on ${url}`);
 
     try {
-      const resp: AxiosResponse = await this.httpService
-        .post<AuthTokenResponse>(
+      const resp: AxiosResponse<AuthTokenResponse> = await this.httpService
+        .post(
           url,
           {
             client_id: config.clientId,
@@ -88,12 +88,14 @@ export class BudgetInsightClient {
     this.logger.debug(`Get a user JWT on ${url}`);
 
     try {
-      const [data] = await request.post<JWTokenResponse>(url, {
-        client_id: config.clientId,
-        client_secret: config.clientSecret,
-      });
+      const resp: AxiosResponse<JWTokenResponse> = await this.httpService
+        .post(url, {
+          client_id: config.clientId,
+          client_secret: config.clientSecret,
+        })
+        .toPromise();
 
-      return data;
+      return resp.data;
     } catch (err) {
       this.logger.error('Failed to register to budgetInsight', err);
       throw err;
@@ -109,7 +111,7 @@ export class BudgetInsightClient {
   public async synchronize(serviceAccountId: string, permanentToken: string): Promise<void> {
     const baseUrl: string = this.getClientConfig(serviceAccountId).baseUrl;
     const url: string = `${baseUrl}/users/me/connections?expand=accounts`;
-    await request.put<ConnectionWrapper>(url, {}, this.setHeaders(permanentToken));
+    await this.httpService.put<ConnectionWrapper>(url, {}, this.setHeaders(permanentToken)).toPromise();
 
     return;
   }
@@ -131,7 +133,7 @@ export class BudgetInsightClient {
       .get(url, this.setHeaders(permanentToken))
       .toPromise();
 
-    return resp.connections.filter((co: any) => co.active);
+    return resp.data.connections.filter((co: Connection) => co.active);
   }
 
   /**
@@ -163,9 +165,11 @@ export class BudgetInsightClient {
     const startDate: Date = moment(endDate).subtract(nbOfMonths, 'month').toDate();
 
     const url: string = `${baseUrl}/users/me/transactions?expand=category&min_date=${startDate.toISOString()}&max_date=${endDate.toISOString()}`;
-    const [data] = await request.get<TransactionWrapper>(url, this.setHeaders(permanentToken));
+    const resp: AxiosResponse<TransactionWrapper> = await this.httpService
+      .get(url, this.setHeaders(permanentToken))
+      .toPromise();
 
-    return data.transactions;
+    return resp.data.transactions;
   }
 
   /**
