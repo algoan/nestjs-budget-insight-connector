@@ -1,0 +1,12 @@
+title Bankreader link required
+
+User -> Algoan: Aggregation request
+note right of User: The user wishes to synchronize his bank accounts
+Algoan -> BI connector: Send a "bankreader_link_required" event
+BI connector -> Algoan: GET /banks-users/:id
+note right of Algoan: Retrieves the concerned Banks User from the event payload sent
+Algoan -> BI connector: Returns the callback URL inside the Banks User
+BI connector -> BI connector: Generates a redirect URL
+BI connector -> Algoan: PATCH /banks-users/:id
+note left of BI connector: Sends back a redirect URK 
+Algoan -> User: Redirects the User to BI user interface
