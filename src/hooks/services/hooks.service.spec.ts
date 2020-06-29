@@ -1,20 +1,17 @@
 /* eslint-disable max-lines */
 import { Test, TestingModule } from '@nestjs/testing';
-import { BanksUser } from '@algoan/rest/dist/src/core/BanksUser';
+import { ServiceAccount, BanksUser, BanksUserStatus } from '@algoan/rest';
 
-import { ServiceAccount } from '@algoan/rest/dist/src/core/ServiceAccount';
-import { AggregatorModule } from '../../../aggregator/aggregator.module';
-import { AggregatorService } from '../../../aggregator/services/aggregator.service';
-import { CoreModule } from '../../../core/core.module';
-import { ServiceAccountCreatedDTO } from '../../dto/service-account-created.dto';
-import { AlgoanModule } from '../../../algoan/algoan.module';
-import { UserStatus } from '../../../algoan/interfaces/algoan.interface';
-import { AppModule } from '../../../app.module';
-import { ConnectionSyncedDTO } from '../../dto/connection-synced.dto';
-import { EventService } from './event.service';
+import { AggregatorModule } from '../../aggregator/aggregator.module';
+import { AggregatorService } from '../../aggregator/services/aggregator.service';
+import { ServiceAccountCreatedDTO } from '../dto/service-account-created.dto';
+import { AlgoanModule } from '../../algoan/algoan.module';
+import { AppModule } from '../../app.module';
+import { ConnectionSyncedDTO } from '../dto/connection-synced.dto';
+import { HooksService } from './hooks.service';
 
-describe('EventService', () => {
-  let eventService: EventService;
+describe('HooksService', () => {
+  let hooksService: HooksService;
   let aggregatorService: AggregatorService;
   let banksUserMapService: BanksUserMapService;
   let banksUserService: BanksUser;
@@ -22,14 +19,13 @@ describe('EventService', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      imports: [AppModule, CoreModule, AggregatorModule, AlgoanModule],
-      providers: [EventService],
+      imports: [AppModule, AggregatorModule, AlgoanModule],
+      providers: [HooksService],
     }).compile();
 
-    eventService = module.get<EventService>(EventService);
+    hooksService = module.get<HooksService>(HooksService);
     aggregatorService = module.get<AggregatorService>(AggregatorService);
     banksUserMapService = module.get<BanksUserMapService>(BanksUserMapService);
-    banksUserService = module.get<BanksUser>(BanksUser);
     serviceAccount = module.get<ServiceAccount>(ServiceAccount);
     serviceAccount.biCredentialsMap.set('serviceAccountId', {
       clientId: 'clientId',
@@ -40,7 +36,7 @@ describe('EventService', () => {
   });
 
   it('should be defined', () => {
-    expect(eventService).toBeDefined();
+    expect(hooksService).toBeDefined();
   });
 
   describe('when synchroniseBanksUser is called', () => {
@@ -57,7 +53,7 @@ describe('EventService', () => {
         .spyOn(banksUserService, 'synchronizeBanksUser')
         .mockReturnValue(Promise.resolve());
 
-      await eventService.synchronizeBanksUser(
+      await hooksService.synchronizeBanksUser(
         {
           id: 'serviceAccountId',
           clientId: 'clientId',
@@ -100,7 +96,7 @@ describe('EventService', () => {
         .spyOn(banksUserService, 'synchronizeBanksUser')
         .mockReturnValue(Promise.resolve());
 
-      await eventService.synchronizeBanksUser(
+      await hooksService.synchronizeBanksUser(
         {
           id: 'serviceAccountId',
           clientId: 'clientId',
@@ -160,7 +156,7 @@ describe('EventService', () => {
         }),
       );
 
-      await eventService.synchronizeBanksUser(
+      await hooksService.synchronizeBanksUser(
         {
           id: 'serviceAccountId',
           clientId: 'clientId',
@@ -191,7 +187,7 @@ describe('EventService', () => {
       const banksUser: BanksUser = {
         id: 'banksUserId',
         callbackUrl: 'callbackUrl',
-        status: UserStatus.NEW,
+        status: BanksUserStatus.NEW,
       };
 
       const mockServiceAccount: ServiceAccount = {
@@ -205,7 +201,7 @@ describe('EventService', () => {
         .spyOn(banksUserService, 'registerRedirectUrl')
         .mockReturnValue(Promise.resolve(banksUser));
 
-      await eventService.generateRedirectUrl(mockServiceAccount, {
+      await hooksService.generateRedirectUrl(mockServiceAccount, {
         applicationId: 'applicationId',
         banksUserId: 'banksUserId',
       });
@@ -230,7 +226,7 @@ describe('EventService', () => {
     it('calls the serviceAccount', async () => {
       const serviceAccountMock = jest.spyOn(serviceAccount, 'add').mockReturnValue(Promise.resolve());
 
-      await eventService.addServiceAccount(serviceAccountCreated);
+      await hooksService.addServiceAccount(serviceAccountCreated);
       expect(serviceAccountMock).toHaveBeenCalledWith('123abc');
     });
   });
@@ -243,7 +239,7 @@ describe('EventService', () => {
     it('calls the serviceAccount', async () => {
       const serviceAccountMock = jest.spyOn(serviceAccount, 'remove').mockReturnValue(undefined);
 
-      await eventService.removeServiceAccount(serviceAccountDeleted);
+      await hooksService.removeServiceAccount(serviceAccountDeleted);
       expect(serviceAccountMock).toHaveBeenCalledWith('123abc');
     });
   });
@@ -261,12 +257,12 @@ describe('EventService', () => {
       const patchBanksUserSpy = jest.spyOn(banksUserService, 'patchBanksUser').mockReturnValue(
         Promise.resolve({
           id: 'banksUserId',
-          status: UserStatus.NEW,
+          status: BanksUserStatus.NEW,
           callbackUrl: 'callbackUrl',
         }),
       );
 
-      await eventService.getSandboxToken(
+      await hooksService.getSandboxToken(
         {
           id: 'serviceAccountId',
           clientId: 'clientId',
@@ -456,7 +452,7 @@ describe('EventService', () => {
         push_type: 'partial_history',
       } as unknown) as ConnectionSyncedDTO;
 
-      await eventService.patchBanksUserConnectionSync(payload);
+      await hooksService.patchBanksUserConnectionSync(payload);
 
       const expectedAccountsWithTransactions = [
         {
