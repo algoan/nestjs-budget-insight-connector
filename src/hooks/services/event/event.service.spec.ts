@@ -1,21 +1,23 @@
 /* eslint-disable max-lines */
 import { Test, TestingModule } from '@nestjs/testing';
+import { BanksUser } from '@algoan/rest/dist/src/core/BanksUser';
+
 import { ServiceAccount } from '@algoan/rest/dist/src/core/ServiceAccount';
 import { AggregatorModule } from '../../../aggregator/aggregator.module';
 import { AggregatorService } from '../../../aggregator/services/aggregator.service';
 import { CoreModule } from '../../../core/core.module';
-import { ServiceAccountCreated } from '../../dto/service-account-created.dto';
+import { ServiceAccountCreatedDTO } from '../../dto/service-account-created.dto';
 import { AlgoanModule } from '../../../algoan/algoan.module';
-import { BanksUser, UserStatus, ServiceAccount } from '../../../algoan/interfaces/algoan.interface';
+import { UserStatus } from '../../../algoan/interfaces/algoan.interface';
 import { AppModule } from '../../../app.module';
-import { ConnectionSyncedDTODTO } from '../../dto/connection-synced.dto';
+import { ConnectionSyncedDTO } from '../../dto/connection-synced.dto';
 import { EventService } from './event.service';
 
 describe('EventService', () => {
   let eventService: EventService;
   let aggregatorService: AggregatorService;
   let banksUserMapService: BanksUserMapService;
-  let banksUserService: BanksUserService;
+  let banksUserService: BanksUser;
   let serviceAccount: ServiceAccount;
 
   beforeEach(async () => {
@@ -27,8 +29,7 @@ describe('EventService', () => {
     eventService = module.get<EventService>(EventService);
     aggregatorService = module.get<AggregatorService>(AggregatorService);
     banksUserMapService = module.get<BanksUserMapService>(BanksUserMapService);
-    banksUserService = module.get<BanksUserService>(BanksUserService);
-    banksUserMapService = module.get<BanksUserMapService>(BanksUserMapService);
+    banksUserService = module.get<BanksUser>(BanksUser);
     serviceAccount = module.get<ServiceAccount>(ServiceAccount);
     serviceAccount.biCredentialsMap.set('serviceAccountId', {
       clientId: 'clientId',
@@ -222,7 +223,7 @@ describe('EventService', () => {
   });
 
   describe('when addServiceAccount is called', () => {
-    const serviceAccountCreated: ServiceAccountCreated = {
+    const serviceAccountCreated: ServiceAccountCreatedDTO = {
       serviceAccountId: '123abc',
     };
 
