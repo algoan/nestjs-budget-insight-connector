@@ -1,4 +1,5 @@
 import { OnModuleInit } from '@nestjs/common';
+import { Ylogger } from '@yelloan/logger';
 
 export class LoggerService implements OnModuleInit {
   private readonly logger: Ylogger;
