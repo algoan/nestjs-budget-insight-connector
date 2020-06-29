@@ -1,7 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, LoggerService } from '@nestjs/common';
 import * as delay from 'delay';
-import { ServiceAccount } from '@algoan/rest/dist/src/core/ServiceAccount';
-import { BanksUser } from '@algoan/rest/dist/src/core/BanksUser';
+import { BanksUser, ServiceAccount } from '@algoan/rest';
 
 import { Connection, JWTokenResponse, Transaction } from '../../../aggregator/interfaces/budget-insight.interface';
 import { AggregatorService } from '../../../aggregator/services/aggregator.service';
@@ -9,9 +8,6 @@ import {
   mapBudgetInsightAccount,
   mapBudgetInsightAccountsFromOneConnection,
 } from '../../../aggregator/services/budget-insight/budget-insight.utils';
-import { AccountWithTransactions, PlugIn } from '../../../algoan/interfaces/algoan.interface';
-import { ConfigService } from '../../../core/modules/config/config.service';
-import { LoggerService } from '../../../core/modules/logger/logger.service';
 import { BankreaderLinkRequiredDTO } from '../../dto/bandreader-link-required.dto';
 import { BankreaderConfigurationRequiredDTO } from '../../dto/bankreader-configuration-required.dto';
 import { BankreaderRequiredDTO } from '../../dto/bankreader-required.dto';
