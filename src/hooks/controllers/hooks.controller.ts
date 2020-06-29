@@ -197,6 +197,6 @@ export class HooksController {
         throw new BadRequestException('Invalid eventName');
     }
 
-    return Promise.resolve();
+    return;
   }
 }
