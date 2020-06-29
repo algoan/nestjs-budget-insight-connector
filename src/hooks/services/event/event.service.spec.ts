@@ -194,7 +194,7 @@ describe('EventService', () => {
         status: UserStatus.NEW,
       };
 
-      const serviceAccount: ServiceAccount = {
+      const mockServiceAccount: ServiceAccount = {
         id: 'serviceAccountId',
         clientId: 'clientId',
       };
@@ -205,7 +205,7 @@ describe('EventService', () => {
         .spyOn(banksUserService, 'registerRedirectUrl')
         .mockReturnValue(Promise.resolve(banksUser));
 
-      await eventService.generateRedirectUrl(serviceAccount, {
+      await eventService.generateRedirectUrl(mockServiceAccount, {
         applicationId: 'applicationId',
         banksUserId: 'banksUserId',
       });
@@ -218,7 +218,7 @@ describe('EventService', () => {
         'banksUserId',
       );
       expect(aggregatorSpy).toHaveBeenCalledWith('serviceAccountId', banksUser);
-      expect(banksUserRegisterSpy).toHaveBeenCalledWith(serviceAccount, banksUser, 'redirectUrl');
+      expect(banksUserRegisterSpy).toHaveBeenCalledWith(mockServiceAccount, banksUser, 'redirectUrl');
     });
   });
 
@@ -364,6 +364,7 @@ describe('EventService', () => {
               ownership: 'owner',
               loan: undefined,
               webid: '3002900000',
+              // eslint-disable-next-line id-blacklist
               number: '3002900000',
               disabled: undefined,
               currency: {

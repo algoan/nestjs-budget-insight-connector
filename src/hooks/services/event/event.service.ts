@@ -56,7 +56,7 @@ export class EventService {
    */
   public async synchronizeBanksUser(serviceAccount: ServiceAccount, payload: BankreaderRequiredDTO): Promise<void> {
     const biCredentials: BIConfigurations | undefined = this.serviceAccount.biCredentialsMap.get(serviceAccount.id);
-    const banksUser: BanksUser = await this.banksUserService.getBanksUser(serviceAccount, payload.banksUserId);
+    const banksUser: BanksUser = await this.banksUserService.getBanksUserById(payload.banksUserId);
     let permanentToken: string | undefined = banksUser?.plugIn?.budgetInsightBank?.token;
 
     if (!permanentToken || payload.temporaryCode) {
@@ -147,6 +147,7 @@ export class EventService {
     serviceAccount: ServiceAccount,
     payload: BankreaderConfigurationRequiredDTO,
   ): Promise<void> {
+    const banksUser: BanksUser = await this.banksUserService.getBanksUserById(payload.banksUserId);
     const jsonWT: JWTokenResponse = await this.aggregator.getJWToken(serviceAccount.id);
 
     const plugIn: PlugIn = {
@@ -158,6 +159,6 @@ export class EventService {
       },
     };
 
-    await this.banksUserService.patchBanksUser(serviceAccount, payload.banksUserId, plugIn);
+    await banksUser.update({ plugin: plugIn });
   }
 }

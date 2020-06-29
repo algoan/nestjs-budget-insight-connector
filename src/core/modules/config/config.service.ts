@@ -134,7 +134,7 @@ export class ConfigService implements OnModuleInit {
    * Get a config property
    * @param key key property
    */
-  public getConfig(key: string | string[]): any {
+  public getConfig(key: string | string[]) {
     return get(this.config, key);
   }
 
@@ -142,7 +142,7 @@ export class ConfigService implements OnModuleInit {
    * Get a config property cast to number
    * @param key key property
    */
-  public getConfigNumber(key: string | string[]): any {
+  public getConfigNumber(key: string | string[]) {
     const response = this.getConfig(key);
 
     return Number(response) || undefined;
@@ -152,7 +152,7 @@ export class ConfigService implements OnModuleInit {
    * Get a secret property
    * @param key key property
    */
-  public getSecret(key: string | string[]): any {
+  public getSecret(key: string | string[]) {
     return get(this.secret, key);
   }
 
