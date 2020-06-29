@@ -186,7 +186,7 @@ export interface ServiceAccountDTO {
 /**
  * A service account represents a service subscription for a chatflow with Oauth2 client
  */
-export interface ServiceAccount {
+export interface IServiceAccount {
   /**
    * The id of the client
    */
