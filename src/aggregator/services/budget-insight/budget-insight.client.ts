@@ -1,8 +1,6 @@
-import { HttpService, Injectable } from '@nestjs/common';
+import { HttpService, Injectable, LoggerService } from '@nestjs/common';
 import * as moment from 'moment-timezone';
 import { AxiosResponse } from 'axios';
-// Axios is an internal Nestjs Dependency
-import { LoggerService } from '../../../core/modules/logger/logger.service';
 import {
   Connection,
   ConnectionWrapper,
@@ -52,30 +50,24 @@ export class BudgetInsightClient {
     const url: string = `${config.baseUrl}auth/token/access`;
 
     this.logger.debug(`Create user with tmpToken ${tmpToken} on ${url}`);
-
-    try {
-      const resp: AxiosResponse<AuthTokenResponse> = await this.httpService
-        .post(
-          url,
-          {
-            client_id: config.clientId,
-            client_secret: config.clientSecret,
-            code: tmpToken,
+    const resp: AxiosResponse<AuthTokenResponse> = await this.httpService
+      .post(
+        url,
+        {
+          client_id: config.clientId,
+          client_secret: config.clientSecret,
+          code: tmpToken,
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
           },
-          {
-            headers: {
-              'Content-Type': 'application/json',
-              Accept: 'application/json',
-            },
-          },
-        )
-        .toPromise();
+        },
+      )
+      .toPromise();
 
-      return resp.data.access_token;
-    } catch (err) {
-      this.logger.error('failed to register to budgetInsight', err);
-      throw err;
-    }
+    return resp.data.access_token;
   }
 
   /**
@@ -85,22 +77,16 @@ export class BudgetInsightClient {
   public async getUserJWT(serviceAccountId: string): Promise<JWTokenResponse> {
     const config: ClientConfig = this.getClientConfig(serviceAccountId);
     const url: string = `${config.baseUrl}auth/jwt`;
-
     this.logger.debug(`Get a user JWT on ${url}`);
 
-    try {
-      const resp: AxiosResponse<JWTokenResponse> = await this.httpService
-        .post(url, {
-          client_id: config.clientId,
-          client_secret: config.clientSecret,
-        })
-        .toPromise();
+    const resp: AxiosResponse<JWTokenResponse> = await this.httpService
+      .post(url, {
+        client_id: config.clientId,
+        client_secret: config.clientSecret,
+      })
+      .toPromise();
 
-      return resp.data;
-    } catch (err) {
-      this.logger.error('Failed to register to budgetInsight', err);
-      throw err;
-    }
+    return resp.data;
   }
 
   /**

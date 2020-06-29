@@ -1,7 +1,5 @@
-import { HttpService, HttpModule } from '@nestjs/common';
+import { HttpService, HttpModule, LoggerService } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { LoggerService } from '../../../core/modules/logger/logger.service';
-import { CoreModule } from '../../../core/core.module';
 import { AlgoanModule } from '../../../algoan/algoan.module';
 import { AppModule } from '../../../app.module';
 import { BudgetInsightClient } from './budget-insight.client';
@@ -50,31 +48,6 @@ describe('BudgetInsightClient', () => {
       client_id: 'clientId',
       client_secret: 'clientSecret',
       code: token,
-    });
-  });
-
-  it('returns the permanent token when I register a new client', async () => {
-    const token = 'token';
-    const spyLog = jest.spyOn(logger, 'error');
-    const spy = jest.spyOn(httpService, 'post').mockReturnValue(
-      Promise.reject({
-        response: {
-          data: {
-            message: 'Code is invalid',
-          },
-        },
-      }),
-    );
-
-    try {
-      await service.register('serviceAccountId', token);
-    } catch (e) {
-      expect(e).toBeDefined();
-    }
-
-    expect(spy).toHaveBeenCalled();
-    expect(spyLog).toHaveBeenCalledWith('failed to register to budgetInsight', {
-      response: { data: { message: 'Code is invalid' } },
     });
   });
 
