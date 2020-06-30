@@ -1,6 +1,5 @@
 import { HttpModule } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { CoreModule } from '../../core/core.module';
 import { BanksUser, UserStatus } from '../../algoan/interfaces/algoan.interface';
 import { AlgoanModule } from '../../algoan/algoan.module';
 import { AppModule } from '../../app.module';
@@ -13,7 +12,7 @@ describe('AggregatorService', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      imports: [AppModule, CoreModule, HttpModule, AlgoanModule],
+      imports: [AppModule, HttpModule, AlgoanModule],
       providers: [AggregatorService, BudgetInsightClient],
     }).compile();
 
