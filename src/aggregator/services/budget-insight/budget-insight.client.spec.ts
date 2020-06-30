@@ -1,4 +1,4 @@
-import { HttpService, HttpModule, LoggerService } from '@nestjs/common';
+import { HttpService, HttpModule } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { AlgoanModule } from '../../../algoan/algoan.module';
 import { AppModule } from '../../../app.module';
@@ -6,7 +6,6 @@ import { BudgetInsightClient } from './budget-insight.client';
 
 describe('BudgetInsightClient', () => {
   let service: BudgetInsightClient;
-  let logger: LoggerService;
   let httpService: HttpService;
 
   beforeEach(async () => {
@@ -22,7 +21,6 @@ describe('BudgetInsightClient', () => {
       baseUrl: 'https://budget-insight/',
       name: 'connector-budgetInsight-psm',
     });
-    logger = module.get<LoggerService>(LoggerService);
   });
 
   it('should be defined', () => {

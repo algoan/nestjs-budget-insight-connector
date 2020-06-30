@@ -1,6 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { ServiceAccount, BanksUser } from '@algoan/rest';
-import { AlgoanService } from '../../algoan.service';
+import { ServiceAccount, BanksUser, BanksUserStatus, ReliabilityStatus } from '@algoan/rest';
 
 import { AlgoanModule } from '../../algoan.module';
 import { AppModule } from '../../../app.module';
@@ -8,7 +7,6 @@ import { BanksUserService } from './banks-user.service';
 
 describe('BanksUserService', () => {
   let service: BanksUserService;
-  let algoanService: AlgoanService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -17,7 +15,6 @@ describe('BanksUserService', () => {
     }).compile();
 
     service = module.get<BanksUserService>(BanksUserService);
-    algoanService = module.get<AlgoanService>(AlgoanService);
   });
 
   it('should be defined', () => {
@@ -28,7 +25,18 @@ describe('BanksUserService', () => {
     const banksUser: BanksUser = {
       id: 'id',
       callbackUrl: 'callbackUrl',
-      status: UserStatus.NEW,
+      status: BanksUserStatus.NEW,
+      // new
+      redirectUrl: 'redirectUrl',
+      redirectUrlCreatedAt: 1,
+      redirectUrlTTL: 1,
+      scores: [],
+      analysis: {
+        alerts: [],
+        regularCashFlows: [],
+        reliability: ReliabilityStatus.MEDIUM,
+      },
+      requestBuilder: {},
     };
 
     const registerSpy = jest

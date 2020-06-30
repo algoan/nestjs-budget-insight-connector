@@ -10,6 +10,7 @@ import {
 } from '@nestjs/common';
 import { ServiceAccount, EventName } from '@algoan/rest';
 import { EventDTO } from '../dto/event.dto';
+import { BIEvent } from '../dto/bi-event.dto';
 import { HooksService } from '../services/hooks.service';
 import { BankreaderLinkRequiredDTO } from '../dto/bandreader-link-required.dto';
 import { BankreaderConfigurationRequiredDTO } from '../dto/bankreader-configuration-required.dto';
@@ -67,7 +68,6 @@ export class HooksController {
    * @param headers the validation Header received from the request
    */
   public async handleAlgoanEvent(@Body() event: EventDTO, @Headers() headers: Headers): Promise<void> {
-    const serviceAccount: ServiceAccount = this.getServiceAccount(event, headers['x-hub-signature']);
     switch (event.subscription.eventName) {
       case EventName.BANKREADER_CONFIGURATION_REQUIRED:
         this.logger.debug(

@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { BanksUser } from '../../algoan/interfaces/algoan.interface';
+import { IBanksUser } from '@algoan/rest';
 import { Connection, JWTokenResponse, Transaction } from '../interfaces/budget-insight.interface';
 import { BudgetInsightClient, ClientConfig } from './budget-insight/budget-insight.client';
 
@@ -30,7 +30,7 @@ export class AggregatorService {
    *
    * @param banksUser The bank user for which we generate the redirectUrl
    */
-  public generateRedirectUrl(serviceAccountId: string, banksUser: BanksUser): string {
+  public generateRedirectUrl(serviceAccountId: string, banksUser: IBanksUser): string {
     const config: ClientConfig = this.budgetInsightClient.getClientConfig(serviceAccountId);
 
     return `${config.baseUrl}auth/webview/fr/connect?client_id=${config.clientId}&redirect_uri=${banksUser.callbackUrl}&response_type=code&state=&types=banks`;

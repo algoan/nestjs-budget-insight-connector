@@ -137,9 +137,9 @@ export enum TransactionType {
 }
 
 /**
- * TransactionType
+ * UsageType
  */
-export enum OwnerType {
+export enum UsageType {
   PRIVATE = 'private',
   ORGANIZATION = 'organization',
   ASSOCIATION = 'association',

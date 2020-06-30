@@ -1,9 +1,9 @@
 import {
+  PostBanksUserTransactionDTO as Transaction,
+  BanksUserTransactionType as TransactionType,
   AccountType,
-  AccountWithTransactions,
-  Transaction,
-  TransactionType,
-} from '../../../algoan/interfaces/algoan.interface';
+  BanksUserAccountWithTransactions,
+} from '@algoan/rest';
 import {
   AccountType as BiAccountType,
   Connection,
@@ -86,7 +86,7 @@ describe('BudgetInsightUtils', () => {
       },
     ];
 
-    const expectedAccounts: AccountWithTransactions[] = [
+    const expectedAccounts: BanksUserAccountWithTransactions[] = [
       {
         balance: -10000,
         balanceDate: 1232031180000,
@@ -111,6 +111,7 @@ describe('BudgetInsightUtils', () => {
         status: 'ACTIVE',
         transactions: [
           {
+            id: 'id1',
             amount: 1,
             banksUserCardId: 'card',
             category: 'category',
@@ -140,6 +141,7 @@ describe('BudgetInsightUtils', () => {
         status: 'ACTIVE',
         transactions: [
           {
+            id: 'id2',
             amount: 1,
             banksUserCardId: 'card',
             category: 'category',
@@ -327,7 +329,7 @@ describe('BudgetInsightUtils', () => {
       push_type: 'partial_history',
     } as unknown) as { connection: Connection };
 
-    const expectedAccounts: AccountWithTransactions[] = ([
+    const expectedAccounts: BanksUserAccountWithTransactions[] = ([
       {
         balance: 2381.86,
         balanceDate: 1589791000000,
@@ -357,7 +359,7 @@ describe('BudgetInsightUtils', () => {
         type: 'CHECKINGS',
         usage: 'PERSONAL',
       },
-    ] as unknown) as AccountWithTransactions[];
+    ] as unknown) as BanksUserAccountWithTransactions[];
 
     expect(mapBudgetInsightAccountsFromOneConnection(event.connection)).toEqual(expectedAccounts);
   });

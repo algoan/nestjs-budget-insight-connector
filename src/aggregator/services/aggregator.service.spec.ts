@@ -1,6 +1,6 @@
 import { HttpModule } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { BanksUser, UserStatus } from '../../algoan/interfaces/algoan.interface';
+import { IBanksUser, BanksUserStatus } from '@algoan/rest';
 import { AlgoanModule } from '../../algoan/algoan.module';
 import { AppModule } from '../../app.module';
 import { AggregatorService } from './aggregator.service';
@@ -29,19 +29,30 @@ describe('AggregatorService', () => {
     expect(service).toBeDefined();
   });
 
-  it('should register user on budget insight', () => {
+  it('should register user on budget insight', async () => {
     const spy = jest.spyOn(client, 'register').mockReturnValue(Promise.resolve('permToken'));
     const token = 'token';
-    service.registerClient('serviceAccountId', token);
+    await service.registerClient('serviceAccountId', token);
 
     expect(spy).toBeCalledWith('serviceAccountId', token);
   });
 
   it('should create the webviewUrl base on the callbackUrl', () => {
-    const banksUser: BanksUser = {
+    const banksUser: IBanksUser = {
       id: 'id',
       callbackUrl: 'callbackUrl',
-      status: UserStatus.NEW,
+      status: BanksUserStatus.NEW,
+      redirectUrl: 'mockRedirectUrl',
+      redirectUrlCreatedAt: 1234567,
+      redirectUrlTTL: 500,
+      plugIn: {
+        budgetInsightBank: {
+          baseUrl: 'mockBaseUrl',
+          token: 'mockToken',
+        },
+      },
+      scores: [],
+      analysis: { alerts: [], regularCashFlows: [], reliability: 'HIGH' },
     };
     const url: string = service.generateRedirectUrl('serviceAccountId', banksUser);
     expect(url).toBe(

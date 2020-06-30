@@ -1,13 +1,18 @@
 import { flatMap } from 'lodash';
 import * as moment from 'moment-timezone';
-import { PostBanksUserTransactionDTO as Transaction, BanksUserTransactionType as TransactionType } from '@algoan/rest';
+import {
+  PostBanksUserTransactionDTO as Transaction,
+  BanksUserTransactionType as TransactionType,
+  UsageType,
+  AccountType,
+  BanksUserAccountWithTransactions,
+} from '@algoan/rest';
 
-import { AccountType, AccountWithTransactions, OwnerType } from '../../../algoan/interfaces/algoan.interface';
 import {
   Account as BiAccount,
   AccountType as BiAccountType,
   Connection,
-  OwnerType as BiOwnerType,
+  UsageType as BiUsageType,
   Transaction as BiTransaction,
   TransactionType as BiTransactionType,
 } from '../../interfaces/budget-insight.interface';
@@ -21,13 +26,13 @@ import {
 export const mapBudgetInsightAccount: (
   connections: Connection[],
   transactions: BiTransaction[],
-) => AccountWithTransactions[] = (
+) => BanksUserAccountWithTransactions[] = (
   connections: Connection[],
   transactions: BiTransaction[],
-): AccountWithTransactions[] =>
-  flatMap(connections, (connection: Connection): AccountWithTransactions[] =>
+): BanksUserAccountWithTransactions[] =>
+  flatMap(connections, (connection: Connection): BanksUserAccountWithTransactions[] =>
     connection.accounts.map(
-      (account: BiAccount): AccountWithTransactions => {
+      (account: BiAccount): BanksUserAccountWithTransactions => {
         const accountTransactions: Transaction[] = mapBudgetInsightTransactions(
           transactions.filter((transaction: BiTransaction) => transaction.id_account === account.id),
         );
@@ -45,7 +50,7 @@ export const mapBudgetInsightAccount: (
           name: account.name,
           reference: account.id.toString(),
           status: connection.active ? 'ACTIVE' : 'CLOSED',
-          usage: mapOwnerType(account.usage),
+          usage: mapUsageType(account.usage),
           loanDetails: account.loan && {
             amount: account.loan.total_amount,
             debitedAccountId: account.loan.id_account,
@@ -67,11 +72,11 @@ export const mapBudgetInsightAccount: (
  * into an array of Banks User accounts
  * @param connection connection from Budget Insight
  */
-export const mapBudgetInsightAccountsFromOneConnection: (connection: Connection) => AccountWithTransactions[] = (
+export const mapBudgetInsightAccountsFromOneConnection: (
   connection: Connection,
-): AccountWithTransactions[] =>
+) => BanksUserAccountWithTransactions[] = (connection: Connection): BanksUserAccountWithTransactions[] =>
   connection.accounts.map(
-    (account: BiAccount): AccountWithTransactions => {
+    (account: BiAccount): BanksUserAccountWithTransactions => {
       const accountTransactions: Transaction[] = mapBudgetInsightTransactions(account?.transactions);
 
       return {
@@ -87,7 +92,7 @@ export const mapBudgetInsightAccountsFromOneConnection: (connection: Connection)
         name: account.name,
         reference: account.id.toString(),
         status: connection.active ? 'ACTIVE' : 'CLOSED',
-        usage: mapOwnerType(account.usage),
+        usage: mapUsageType(account.usage),
         loanDetails: account.loan && {
           amount: account.loan.total_amount,
           debitedAccountId: account.loan.id_account,
@@ -180,20 +185,20 @@ const mapTransactionType = (transactionType: BiTransactionType): TransactionType
   TRANSACTION_TYPE_MAPPING[transactionType] || TransactionType.OTHER;
 
 /**
- * Ownertype TypeMapping
+ * UsageType TypeMapping
  */
-interface OwnerTypeMapping {
-  [index: string]: OwnerType;
+interface UsageTypeMapping {
+  [index: string]: UsageType;
 }
 
-const OWNER_TYPE_MAPPING: OwnerTypeMapping = {
-  [BiOwnerType.PRIVATE]: OwnerType.PERSONAL,
-  [BiOwnerType.ASSOCIATION]: OwnerType.PROFESSIONAL,
-  [BiOwnerType.ORGANIZATION]: OwnerType.PROFESSIONAL,
+const USAGE_TYPE_MAPPING: UsageTypeMapping = {
+  [BiUsageType.PRIVATE]: UsageType.PERSONAL,
+  [BiUsageType.ASSOCIATION]: UsageType.PROFESSIONAL,
+  [BiUsageType.ORGANIZATION]: UsageType.PROFESSIONAL,
 };
 
 /**
  * mapAccountType map the banksUser type from the budget Insight type
  * @param transactionType BudgetInsight type
  */
-const mapOwnerType = (ownerType: BiOwnerType): OwnerType => OWNER_TYPE_MAPPING[ownerType] || OwnerType.PERSONAL;
+const mapUsageType = (usageType: BiUsageType): UsageType => USAGE_TYPE_MAPPING[usageType] || UsageType.PERSONAL;

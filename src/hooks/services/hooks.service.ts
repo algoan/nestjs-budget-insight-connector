@@ -107,7 +107,7 @@ export class HooksService {
 
       const connections: Connection[] = await this.aggregator.getAccounts(serviceAccount.id, permanentToken);
       const transactions: Transaction[] = await this.aggregator.getTransactions(serviceAccount.id, permanentToken);
-      const accounts: AccountWithTransactions[] = mapBudgetInsightAccount(connections, transactions);
+      const accounts: BanksUserAccountWithTransactions[] = mapBudgetInsightAccount(connections, transactions);
 
       await this.banksUserService.synchronizeBanksUser(accounts, serviceAccount, payload.banksUserId);
     }
@@ -145,7 +145,7 @@ export class HooksService {
     }
 
     // Format accounts & transactions to Algoan
-    const accounts: AccountWithTransactions[] = mapBudgetInsightAccountsFromOneConnection(payload.connection);
+    const accounts: BanksUserAccountWithTransactions[] = mapBudgetInsightAccountsFromOneConnection(payload.connection);
 
     const serviceAccount: ServiceAccount = ({
       clientId: banksUserMap.clientId,
