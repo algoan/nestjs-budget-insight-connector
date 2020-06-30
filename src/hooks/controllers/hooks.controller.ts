@@ -1,7 +1,22 @@
-import { Body, Controller, Headers, HttpCode, HttpStatus, Post, LoggerService } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Headers,
+  HttpCode,
+  HttpStatus,
+  Post,
+  LoggerService,
+  BadRequestException,
+} from '@nestjs/common';
 import { ServiceAccount, EventName } from '@algoan/rest';
 import { EventDTO } from '../dto/event.dto';
 import { HooksService } from '../services/hooks.service';
+import { BankreaderLinkRequiredDTO } from '../dto/bandreader-link-required.dto';
+import { BankreaderConfigurationRequiredDTO } from '../dto/bankreader-configuration-required.dto';
+import { BankreaderRequiredDTO } from '../dto/bankreader-required.dto';
+import { ServiceAccountCreatedDTO } from '../dto/service-account-created.dto';
+import { ServiceAccountDeletedDTO } from '../dto/service-account-deleted.dto';
+
 /**
  * Headers interface
  */
@@ -33,7 +48,7 @@ export class HooksController {
    */
   public async handleBudgetInsightEvent(@Body() event: BIEvent): Promise<void> {
     this.logger.debug(`event for connection synced: ${event}`);
-    this.eventService
+    this.hooksService
       .patchBanksUserConnectionSync(event)
       .then(() => {
         this.logger.debug('BanksUser updated with success after connection sync');
@@ -57,12 +72,12 @@ export class HooksController {
       case EventName.BANKREADER_CONFIGURATION_REQUIRED:
         this.logger.debug(
           `Start ${EventName.BANKREADER_CONFIGURATION_REQUIRED} process for banksUsers ${
-            (event.payload as BankreaderConfigurationRequired).banksUserId
+            (event.payload as BankreaderConfigurationRequiredDTO).banksUserId
           }`,
         );
 
         this.hooksService
-          .getSandboxToken(serviceAccount, event.payload as BankreaderConfigurationRequired)
+          .getSandboxToken(serviceAccount, event.payload as BankreaderConfigurationRequiredDTO)
           .catch((e: Error) => {
             this.logger.error(`Could not add the sandbox to the bank user: ${e.message}`, e);
           });
@@ -70,11 +85,11 @@ export class HooksController {
       case EventName.BANKREADER_LINK_REQUIRED:
         this.logger.debug(
           `Start ${EventName.BANKREADER_LINK_REQUIRED} process for banksUsers ${
-            (event.payload as BankreaderLinkRequired).banksUserId
+            (event.payload as BankreaderLinkRequiredDTO).banksUserId
           }`,
         );
         this.hooksService
-          .generateRedirectUrl(serviceAccount, event.payload as BankreaderLinkRequired)
+          .generateRedirectUrl(serviceAccount, event.payload as BankreaderLinkRequiredDTO)
           .catch((e: Error) => {
             this.logger.error(`Could not add the redirection Url to the bank user: ${e.message}`, e);
           });
@@ -82,11 +97,11 @@ export class HooksController {
       case EventName.BANKREADER_REQUIRED:
         this.logger.debug(
           `Start ${EventName.BANKREADER_REQUIRED} process for banksUsers ${
-            (event.payload as BankreaderLinkRequired).banksUserId
+            (event.payload as BankreaderLinkRequiredDTO).banksUserId
           }`,
         );
         this.hooksService
-          .synchronizeBanksUser(serviceAccount, event.payload as BankreaderRequired)
+          .synchronizeBanksUser(serviceAccount, event.payload as BankreaderRequiredDTO)
           .then(() => {
             this.logger.debug('User synchronised with success');
           })
@@ -97,12 +112,12 @@ export class HooksController {
       case EventName.SERVICE_ACCOUNT_CREATED:
         this.logger.debug(
           `Start ${EventName.SERVICE_ACCOUNT_CREATED} process for serviceAccount ${
-            (event.payload as ServiceAccountCreated).serviceAccountId
+            (event.payload as ServiceAccountCreatedDTO).serviceAccountId
           }`,
         );
 
         this.hooksService
-          .addServiceAccount(event.payload as ServiceAccountCreated)
+          .addServiceAccount(event.payload as ServiceAccountCreatedDTO)
           .then(() => {
             this.logger.debug('Service Account added with success');
           })
@@ -113,12 +128,12 @@ export class HooksController {
       case EventName.SERVICE_ACCOUNT_DELETED:
         this.logger.debug(
           `Start ${EventName.SERVICE_ACCOUNT_CREATED} process for serviceAccount ${
-            (event.payload as ServiceAccountCreated).serviceAccountId
+            (event.payload as ServiceAccountCreatedDTO).serviceAccountId
           }`,
         );
 
         this.hooksService
-          .removeServiceAccount(event.payload as ServiceAccountDeleted)
+          .removeServiceAccount(event.payload as ServiceAccountDeletedDTO)
           .then(() => {
             this.logger.debug('Service Account deleted with success');
           })

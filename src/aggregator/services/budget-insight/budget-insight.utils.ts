@@ -1,13 +1,8 @@
 import { flatMap } from 'lodash';
 import * as moment from 'moment-timezone';
+import { PostBanksUserTransactionDTO as Transaction, BanksUserTransactionType as TransactionType } from '@algoan/rest';
 
-import {
-  AccountType,
-  AccountWithTransactions,
-  OwnerType,
-  Transaction,
-  TransactionType,
-} from '../../../algoan/interfaces/algoan.interface';
+import { AccountType, AccountWithTransactions, OwnerType } from '../../../algoan/interfaces/algoan.interface';
 import {
   Account as BiAccount,
   AccountType as BiAccountType,

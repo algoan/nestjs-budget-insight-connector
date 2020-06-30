@@ -35,13 +35,7 @@ export class HooksService {
    * @param signature Signature headers, to check if the call is from Algoan
    */
   public async handleWebhook(event: EventDTO, signature: string): Promise<void> {
-    const serviceAccount:
-      | ServiceAccount
-      | undefined = this.algoanService.algoanClient.getServiceAccountBySubscriptionId(event.subscription.id);
-
-    if (serviceAccount === undefined) {
-      throw new UnauthorizedException(`No service account found for subscription ${event.subscription.id}`);
-    }
+    const serviceAccount = await this.getServiceAccount(event);
 
     const subscription: Subscription = serviceAccount.subscriptions.find(
       (sub: Subscription) => sub.id === event.subscription.id,
@@ -58,7 +52,8 @@ export class HooksService {
    * Handle the bankreader-link-required event
    */
   public async generateRedirectUrl(event: EventDTO, payload: BankreaderLinkRequiredDTO): Promise<void> {
-    let banksUser = await this.getBanksUser(event, payload);
+    const serviceAccount = await this.getServiceAccount(event);
+    let banksUser = await serviceAccount.getBanksUserById(payload.banksUserId);
     this.logger.debug(`Found BanksUser with id ${banksUser.id} and callback ${banksUser.callbackUrl}`);
 
     const redirectUrl: string = this.aggregator.generateRedirectUrl(serviceAccount.id, banksUser);
@@ -72,8 +67,11 @@ export class HooksService {
    * Handle the bankreader-required event
    */
   public async synchronizeBanksUser(event: EventDTO, payload: BankreaderRequiredDTO): Promise<void> {
-    const biCredentials: BIConfigurations | undefined = this.serviceAccount.biCredentialsMap.get(serviceAccount.id);
-    const banksUser: BanksUser = await this.banksUserService.getBanksUserById(payload.banksUserId);
+    const serviceAccount = await this.getServiceAccount(event);
+    const banksUser = await serviceAccount.getBanksUserById(payload.banksUserId);
+    const biCredentials: BIConfigurations | undefined = this.serviceAccountService.biCredentialsMap.get(
+      serviceAccount.id,
+    );
     let permanentToken: string | undefined = banksUser?.plugIn?.budgetInsightBank?.token;
 
     if (!permanentToken || payload.temporaryCode) {
@@ -119,27 +117,29 @@ export class HooksService {
    * Handle the service-account-created event
    */
   public async addServiceAccount(event: EventDTO, payload: ServiceAccountCreatedDTO): Promise<void> {
-    await this.serviceAccount.add(payload.serviceAccountId);
+    const serviceAccount = await this.getServiceAccount(event);
+    await serviceAccount.add(payload.serviceAccountId);
   }
 
   /**
    * Handle the service-account-deleted event
    */
   public async removeServiceAccount(event: EventDTO, payload: ServiceAccountDeletedDTO): Promise<void> {
-    this.serviceAccount.remove(payload.serviceAccountId);
+    const serviceAccount = await this.getServiceAccount(event);
+    serviceAccount.remove(payload.serviceAccountId);
   }
 
   /**
    * Handle the connection-synced event
    * @param payload the event payload with accounts and transactions in connection
    */
-  public async patchBanksUserConnectionSync(event: EventDTO, payload: ConnectionSyncedDTO): Promise<void> {
+  public async patchBanksUserConnectionSync(payload: ConnectionSyncedDTO): Promise<void> {
     // Get Algoan BanksUser to update
     if (!payload.connection?.id) {
       throw new Error(`No id found in connection "${payload}"`);
     }
 
-    const banksUserMap: BanksUserMap | null = await this.banksUserMapService.getByConnectionId(payload.connection.id);
+    const banksUserMap = await this.banksUserMapService.getByConnectionId(payload.connection.id);
     if (!banksUserMap) {
       throw new Error(`No banksUserMap found for Budget-Insight connection n°"${payload.connection.id}"`);
     }
@@ -160,12 +160,9 @@ export class HooksService {
    * @param serviceAccount Algoan service account to retrieve sandbox credentials
    * @param payload Payload
    */
-  public async getSandboxToken(
-    event: EventDTO,
-    serviceAccount: ServiceAccount,
-    payload: BankreaderConfigurationRequiredDTO,
-  ): Promise<void> {
-    const banksUser: BanksUser = await this.banksUserService.getBanksUserById(payload.banksUserId);
+  public async getSandboxToken(event: EventDTO, payload: BankreaderConfigurationRequiredDTO): Promise<void> {
+    const serviceAccount = await this.getServiceAccount(event);
+    const banksUser = await serviceAccount.getBanksUserById(payload.banksUserId);
     const jsonWT: JWTokenResponse = await this.aggregator.getJWToken(serviceAccount.id);
 
     const plugIn: PlugIn = {
@@ -181,17 +178,14 @@ export class HooksService {
   }
 
   /**
-   * Gets the BanksUser given the event
+   * Gets the Service Account given the event
    */
-  private async getBanksUser(event: EventDTO, payload: BankreaderLinkRequiredDTO): Promise<BanksUser> {
-    const serviceAccount:
-      | ServiceAccount
-      | undefined = this.algoanService.algoanClient.getServiceAccountBySubscriptionId(event.subscription.id);
+  private async getServiceAccount(event: EventDTO): Promise<ServiceAccount> {
+    const serviceAccount = this.algoanService.algoanClient.getServiceAccountBySubscriptionId(event.subscription.id);
     if (serviceAccount === undefined) {
       throw new UnauthorizedException(`No service account found for subscription ${event.subscription.id}`);
     }
-    const banksUser: BanksUser = await serviceAccount.getBanksUserById(payload.banksUserId);
 
-    return banksUser;
+    return serviceAccount;
   }
 }
