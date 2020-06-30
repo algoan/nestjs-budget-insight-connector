@@ -1,4 +1,4 @@
-import { ServiceAccount } from '@algoan/rest';
+import { ServiceAccount, Subscription } from '@algoan/rest';
 import { UnauthorizedException, Injectable } from '@nestjs/common';
 
 import { AlgoanService } from '../../algoan/algoan.service';
@@ -23,6 +23,14 @@ export class HooksService {
 
     if (serviceAccount === undefined) {
       throw new UnauthorizedException(`No service account found for subscription ${event.subscription.id}`);
+    }
+
+    const subscription: Subscription = serviceAccount.subscriptions.find((sub: Subscription) => {
+      return sub.id === event.subscription.id;
+    });
+
+    if (!subscription.validateSignature(signature, event.payload as unknown as {[key: string]: string})) {
+      throw new UnauthorizedException('Invalid X-Hub-Signature: you cannot call this API');
     }
 
     return;

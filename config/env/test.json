@@ -6,11 +6,8 @@
   },
   "targetUrl": "https://test",
   "eventList": [
-    "service_account_created",
-    "bankreader_link_required",
-    "bankreader_configuration_required",
-    "bankreader_required"
+    "service_account_created"
   ],
-  "restHooksSecret": "sdvcsqdcsdcsd",
+  "restHooksSecret": "a",
   "port": 8080
 }
