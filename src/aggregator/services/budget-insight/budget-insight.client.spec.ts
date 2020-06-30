@@ -11,7 +11,7 @@ describe('BudgetInsightClient', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      imports: [AppModule, HttpModule, CoreModule, AlgoanModule],
+      imports: [AppModule, HttpModule, AlgoanModule],
       providers: [BudgetInsightClient],
     }).compile();
 
