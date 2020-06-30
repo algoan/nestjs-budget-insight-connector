@@ -1,0 +1,13 @@
+{
+  "algoan": {
+    "baseUrl": "http://localhost:3000",
+    "clientId": "a",
+    "clientSecret": "b"
+  },
+  "targetUrl": "https://test",
+  "eventList": [
+    "service_account_created"
+  ],
+  "restHooksSecret": "a",
+  "port": 8080
+}
