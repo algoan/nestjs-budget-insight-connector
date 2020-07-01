@@ -5,13 +5,13 @@ import { AlgoanModule } from '../../algoan/algoan.module';
 import { ConnectionSyncedDTO } from '../dto/connection-synced.dto';
 import { BIEvent } from '../dto/bi-event.dto';
 import { EventDTO } from '../dto/event.dto';
-import { EventService } from '../services/event/event.service';
+import { HooksService } from '../services/hooks.service';
 import { AppModule } from '../../app.module';
 import { HooksController } from './hooks.controller';
 
 describe('Hooks Controller', () => {
   let controller: HooksController;
-  let eventService: EventService;
+  let hooksService: HooksService;
   const serviceAccount: ServiceAccount = {
     id: 'serviceAccountId',
     clientId: 'clientId',
@@ -26,12 +26,12 @@ describe('Hooks Controller', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       imports: [AppModule, AggregatorModule, AlgoanModule],
-      providers: [EventService],
+      providers: [HooksService],
       controllers: [HooksController],
     }).compile();
 
     controller = module.get<HooksController>(HooksController);
-    eventService = module.get<EventService>(EventService);
+    hooksService = module.get<HooksService>(HooksService);
   });
 
   it('should be defined', () => {
@@ -45,8 +45,7 @@ describe('Hooks Controller', () => {
           id: 'b3cf907a5a66c1a7f5490fe1',
           target: 'https://bankease.com/algoan-hook/',
           eventName: EventName.BANKREADER_REQUIRED,
-          status: RestHookSubscriptionStatusEnum.ACTIVE,
-          subscriberId: 's',
+          status: 'ACTIVE',
         },
         payload: {
           applicationId: '8fa7795ff26a471b384daf8b',
@@ -76,8 +75,7 @@ describe('Hooks Controller', () => {
           id: 'b3cf907a5a66c1a7f5490fe1',
           target: 'https://bankease.com/algoan-hook/',
           eventName: EventName.BANKREADER_CONFIGURATION_REQUIRED,
-          status: RestHookSubscriptionStatusEnum.ACTIVE,
-          subscriberId: 's',
+          status: 'ACTIVE',
         },
         payload: {
           banksUserId: '2a0bf32e3180329b3167e777',
@@ -89,7 +87,7 @@ describe('Hooks Controller', () => {
 
       it('should get the sandbox token', () => {
         serviceAccountService.serviceAccountMap.b3cf907a5a66c1a7f5490fe1 = serviceAccount;
-        const spy = jest.spyOn(eventService, 'getSandboxToken').mockReturnValue(Promise.resolve());
+        const spy = jest.spyOn(hooksService, 'getSandboxToken').mockReturnValue(Promise.resolve());
 
         expect(
           controller.controlHook(eventBody, {
@@ -106,8 +104,7 @@ describe('Hooks Controller', () => {
           id: 'b3cf907a5a66c1a7f5490fe1',
           target: 'https://bankease.com/algoan-hook/',
           eventName: EventName.SERVICE_ACCOUNT_CREATED,
-          status: RestHookSubscriptionStatusEnum.ACTIVE,
-          subscriberId: 's',
+          status: 'ACTIVE',
         },
         payload: {
           applicationId: '8fa7795ff26a471b384daf8b',
@@ -121,7 +118,7 @@ describe('Hooks Controller', () => {
 
       it('should start the addition of the serviceAccount', () => {
         serviceAccountService.serviceAccountMap.b3cf907a5a66c1a7f5490fe1 = serviceAccount;
-        const spy = jest.spyOn(eventService, 'addServiceAccount').mockReturnValue(Promise.resolve());
+        const spy = jest.spyOn(hooksService, 'addServiceAccount').mockReturnValue(Promise.resolve());
 
         expect(
           controller.controlHook(eventBody, {
@@ -138,8 +135,7 @@ describe('Hooks Controller', () => {
           id: 'b3cf907a5a66c1a7f5490fe1',
           target: 'https://bankease.com/algoan-hook/',
           eventName: EventName.SERVICE_ACCOUNT_DELETED,
-          status: RestHookSubscriptionStatusEnum.ACTIVE,
-          subscriberId: 's',
+          status: 'ACTIVE',
         },
         payload: {
           applicationId: '8fa7795ff26a471b384daf8b',
@@ -153,7 +149,7 @@ describe('Hooks Controller', () => {
 
       it('should start the deletion of the serviceAccount', () => {
         serviceAccountService.serviceAccountMap.b3cf907a5a66c1a7f5490fe1 = serviceAccount;
-        const spy = jest.spyOn(eventService, 'removeServiceAccount').mockReturnValue(Promise.resolve());
+        const spy = jest.spyOn(hooksService, 'removeServiceAccount').mockReturnValue(Promise.resolve());
 
         expect(
           controller.controlHook(eventBody, {
@@ -165,7 +161,7 @@ describe('Hooks Controller', () => {
 
       it('should throw an error when the hash is invalid', async () => {
         serviceAccountService.serviceAccountMap.b3cf907a5a66c1a7f5490fe1 = serviceAccount;
-        jest.spyOn(eventService, 'removeServiceAccount').mockReturnValue(Promise.resolve());
+        jest.spyOn(hooksService, 'removeServiceAccount').mockReturnValue(Promise.resolve());
 
         let errorThrown: boolean = false;
         let res;
@@ -188,8 +184,7 @@ describe('Hooks Controller', () => {
           id: 'b3cf907a5a66c1a7f5490fe1',
           target: 'https://bankease.com/algoan-hook/',
           eventName: EventName.BANKREADER_LINK_REQUIRED,
-          status: RestHookSubscriptionStatusEnum.ACTIVE,
-          subscriberId: 's',
+          status: 'ACTIVE',
         },
         payload: {
           applicationId: '8fa7795ff26a471b384daf8b',
@@ -203,7 +198,7 @@ describe('Hooks Controller', () => {
 
       it('send the event to the right service', () => {
         serviceAccountService.serviceAccountMap.b3cf907a5a66c1a7f5490fe1 = serviceAccount;
-        const eventServiceSpy = jest.spyOn(eventService, 'generateRedirectUrl').mockReturnValue(Promise.resolve());
+        const eventServiceSpy = jest.spyOn(hooksService, 'generateRedirectUrl').mockReturnValue(Promise.resolve());
         expect(
           controller.controlHook(eventBody, {
             'x-hub-signature': 'sha256=e6b153073c9db80ffa69f6c21668d4de997f3620c262d9b44c056c8b4db975fa',
@@ -218,7 +213,7 @@ describe('Hooks Controller', () => {
        */
       it('throw an error id the service account does not exists', async () => {
         serviceAccountService.serviceAccountMap = {};
-        const eventServiceSpy = jest.spyOn(eventService, 'generateRedirectUrl').mockReturnValue(Promise.resolve());
+        const eventServiceSpy = jest.spyOn(hooksService, 'generateRedirectUrl').mockReturnValue(Promise.resolve());
 
         let errorThrown: boolean = false;
         let res;
@@ -247,7 +242,7 @@ describe('Hooks Controller', () => {
       it('send the event to the right service', async () => {
         serviceAccountService.serviceAccountMap.b3cf907a5a66c1a7f5490fe1 = serviceAccount;
         const eventServiceSpy = jest
-          .spyOn(eventService, 'patchBanksUserConnectionSync')
+          .spyOn(hooksService, 'patchBanksUserConnectionSync')
           .mockReturnValue(Promise.resolve());
 
         let errorThrown: boolean = false;
@@ -268,8 +263,7 @@ describe('Hooks Controller', () => {
           id: 'b3cf907a5a66c1a7f5490fe1',
           target: 'https://bankease.com/algoan-hook/',
           eventName: 'iuohjqwd' as EventName,
-          status: RestHookSubscriptionStatusEnum.ACTIVE,
-          subscriberId: 's',
+          status: 'ACTIVE',
         },
         payload: {
           applicationId: '8fa7795ff26a471b384daf8b',

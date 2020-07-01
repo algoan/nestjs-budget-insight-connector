@@ -1,11 +1,16 @@
-import { ServiceAccount, Subscription, BanksUser } from '@algoan/rest';
+import { ServiceAccount, Subscription, BanksUserAccountWithTransactions } from '@algoan/rest';
 import { UnauthorizedException, Injectable, LoggerService } from '@nestjs/common';
 import * as delay from 'delay';
 
 import { AlgoanService } from '../../algoan/algoan.service';
 import { EventDTO } from '../dto/event.dto';
 
-import { Connection, JWTokenResponse, Transaction } from '../../aggregator/interfaces/budget-insight.interface';
+import {
+  Connection,
+  JWTokenResponse,
+  Transaction,
+  BIConfigurations,
+} from '../../aggregator/interfaces/budget-insight.interface';
 import { AggregatorService } from '../../aggregator/services/aggregator.service';
 import {
   mapBudgetInsightAccount,
@@ -17,6 +22,9 @@ import { BankreaderRequiredDTO } from '../dto/bankreader-required.dto';
 import { ConnectionSyncedDTO } from '../dto/connection-synced.dto';
 import { ServiceAccountCreatedDTO } from '../dto/service-account-created.dto';
 import { ServiceAccountDeletedDTO } from '../dto/service-account-deleted.dto';
+import { BanksUserMapService } from '../../algoan/services/banks-user-map/banks-user-map.service';
+import { BanksUserService } from '../../algoan/services/banks-user/banks-user.service';
+import { ConfigService } from '../../algoan/services/config/config.service';
 
 /**
  * Hook service
@@ -27,6 +35,9 @@ export class HooksService {
     private readonly algoanService: AlgoanService,
     private readonly aggregator: AggregatorService,
     private readonly logger: LoggerService,
+    private readonly banksUserMapService: BanksUserMapService,
+    private readonly banksUserService: BanksUserService,
+    private readonly configService: ConfigService,
   ) {}
 
   /**
@@ -69,9 +80,7 @@ export class HooksService {
   public async synchronizeBanksUser(event: EventDTO, payload: BankreaderRequiredDTO): Promise<void> {
     const serviceAccount = await this.getServiceAccount(event);
     const banksUser = await serviceAccount.getBanksUserById(payload.banksUserId);
-    const biCredentials: BIConfigurations | undefined = this.serviceAccountService.biCredentialsMap.get(
-      serviceAccount.id,
-    );
+    const biCredentials: BIConfigurations | undefined = serviceAccount.biCredentialsMap.get(serviceAccount.id);
     let permanentToken: string | undefined = banksUser?.plugIn?.budgetInsightBank?.token;
 
     if (!permanentToken || payload.temporaryCode) {
@@ -165,7 +174,7 @@ export class HooksService {
     const banksUser = await serviceAccount.getBanksUserById(payload.banksUserId);
     const jsonWT: JWTokenResponse = await this.aggregator.getJWToken(serviceAccount.id);
 
-    const plugIn: PlugIn = {
+    const plugIn = {
       budgetInsightBank: {
         baseUrl: jsonWT.payload?.domain
           ? `https://${jsonWT.payload.domain}/2.0/`
@@ -174,7 +183,7 @@ export class HooksService {
       },
     };
 
-    await banksUser.update({ plugin: plugIn });
+    await banksUser.update({ plugIn });
   }
 
   /**
