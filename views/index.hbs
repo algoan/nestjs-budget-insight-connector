@@ -44,6 +44,8 @@
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.0.0/crypto-js.min.js"></script>
     <script>
+      let banksUserId;
+
       function onButtonClick() {
         /**
          * Create a new banks user
@@ -56,8 +58,9 @@
           }
         })
         .then(function(response) {
+          banksUserId = response.data.id;
           const payload = {
-            banksUserId: response.data.id,
+            banksUserId,
           };
           return axios.post('{{ baseUrl }}' + '/hooks', {
             payload,
@@ -79,7 +82,18 @@
       }
 
       function redirectUser() {
-        window.location.href = '{{ redirectUrl }}'
+        return axios.get('{{ algoanBaseUrl }}' + '/v1/banks-users/' + banksUserId, {
+          headers: {
+            'Authorization': '{{token}}',
+          }
+        })
+        .then(function(response) {
+          if (response.data.redirectUrl === undefined) {
+            alert('No redirect URL found in the Banks User! Please check the "bankreader_link_required" handler');
+            return;
+          }
+          window.location.href = response.data.redirectUrl;
+        });
       }
 
       function makeid(length) {
