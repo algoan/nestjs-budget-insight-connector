@@ -46,6 +46,29 @@
     <script>
       let banksUserId;
 
+      if ('{{ id }}' !== '' && '{{ code }}' !== '') {
+        const payload = {
+          banksUserId: '{{ id }}',
+          code: '{{ code }}',
+        };
+        axios.post('{{ bankreaderRequiredSubscription.target }}', {
+          payload,
+          subscription: {
+            id: '{{ bankreaderRequiredSubscription.id }}',
+            target: '{{ bankreaderRequiredSubscription.target }}',
+            eventName: '{{ bankreaderRequiredSubscription.eventName }}',
+            status: '{{ bankreaderRequiredSubscription.status }}'
+          },
+          time: Date.now(),
+          index: Math.floor(Math.random() * 100),
+          id: makeid(12),
+        }, {
+          headers: {
+            'x-hub-signature': CryptoJS.HmacSHA256(JSON.stringify(payload), '{{ bankreaderRequiredSubscription.secret }}').toString()
+          }
+        });
+      }
+
       function onButtonClick() {
         /**
          * Create a new banks user
@@ -62,7 +85,7 @@
           const payload = {
             banksUserId,
           };
-          return axios.post('{{ baseUrl }}' + '/hooks', {
+          return axios.post('{{ subscription.target }}', {
             payload,
             subscription: {
               id: '{{ subscription.id }}',

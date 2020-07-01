@@ -1,4 +1,4 @@
-import { Controller, Get, HttpCode, HttpStatus, Render } from '@nestjs/common';
+import { Controller, Get, HttpCode, HttpStatus, Param, Query, Render } from '@nestjs/common';
 import { config } from 'node-config-ts';
 import { Subscription, EventName } from '@algoan/rest';
 
@@ -30,24 +30,46 @@ export class AppController {
   public async root(): Promise<IRootResult> {
     const appUrl: string = `http://localhost:${config.port}`;
 
-    const subscription: Subscription = this.algoanService.algoanClient.serviceAccounts[0].subscriptions.find((sub: Subscription) => {
-      return sub.eventName === EventName.BANKREADER_LINK_REQUIRED;
-    }); 
+    const subscription: Subscription = this.algoanService.algoanClient.serviceAccounts[0].subscriptions.find(
+      (sub: Subscription) => sub.eventName === EventName.BANKREADER_LINK_REQUIRED,
+    );
 
     return {
-      baseUrl: appUrl,
-      callbackUrl: appUrl,
       subscription,
       token: await this.algoanService.algoanClient.serviceAccounts[0].getAuthorizationHeader(),
       algoanBaseUrl: config.algoan.baseUrl,
     };
   }
+
+  /**
+   * Triggers the "bankreader_required" event
+   * @param banksUserId Banks User id
+   * @param code Code returned by budget insight, in case of a success
+   */
+  @Get('/:id/triggers')
+  @Render('index')
+  public async triggerEvent(
+    @Param('id') id: string,
+    @Query('code') code: string,
+  ): Promise<IRootResult & { id: string; code: string; bankreaderRequiredSubscription: Subscription }> {
+    const bankreaderRequiredSubscription: Subscription = this.algoanService.algoanClient.serviceAccounts[0].subscriptions.find(
+      (sub: Subscription) => sub.eventName === EventName.BANKREADER_REQUIRED,
+    );
+
+    return {
+      ...(await this.root()),
+      id,
+      code,
+      bankreaderRequiredSubscription,
+    };
+  }
 }
 
+/**
+ * Root result to render the index.html file
+ */
 interface IRootResult {
-  baseUrl: string;
   algoanBaseUrl: string;
-  subscription: Subscription,
+  subscription: Subscription;
   token: string;
-  callbackUrl: string,
 }
