@@ -38,6 +38,9 @@ jobs:
           name: Install node dependencies
           command: npm ci
       - run:
+          name: Run ESLint and Typescript CLI
+          command: npm run lint && npm run build
+      - run:
           name: Run unit tests
           command: npm test
       - run:

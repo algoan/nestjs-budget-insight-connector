@@ -25,11 +25,11 @@ export class HooksService {
       throw new UnauthorizedException(`No service account found for subscription ${event.subscription.id}`);
     }
 
-    const subscription: Subscription = serviceAccount.subscriptions.find((sub: Subscription) => {
-      return sub.id === event.subscription.id;
-    });
+    const subscription: Subscription = serviceAccount.subscriptions.find(
+      (sub: Subscription) => sub.id === event.subscription.id,
+    );
 
-    if (!subscription.validateSignature(signature, event.payload as unknown as {[key: string]: string})) {
+    if (!subscription.validateSignature(signature, (event.payload as unknown) as { [key: string]: string })) {
       throw new UnauthorizedException('Invalid X-Hub-Signature: you cannot call this API');
     }
 

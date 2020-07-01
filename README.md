@@ -75,6 +75,19 @@ When the user has finished the aggregation process, the connector has to retriev
 
 ![bankreader_required](assets/bankreader_required_1.png)
 
+## How to test
+
+To test locally the Budget Insight process, a simple `index.html` file is rendered. To use it:
+
+- Create a `config/user/{process.env.USER}.json` file to override app configurations. _NOTE_: This application uses [node-config-ts](https://github.com/tusharmath/node-config-ts).
+- Run `npm start`
+- Go to your favorite browser and navigate to http://localhost:8080. It should display a web page: 
+
+![index_page](assets/index-page.png)
+
+- Click on the first button "Launch BI redirection process". It will create a new Banks User and triggers the hooks controller.
+- To be redirected to Budget Insight, click on the second button "Redirect to BI" . This will get your banks-user and redirect you to the Budget Insight redirect URL. If an alert appears, it means that the Banks user has not been updated.
+
 
 ## Support
 

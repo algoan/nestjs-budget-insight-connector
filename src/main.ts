@@ -1,4 +1,4 @@
-import { join } from 'path';
+import { join } from 'path';
 import { HttpExceptionFilter } from '@algoan/nestjs-http-exception-filter';
 import { NestFactory, NestApplication } from '@nestjs/core';
 import { Logger, ValidationPipe } from '@nestjs/common';
