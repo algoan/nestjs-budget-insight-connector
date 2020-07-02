@@ -1,18 +1,15 @@
-import { ApiProperty } from '@nestjs/swagger';
 import { IsNotEmpty, IsOptional } from 'class-validator';
 
 /**
  * BankreaderRequired
  */
 export class BankreaderRequiredDTO {
-  @ApiProperty()
   @IsNotEmpty()
-  public readonly applicationId: string;
-  @ApiProperty()
+  @IsOptional()
+  public readonly applicationId?: string;
   @IsNotEmpty()
   public readonly banksUserId: string;
-  @ApiProperty()
   @IsOptional()
   @IsNotEmpty()
-  public readonly temporaryCode: string;
+  public readonly temporaryCode?: string;
 }

@@ -1,6 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { IBanksUser } from '@algoan/rest';
-import { Connection, JWTokenResponse, Transaction } from '../interfaces/budget-insight.interface';
+import {
+  Connection,
+  JWTokenResponse,
+  BudgetInsightTransaction,
+  BudgetInsightAccount,
+} from '../interfaces/budget-insight.interface';
 import { BudgetInsightClient, ClientConfig } from './budget-insight/budget-insight.client';
 
 /**
@@ -14,15 +19,15 @@ export class AggregatorService {
    *
    * @param tmpToken Budget Insight token returned from the web view
    */
-  public async registerClient(serviceAccountId: string, tmpToken: string): Promise<string> {
-    return this.budgetInsightClient.register(serviceAccountId, tmpToken);
+  public async registerClient(tmpToken: string): Promise<string> {
+    return this.budgetInsightClient.register(tmpToken);
   }
 
   /**
    * Get user JSON Web Token
    */
-  public async getJWToken(serviceAccountId: string): Promise<JWTokenResponse> {
-    return this.budgetInsightClient.getUserJWT(serviceAccountId);
+  public async getJWToken(): Promise<JWTokenResponse> {
+    return this.budgetInsightClient.getUserJWT();
   }
 
   /**
@@ -30,21 +35,19 @@ export class AggregatorService {
    *
    * @param banksUser The bank user for which we generate the redirectUrl
    */
-  public generateRedirectUrl(serviceAccountId: string, banksUser: IBanksUser): string {
-    const config: ClientConfig = this.budgetInsightClient.getClientConfig(serviceAccountId);
+  public generateRedirectUrl(banksUser: IBanksUser): string {
+    const config: ClientConfig = this.budgetInsightClient.getClientConfig();
 
     return `${config.baseUrl}auth/webview/fr/connect?client_id=${config.clientId}&redirect_uri=${banksUser.callbackUrl}&response_type=code&state=&types=banks`;
   }
 
   /**
-   * Will wait for the synchronisation to be finished and return accounts
+   * Get accounts from Budget Insight
    *
    * @param token The permanent token shared with BudgetInsight
    */
-  public async getAccounts(serviceAccountId: string, token: string): Promise<Connection[]> {
-    await this.budgetInsightClient.synchronize(serviceAccountId, token);
-
-    return this.budgetInsightClient.fetchConnection(serviceAccountId, token);
+  public async getAccounts(token: string): Promise<BudgetInsightAccount[]> {
+    return this.budgetInsightClient.fetchBankAccounts(token);
   }
 
   /**
@@ -52,14 +55,14 @@ export class AggregatorService {
    *
    * @param token The permanent token shared with BudgetInsight
    */
-  public async getTransactions(serviceAccountId: string, token: string): Promise<Transaction[]> {
-    return this.budgetInsightClient.fetchTransactions(serviceAccountId, token);
+  public async getTransactions(token: string, accountId: number): Promise<BudgetInsightTransaction[]> {
+    return this.budgetInsightClient.fetchTransactions(token, accountId);
   }
 
   /**
    * Get user's connections
    */
-  public async getConnections(serviceAccountId: string, token: string): Promise<Connection[]> {
-    return this.budgetInsightClient.fetchConnection(serviceAccountId, token, false);
+  public async getConnections(token: string): Promise<Connection[]> {
+    return this.budgetInsightClient.fetchConnection(token);
   }
 }

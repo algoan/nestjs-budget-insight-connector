@@ -45,11 +45,10 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.0.0/crypto-js.min.js"></script>
     <script>
       let banksUserId;
-
-      if ('{{ id }}' !== '' && '{{ code }}' !== '') {
+      if (localStorage.getItem('banksUserId') && '{{ code }}' !== '') {
         const payload = {
-          banksUserId: '{{ id }}',
-          code: '{{ code }}',
+          banksUserId: localStorage.getItem('banksUserId'),
+          temporaryCode: '{{ code }}',
         };
         axios.post('{{ bankreaderRequiredSubscription.target }}', {
           payload,
@@ -67,6 +66,8 @@
             'x-hub-signature': CryptoJS.HmacSHA256(JSON.stringify(payload), '{{ bankreaderRequiredSubscription.secret }}').toString()
           }
         });
+
+        localStorage.removeItem('banksUserId');
       }
 
       function onButtonClick() {
@@ -81,6 +82,7 @@
           }
         })
         .then(function(response) {
+          localStorage.setItem('banksUserId', response.data.id);
           banksUserId = response.data.id;
           const payload = {
             banksUserId,
