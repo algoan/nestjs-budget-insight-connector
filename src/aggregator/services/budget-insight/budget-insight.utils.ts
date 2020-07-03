@@ -21,40 +21,42 @@ import {
  * @param connections arrays from Budget Insight
  * @param transactions The complete list of transactions
  */
-export const mapBudgetInsightAccount = (accounts: BudgetInsightAccount[]): PostBanksUserAccountDTO[] => accounts.map(fromBIToAlgoanAccounts);
+export const mapBudgetInsightAccount = (accounts: BudgetInsightAccount[]): PostBanksUserAccountDTO[] =>
+  accounts.map(fromBIToAlgoanAccounts);
 
 /**
  * Converts a single BI account instance to Algoan format
  * @param account
  */
 const fromBIToAlgoanAccounts = (account: BudgetInsightAccount): PostBanksUserAccountDTO => ({
-    balanceDate: new Date(mapDate(account.last_update)).toISOString(),
-    balance: account.balance,
-    bank: account.name,
-    connectionSource: 'BUDGET_INSIGHT',
-    type: mapAccountType(account.type),
-    bic: account.bic,
-    iban: account.iban,
-    currency: account.currency.id,
-    name: account.name,
-    reference: account.id.toString(),
-    status: account.disabled ? 'ACTIVE' : 'CLOSED',
-    usage: mapUsageType(account.usage),
-    loanDetails:
-      account.loan !== undefined
-        ? {
-            amount: account.loan.total_amount,
-            debitedAccountId: account.loan.id_account,
-            startDate: mapDate(account.loan.subscription_date),
-            endDate: mapDate(account.loan.maturity_date),
-            payment: account.loan.next_payment_amount,
-            interestRate: account.loan.rate,
-            remainingCapital: account.balance,
-            type: 'OTHER',
-          }
-        : undefined,
-    savingsDetails: account.type === BiAccountType.SAVINGS ? account.company_name : account.original_name,
-  });
+  balanceDate: new Date(mapDate(account.last_update)).toISOString(),
+  balance: account.balance,
+  bank: account.name,
+  connectionSource: 'BUDGET_INSIGHT',
+  type: mapAccountType(account.type),
+  bic: account.bic,
+  iban: account.iban,
+  currency: account.currency.id,
+  name: account.name,
+  reference: account.id.toString(),
+  status: account.disabled ? 'ACTIVE' : 'CLOSED',
+  usage: mapUsageType(account.usage),
+  loanDetails:
+    // eslint-disable-next-line no-null/no-null
+    account.loan !== null
+      ? {
+          amount: account.loan.total_amount,
+          debitedAccountId: account.loan.id_account,
+          startDate: mapDate(account.loan.subscription_date),
+          endDate: mapDate(account.loan.maturity_date),
+          payment: account.loan.next_payment_amount,
+          interestRate: account.loan.rate,
+          remainingCapital: account.balance,
+          type: 'OTHER',
+        }
+      : undefined,
+  savingsDetails: account.type === BiAccountType.SAVINGS ? account.company_name : account.original_name,
+});
 
 /**
  * mapBudgetInsightTransactions transforms a budgetInsight transaction wrapper into
