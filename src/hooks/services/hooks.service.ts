@@ -1,44 +1,44 @@
-import { ServiceAccount, Subscription, BanksUserAccountWithTransactions } from '@algoan/rest';
-import { UnauthorizedException, Injectable, LoggerService } from '@nestjs/common';
-import * as delay from 'delay';
+import {
+  BanksUserAccount,
+  ServiceAccount,
+  Subscription,
+  EventName,
+  BanksUser,
+  BanksUserStatus,
+  PostBanksUserTransactionDTO,
+  PostBanksUserAccountDTO,
+} from '@algoan/rest';
+import { UnauthorizedException, Injectable, NotFoundException, Logger } from '@nestjs/common';
+import { config } from 'node-config-ts';
 
 import { AlgoanService } from '../../algoan/algoan.service';
 import { EventDTO } from '../dto/event.dto';
 
 import {
-  Connection,
   JWTokenResponse,
-  Transaction,
-  BIConfigurations,
+  BudgetInsightAccount,
+  BudgetInsightTransaction,
 } from '../../aggregator/interfaces/budget-insight.interface';
 import { AggregatorService } from '../../aggregator/services/aggregator.service';
 import {
   mapBudgetInsightAccount,
-  mapBudgetInsightAccountsFromOneConnection,
+  mapBudgetInsightTransactions,
 } from '../../aggregator/services/budget-insight/budget-insight.utils';
 import { BankreaderLinkRequiredDTO } from '../dto/bandreader-link-required.dto';
 import { BankreaderConfigurationRequiredDTO } from '../dto/bankreader-configuration-required.dto';
 import { BankreaderRequiredDTO } from '../dto/bankreader-required.dto';
-import { ConnectionSyncedDTO } from '../dto/connection-synced.dto';
-import { ServiceAccountCreatedDTO } from '../dto/service-account-created.dto';
-import { ServiceAccountDeletedDTO } from '../dto/service-account-deleted.dto';
-import { BanksUserMapService } from '../../algoan/services/banks-user-map/banks-user-map.service';
-import { BanksUserService } from '../../algoan/services/banks-user/banks-user.service';
-import { ConfigService } from '../../algoan/services/config/config.service';
 
 /**
  * Hook service
  */
 @Injectable()
 export class HooksService {
-  constructor(
-    private readonly algoanService: AlgoanService,
-    private readonly aggregator: AggregatorService,
-    private readonly logger: LoggerService,
-    private readonly banksUserMapService: BanksUserMapService,
-    private readonly banksUserService: BanksUserService,
-    private readonly configService: ConfigService,
-  ) {}
+  /**
+   * Class logger
+   */
+  private readonly logger: Logger = new Logger(HooksService.name);
+
+  constructor(private readonly algoanService: AlgoanService, private readonly aggregator: AggregatorService) {}
 
   /**
    * Handle Algoan webhooks
@@ -56,112 +56,124 @@ export class HooksService {
       throw new UnauthorizedException('Invalid X-Hub-Signature: you cannot call this API');
     }
 
+    switch (event.subscription.eventName) {
+      case EventName.BANKREADER_LINK_REQUIRED:
+        await this.handleBankreaderLinkRequiredEvent(serviceAccount, event.payload as BankreaderLinkRequiredDTO);
+        break;
+
+      case EventName.BANKREADER_CONFIGURATION_REQUIRED:
+        break;
+
+      case EventName.BANKREADER_REQUIRED:
+        await this.handleBankReaderRequiredEvent(serviceAccount, event.payload as BankreaderRequiredDTO);
+        break;
+
+      // The default case should never be reached, as the eventName is already checked in the DTO
+      default:
+        return;
+    }
+
     return;
   }
 
   /**
-   * Handle the bankreader-link-required event
+   * Handle the "bankreader_link_required" event
+   * Looks for a callback URL and generates a new redirect URL
+   * @param serviceAccount Concerned Algoan service account attached to the subscription
+   * @param payload Payload sent, containing the Banks User id
    */
-  public async generateRedirectUrl(event: EventDTO, payload: BankreaderLinkRequiredDTO): Promise<void> {
-    const serviceAccount = await this.getServiceAccount(event);
-    let banksUser = await serviceAccount.getBanksUserById(payload.banksUserId);
+  private async handleBankreaderLinkRequiredEvent(
+    serviceAccount: ServiceAccount,
+    payload: BankreaderLinkRequiredDTO,
+  ): Promise<void> {
+    /**
+     * 1. GET the banks user to retrieve the callback URL
+     */
+    const banksUser: BanksUser = await serviceAccount.getBanksUserById(payload.banksUserId);
     this.logger.debug(`Found BanksUser with id ${banksUser.id} and callback ${banksUser.callbackUrl}`);
 
-    const redirectUrl: string = this.aggregator.generateRedirectUrl(serviceAccount.id, banksUser);
+    if (banksUser.callbackUrl === undefined) {
+      throw new NotFoundException(`BanksUser ${banksUser.id} has no callback URL`);
+    }
 
-    banksUser = await this.banksUser.registerRedirectUrl(serviceAccount, banksUser, redirectUrl);
+    /**
+     * 2. Generates a redirect URL
+     */
+    const redirectUrl: string = this.aggregator.generateRedirectUrl(banksUser);
+
+    /**
+     * 3. Update the Banks-User, sending to Algoan the generated URL
+     */
+    await banksUser.update({
+      redirectUrl,
+    });
 
     this.logger.debug(`Added redirect url ${banksUser.redirectUrl} to banksUser ${banksUser.id}`);
+
+    return;
   }
 
   /**
-   * Handle the bankreader-required event
+   * Handle the "bankreader_required" subscription
+   * It triggers the banks accounts and transactions synchronization
+   * @param serviceAccount Concerned Algoan service account attached to the subscription
+   * @param payload Payload sent, containing the Banks User id
    */
-  public async synchronizeBanksUser(event: EventDTO, payload: BankreaderRequiredDTO): Promise<void> {
-    const serviceAccount = await this.getServiceAccount(event);
-    const banksUser = await serviceAccount.getBanksUserById(payload.banksUserId);
-    const biCredentials: BIConfigurations | undefined = serviceAccount.biCredentialsMap.get(serviceAccount.id);
-    let permanentToken: string | undefined = banksUser?.plugIn?.budgetInsightBank?.token;
+  private async handleBankReaderRequiredEvent(
+    serviceAccount: ServiceAccount,
+    payload: BankreaderRequiredDTO,
+  ): Promise<void> {
+    /**
+     * 1. Retrieves an access token from Budget Insight to access to the user accounts
+     */
+    const banksUser: BanksUser = await serviceAccount.getBanksUserById(payload.banksUserId);
+    let permanentToken: string | undefined = banksUser.plugIn?.budgetInsightBank?.token;
 
-    if (!permanentToken || payload.temporaryCode) {
-      permanentToken = await this.aggregator.registerClient(serviceAccount.id, payload.temporaryCode);
-    }
-    if (biCredentials?.webhook) {
-      /**
-       * Fetch the connections
-       */
-      const connections: Connection[] = await this.aggregator.getConnections(serviceAccount.id, permanentToken);
-
-      /**
-       * Link banksUser with the connections
-       */
-      for (const co of connections) {
-        await this.banksUserMapService.create({
-          banksUserId: payload.banksUserId,
-          connectionId: co.id as string,
-          clientId: serviceAccount.clientId,
-        });
-      }
-
-      return;
-    } else {
-      /**
-       * Add a delay in order to wait for Budget Insight to synchronize all accounts
-       * ⚠️ NOTE: This is temporary! Normally we are warned through a webhook
-       * that the synchronization is finished
-       */
-      const timeout: number = this.configService.getConfig('budget-insight.synchronizationTimeout') || 0;
-      this.logger.debug(`SynchroniseBanksUser with a ${timeout} millisecond delay`);
-      await delay(timeout);
-
-      const connections: Connection[] = await this.aggregator.getAccounts(serviceAccount.id, permanentToken);
-      const transactions: Transaction[] = await this.aggregator.getTransactions(serviceAccount.id, permanentToken);
-      const accounts: BanksUserAccountWithTransactions[] = mapBudgetInsightAccount(connections, transactions);
-
-      await this.banksUserService.synchronizeBanksUser(accounts, serviceAccount, payload.banksUserId);
-    }
-  }
-
-  /**
-   * Handle the service-account-created event
-   */
-  public async addServiceAccount(event: EventDTO, payload: ServiceAccountCreatedDTO): Promise<void> {
-    const serviceAccount = await this.getServiceAccount(event);
-    await serviceAccount.add(payload.serviceAccountId);
-  }
-
-  /**
-   * Handle the service-account-deleted event
-   */
-  public async removeServiceAccount(event: EventDTO, payload: ServiceAccountDeletedDTO): Promise<void> {
-    const serviceAccount = await this.getServiceAccount(event);
-    serviceAccount.remove(payload.serviceAccountId);
-  }
-
-  /**
-   * Handle the connection-synced event
-   * @param payload the event payload with accounts and transactions in connection
-   */
-  public async patchBanksUserConnectionSync(payload: ConnectionSyncedDTO): Promise<void> {
-    // Get Algoan BanksUser to update
-    if (!payload.connection?.id) {
-      throw new Error(`No id found in connection "${payload}"`);
+    if (permanentToken === undefined && payload.temporaryCode !== undefined) {
+      permanentToken = await this.aggregator.registerClient(payload.temporaryCode);
     }
 
-    const banksUserMap = await this.banksUserMapService.getByConnectionId(payload.connection.id);
-    if (!banksUserMap) {
-      throw new Error(`No banksUserMap found for Budget-Insight connection n°"${payload.connection.id}"`);
+    /**
+     * @todo Add a retry policy to wait for accounts synchronization to be finished
+     * NOTE: Synchronization is finished if an error status is defined or if status === null and last_update !== null
+     * 2. Fetch user active connections
+     */
+
+    /**
+     * 3. Retrieves BI banks accounts and send them to Algoan
+     */
+    const accounts: BudgetInsightAccount[] = await this.aggregator.getAccounts(permanentToken);
+    this.logger.debug({
+      message: `Budget Insight accounts retrieved for Banks User "${banksUser.id}"`,
+      accounts,
+    });
+    const algoanAccounts: PostBanksUserAccountDTO[] = mapBudgetInsightAccount(accounts);
+    const createdAccounts: BanksUserAccount[] = await banksUser.createAccounts(algoanAccounts);
+    this.logger.debug({
+      message: `Algoan accounts created for Banks User "${banksUser.id}"`,
+      accounts: createdAccounts,
+    });
+
+    /**
+     * 4. For each synchronized accounts, get transactions
+     */
+    for (const account of createdAccounts) {
+      const transactions: BudgetInsightTransaction[] = await this.aggregator.getTransactions(
+        permanentToken,
+        Number(account.reference),
+      );
+      const algoanTransactions: PostBanksUserTransactionDTO[] = mapBudgetInsightTransactions(transactions);
+      await banksUser.createTransactions(account.id, algoanTransactions);
     }
 
-    // Format accounts & transactions to Algoan
-    const accounts: BanksUserAccountWithTransactions[] = mapBudgetInsightAccountsFromOneConnection(payload.connection);
+    /**
+     * 5. Notify Algoan that the process is finished
+     */
+    await banksUser.update({
+      status: BanksUserStatus.FINISHED,
+    });
 
-    const serviceAccount: ServiceAccount = ({
-      clientId: banksUserMap.clientId,
-    } as unknown) as ServiceAccount;
-
-    // Send accounts and transactions to Algoan BanksUser
-    await this.banksUserService.synchronizeBanksUser(accounts, serviceAccount, banksUserMap.banksUserId);
+    return;
   }
 
   /**
@@ -169,16 +181,16 @@ export class HooksService {
    * @param serviceAccount Algoan service account to retrieve sandbox credentials
    * @param payload Payload
    */
-  public async getSandboxToken(event: EventDTO, payload: BankreaderConfigurationRequiredDTO): Promise<void> {
-    const serviceAccount = await this.getServiceAccount(event);
+  public async handleBankreaderConfigurationRequiredEvent(
+    serviceAccount: ServiceAccount,
+    payload: BankreaderConfigurationRequiredDTO,
+  ): Promise<void> {
     const banksUser = await serviceAccount.getBanksUserById(payload.banksUserId);
-    const jsonWT: JWTokenResponse = await this.aggregator.getJWToken(serviceAccount.id);
+    const jsonWT: JWTokenResponse = await this.aggregator.getJWToken();
 
     const plugIn = {
       budgetInsightBank: {
-        baseUrl: jsonWT.payload?.domain
-          ? `https://${jsonWT.payload.domain}/2.0/`
-          : this.configService.getConfig('budget-insight.url'),
+        baseUrl: config.budgetInsight.url,
         token: jsonWT.jwt_token,
       },
     };

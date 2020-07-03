@@ -1,38 +1,69 @@
 /**
  * Budget Insight ConnectionWrapper
+ * https://docs.budget-insight.com/reference/connections#list-connections
  */
 export interface ConnectionWrapper {
   connections: Connection[];
 }
 
 /**
+ * Budget insight account wrapper
+ * https://docs.budget-insight.com/reference/bank-accounts#list-bank-accounts
+ */
+export interface AccountWrapper {
+  accounts: BudgetInsightAccount[];
+}
+
+/**
+ * Budget insight transaction wrapper
+ * https://docs.budget-insight.com/reference/bank-transactions#list-transactions
+ */
+export interface TransactionWrapper {
+  transactions: BudgetInsightTransaction[];
+}
+
+/**
  * Budget Insight Connection
+ * https://docs.budget-insight.com/reference/connections#get-a-connection
  */
 export interface Connection {
-  id?: string;
-  accounts: Account[];
-  last_update: string;
-  error?: Error;
+  id: number;
+  id_user: number | null;
+  id_connector: number;
+  last_update: string | null;
+  state: ConnectionErrorState | null;
   active: boolean;
   bank?: Bank;
+  created: Date | null;
+  next_try: Date | null;
 }
 
 /**
  * Budget Insight Account
+ * https://docs.budget-insight.com/reference/bank-accounts
  */
-export interface Account {
+export interface BudgetInsightAccount {
+  id: number;
+  id_connection: number | null;
+  id_user: number | null;
+  id_source: number | null;
+  id_parent: number | null;
+  // eslint-disable-next-line id-blacklist
+  number: string | null;
+  original_name: string;
+  coming: string | null;
   currency: Currency;
   balance: number;
   error?: Error;
   name: string;
   last_update: string;
   type: AccountType;
-  iban: string;
+  iban: string | null;
   bic: string;
-  id: number;
   loan?: Loan;
-  usage?: string;
-  transactions?: Transaction[];
+  usage?: BankAccountUsage;
+  disabled: boolean;
+  company_name: string | null;
 }
 
 /**
@@ -88,27 +119,26 @@ export enum AccountType {
 /**
  * Budget Insight Error
  */
-export enum Error {
+export enum ConnectionErrorState {
   WRONGPASS = 'wrongpass',
   ADDITIONAL_INFORMATION_NEEDED = 'additionalInformationNeeded',
   WEBSITE_UNAVAILABLE = 'websiteUnavailable',
   ACTION_NEEDED = 'actionNeeded',
   BUG = 'bug',
-}
-
-/**
- * Budget Insight TransactionWrapper
- */
-export interface TransactionWrapper {
-  transactions: Transaction[];
+  SCA_REQUIRED = 'SCARequired',
+  DECOUPLED = 'decoupled',
+  PASSWORD_EXPIRED = 'passwordExpired',
+  WEBAUTH_REQUIRED = 'webauthRequired',
 }
 
 /**
  * Budget Insight Transaction
+ * https://docs.budget-insight.com/reference/bank-transactions#get-a-transaction
  */
-export interface Transaction {
+export interface BudgetInsightTransaction {
   id_account: number;
   id: string;
+  application_date: string | null;
   rdate: string;
   simplified_wording: string;
   value: number;
@@ -163,17 +193,11 @@ export interface JWTokenResponse {
 }
 
 /**
- * Budget Insight configurations
+ * Bank account usage
+ * https://docs.budget-insight.com/reference/bank-accounts#get-a-bank-account
  */
-export interface BIConfigurations {
-  baseUrl: string;
-  clientId: string;
-  clientSecret: string;
-  name: string;
-  webhook?: boolean;
+export enum BankAccountUsage {
+  PRIVATE = 'PRIV',
+  PROFESSIONAL = 'ORGA',
+  ASSOCIATION = 'ASSO',
 }
-
-/**
- * Budget insight credentials mapped to service account ids
- */
-export type BudgetInsightCredentials = Map<string, BIConfigurations>;

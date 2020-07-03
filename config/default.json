@@ -4,6 +4,11 @@
     "clientId": "a",
     "clientSecret": "b"
   },
+  "budgetInsight": {
+    "url": "http://localhost:4000/",
+    "clientId": "c",
+    "clientSecret": "d"
+  },
   "targetUrl": "http://localhost:8080/hooks",
   "eventList": [
     "service_account_created",

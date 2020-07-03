@@ -2,7 +2,6 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { EventName, ServiceAccount } from '@algoan/rest';
 import { AggregatorModule } from '../../aggregator/aggregator.module';
 import { AlgoanModule } from '../../algoan/algoan.module';
-import { ConnectionSyncedDTO } from '../dto/connection-synced.dto';
 import { BIEvent } from '../dto/bi-event.dto';
 import { EventDTO } from '../dto/event.dto';
 import { HooksService } from '../services/hooks.service';

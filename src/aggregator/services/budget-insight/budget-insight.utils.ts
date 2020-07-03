@@ -1,20 +1,18 @@
-import { flatMap } from 'lodash';
 import * as moment from 'moment-timezone';
 import {
-  PostBanksUserTransactionDTO as Transaction,
+  PostBanksUserTransactionDTO,
   BanksUserTransactionType as TransactionType,
   UsageType,
   AccountType,
-  BanksUserAccountWithTransactions,
+  PostBanksUserAccountDTO,
 } from '@algoan/rest';
 
 import {
-  Account as BiAccount,
+  BudgetInsightTransaction,
   AccountType as BiAccountType,
-  Connection,
-  UsageType as BiUsageType,
-  Transaction as BiTransaction,
+  BankAccountUsage as BiUsageType,
   TransactionType as BiTransactionType,
+  BudgetInsightAccount,
 } from '../../interfaces/budget-insight.interface';
 
 /**
@@ -23,35 +21,28 @@ import {
  * @param connections arrays from Budget Insight
  * @param transactions The complete list of transactions
  */
-export const mapBudgetInsightAccount: (
-  connections: Connection[],
-  transactions: BiTransaction[],
-) => BanksUserAccountWithTransactions[] = (
-  connections: Connection[],
-  transactions: BiTransaction[],
-): BanksUserAccountWithTransactions[] =>
-  flatMap(connections, (connection: Connection): BanksUserAccountWithTransactions[] =>
-    connection.accounts.map(
-      (account: BiAccount): BanksUserAccountWithTransactions => {
-        const accountTransactions: Transaction[] = mapBudgetInsightTransactions(
-          transactions.filter((transaction: BiTransaction) => transaction.id_account === account.id),
-        );
+export const mapBudgetInsightAccount = (accounts: BudgetInsightAccount[]): PostBanksUserAccountDTO[] => accounts.map(fromBIToAlgoanAccounts);
 
-        return {
-          transactions: accountTransactions,
-          balanceDate: mapDate(account.last_update || connection.last_update),
-          balance: account.balance,
-          bank: connection?.bank?.name,
-          connectionSource: 'BUDGET_INSIGHT',
-          type: mapAccountType(account.type),
-          bic: account.bic,
-          iban: account.iban,
-          currency: account.currency.id,
-          name: account.name,
-          reference: account.id.toString(),
-          status: connection.active ? 'ACTIVE' : 'CLOSED',
-          usage: mapUsageType(account.usage),
-          loanDetails: account.loan && {
+/**
+ * Converts a single BI account instance to Algoan format
+ * @param account
+ */
+const fromBIToAlgoanAccounts = (account: BudgetInsightAccount): PostBanksUserAccountDTO => ({
+    balanceDate: new Date(mapDate(account.last_update)).toISOString(),
+    balance: account.balance,
+    bank: account.name,
+    connectionSource: 'BUDGET_INSIGHT',
+    type: mapAccountType(account.type),
+    bic: account.bic,
+    iban: account.iban,
+    currency: account.currency.id,
+    name: account.name,
+    reference: account.id.toString(),
+    status: account.disabled ? 'ACTIVE' : 'CLOSED',
+    usage: mapUsageType(account.usage),
+    loanDetails:
+      account.loan !== undefined
+        ? {
             amount: account.loan.total_amount,
             debitedAccountId: account.loan.id_account,
             startDate: mapDate(account.loan.subscription_date),
@@ -59,63 +50,20 @@ export const mapBudgetInsightAccount: (
             payment: account.loan.next_payment_amount,
             interestRate: account.loan.rate,
             remainingCapital: account.balance,
-            type: mapAccountType(account.loan.type),
-          },
-          savingsDetails: account.type.toString(),
-        };
-      },
-    ),
-  );
-
-/**
- * Transforms a connection containing an array of accounts
- * into an array of Banks User accounts
- * @param connection connection from Budget Insight
- */
-export const mapBudgetInsightAccountsFromOneConnection: (
-  connection: Connection,
-) => BanksUserAccountWithTransactions[] = (connection: Connection): BanksUserAccountWithTransactions[] =>
-  connection.accounts.map(
-    (account: BiAccount): BanksUserAccountWithTransactions => {
-      const accountTransactions: Transaction[] = mapBudgetInsightTransactions(account?.transactions);
-
-      return {
-        transactions: accountTransactions,
-        balanceDate: mapDate(account.last_update || connection.last_update),
-        balance: account.balance,
-        bank: connection?.bank?.name,
-        connectionSource: 'BUDGET_INSIGHT',
-        type: mapAccountType(account.type),
-        bic: account.bic,
-        iban: account.iban,
-        currency: account.currency.id,
-        name: account.name,
-        reference: account.id.toString(),
-        status: connection.active ? 'ACTIVE' : 'CLOSED',
-        usage: mapUsageType(account.usage),
-        loanDetails: account.loan && {
-          amount: account.loan.total_amount,
-          debitedAccountId: account.loan.id_account,
-          startDate: mapDate(account.loan.subscription_date),
-          endDate: mapDate(account.loan.maturity_date),
-          payment: account.loan.next_payment_amount,
-          interestRate: account.loan.rate,
-          remainingCapital: account.balance,
-          type: mapAccountType(account.loan.type),
-        },
-        savingsDetails: account.type.toString(),
-      };
-    },
-  );
+            type: 'OTHER',
+          }
+        : undefined,
+    savingsDetails: account.type === BiAccountType.SAVINGS ? account.company_name : account.original_name,
+  });
 
 /**
  * mapBudgetInsightTransactions transforms a budgetInsight transaction wrapper into
  * an array of banks user transactions
  * @param transactions TransactionWrapper from Budget Insight
  */
-export const mapBudgetInsightTransactions = (transactions: BiTransaction[]): Transaction[] =>
+export const mapBudgetInsightTransactions = (transactions: BudgetInsightTransaction[]): PostBanksUserTransactionDTO[] =>
   transactions.map(
-    (transaction: BiTransaction): Transaction => ({
+    (transaction: BudgetInsightTransaction): PostBanksUserTransactionDTO => ({
       amount: transaction.value,
       simplifiedDescription: transaction.simplified_wording,
       description: transaction.original_wording,
@@ -194,7 +142,7 @@ interface UsageTypeMapping {
 const USAGE_TYPE_MAPPING: UsageTypeMapping = {
   [BiUsageType.PRIVATE]: UsageType.PERSONAL,
   [BiUsageType.ASSOCIATION]: UsageType.PROFESSIONAL,
-  [BiUsageType.ORGANIZATION]: UsageType.PROFESSIONAL,
+  [BiUsageType.PROFESSIONAL]: UsageType.PROFESSIONAL,
 };
 
 /**
