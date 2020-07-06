@@ -43,7 +43,7 @@ const fromBIToAlgoanAccounts = (account: BudgetInsightAccount): PostBanksUserAcc
   usage: mapUsageType(account.usage),
   loanDetails:
     // eslint-disable-next-line no-null/no-null
-    account.loan !== null
+    account.loan !== null && account.loan !== undefined
       ? {
           amount: account.loan.total_amount,
           debitedAccountId: account.loan.id_account,
