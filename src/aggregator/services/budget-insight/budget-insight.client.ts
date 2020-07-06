@@ -6,19 +6,12 @@ import {
   Connection,
   ConnectionWrapper,
   JWTokenResponse,
+  AuthTokenResponse,
   BudgetInsightTransaction,
   BudgetInsightAccount,
   TransactionWrapper,
   AccountWrapper,
 } from '../../interfaces/budget-insight.interface';
-
-/**
- * Body returned after registration
- */
-interface AuthTokenResponse {
-  access_token: string;
-  token_type: string;
-}
 
 /**
  * Budget Insight Client Config
@@ -138,7 +131,7 @@ export class BudgetInsightClient {
    */
   public async fetchTransactions(permanentToken: string, accountId: number): Promise<BudgetInsightTransaction[]> {
     const baseUrl: string = this.getClientConfig().baseUrl;
-    const endDate: Date = new Date();
+    const endDate: Date = new Date(Date.now());
     const nbOfMonths: number = 3;
     const startDate: Date = moment(endDate).subtract(nbOfMonths, 'month').toDate();
 

@@ -3,13 +3,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { IBanksUser, BanksUserStatus } from '@algoan/rest';
 import { AlgoanModule } from '../../algoan/algoan.module';
 import { AppModule } from '../../app.module';
-import {
-  BudgetInsightAccount,
-  AccountType,
-  BudgetInsightTransaction,
-  TransactionType,
-  Connection,
-} from '../interfaces/budget-insight.interface';
+import { Connection } from '../interfaces/budget-insight.interface';
+import { mockAccount, mockTransaction } from '../interfaces/budget-insight-mock';
 import { AggregatorService } from './aggregator.service';
 import { BudgetInsightClient } from './budget-insight/budget-insight.client';
 
@@ -72,31 +67,12 @@ describe('AggregatorService', () => {
   it('should create the webviewUrl base on the callbackUrl', () => {
     const url: string = service.generateRedirectUrl(mockBanksUser);
     expect(url).toBe(
-      'http://localhost:4000/auth/webview/fr/connect?client_id=c&redirect_uri=callbackUrl&response_type=code&state=&types=banks',
+      'http://localhost:4000/auth/webview/fr/connect?client_id=budgetInsightClientId&redirect_uri=callbackUrl&response_type=code&state=&types=banks',
     );
   });
 
   it('should get the accounts', async () => {
-    const account: BudgetInsightAccount = {
-      id: 1,
-      id_connection: 2,
-      id_user: 3,
-      id_source: 4,
-      id_parent: 5,
-      number: 'mockNumber',
-      original_name: 'mockOrginalName',
-      coming: 'mockComing',
-      currency: { id: 'id1' },
-      balance: 100,
-      name: 'mockName',
-      last_update: 'mockLastUpdate',
-      type: AccountType.CHECKING,
-      iban: 'mockIban',
-      bic: 'mockBic',
-      disabled: false,
-      company_name: 'mockCompany',
-    };
-    const spy = jest.spyOn(client, 'fetchBankAccounts').mockReturnValue(Promise.resolve([account]));
+    const spy = jest.spyOn(client, 'fetchBankAccounts').mockReturnValue(Promise.resolve([mockAccount]));
     const token = 'token';
     await service.getAccounts(token);
 
@@ -104,20 +80,7 @@ describe('AggregatorService', () => {
   });
 
   it('should get the transactions', async () => {
-    const transaction: BudgetInsightTransaction = {
-      id_account: 5,
-      id: 'mockId',
-      application_date: 'mockApplicationDate',
-      rdate: 'mockRdate',
-      simplified_wording: 'mockSimplifiedWording',
-      value: 50,
-      card: 'mockCard',
-      wording: 'mockWording',
-      original_wording: 'mockSimplifiedWording',
-      category: { name: 'mockName' },
-      type: TransactionType.BANK,
-    };
-    const spy = jest.spyOn(client, 'fetchTransactions').mockReturnValue(Promise.resolve([transaction]));
+    const spy = jest.spyOn(client, 'fetchTransactions').mockReturnValue(Promise.resolve([mockTransaction]));
     const token = 'token';
     const accountId = 7;
     await service.getTransactions(token, accountId);

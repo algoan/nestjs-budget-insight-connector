@@ -193,6 +193,14 @@ export interface JWTokenResponse {
 }
 
 /**
+ * Body returned after registration
+ */
+export interface AuthTokenResponse {
+  access_token: string;
+  token_type: string;
+}
+
+/**
  * Bank account usage
  * https://docs.budget-insight.com/reference/bank-accounts#get-a-bank-account
  */

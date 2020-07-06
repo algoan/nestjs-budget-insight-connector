@@ -1,12 +1,29 @@
 import { HttpService, HttpModule } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
+import { AxiosResponse } from 'axios';
+import { of } from 'rxjs';
 import { AlgoanModule } from '../../../algoan/algoan.module';
 import { AppModule } from '../../../app.module';
 import { BudgetInsightClient } from './budget-insight.client';
+import {
+  AuthTokenResponse,
+  JWTokenResponse,
+  TransactionWrapper,
+  AccountWrapper,
+} from '../../interfaces/budget-insight.interface';
+import { mockAccount, mockTransaction } from '../../interfaces/budget-insight-mock';
 
 describe('BudgetInsightClient', () => {
   let service: BudgetInsightClient;
   let httpService: HttpService;
+  const headers = { headers: { Accept: 'application/json', 'Content-Type': 'application/json' } };
+  let result: AxiosResponse = {
+    data: {},
+    status: 200,
+    statusText: '',
+    headers: {},
+    config: {},
+  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -14,13 +31,8 @@ describe('BudgetInsightClient', () => {
       providers: [BudgetInsightClient],
     }).compile();
 
+    httpService = module.get<HttpService>(HttpService);
     service = module.get<BudgetInsightClient>(BudgetInsightClient);
-    service.biCredentialsMap.set('serviceAccountId', {
-      clientId: 'clientId',
-      clientSecret: 'clientSecret',
-      baseUrl: 'https://budget-insight/',
-      name: 'connector-budgetInsight-psm',
-    });
   });
 
   it('should be defined', () => {
@@ -28,48 +40,43 @@ describe('BudgetInsightClient', () => {
   });
 
   it('returns the permanent token when I register a new client', async () => {
+    const authResponse: AuthTokenResponse = {
+      access_token: 'mockAccessToken',
+      token_type: 'mockTokenType',
+    };
+    result.data = authResponse;
     const token = 'token';
-    const spy = jest.spyOn(httpService, 'post').mockReturnValue(
-      Promise.resolve([
-        {
-          access_token: 'permToken',
-        },
-        {},
-        201,
-      ]),
+    const spy = jest.spyOn(httpService, 'post').mockImplementationOnce(() => of(result));
+
+    const permToken = await service.register(token);
+    expect(permToken).toBe('mockAccessToken');
+    expect(spy).toHaveBeenCalledWith(
+      'http://localhost:4000/auth/token/access',
+      {
+        client_id: 'budgetInsightClientId',
+        client_secret: 'budgetInsightClientSecret',
+        code: token,
+      },
+      headers,
     );
-
-    const permToken = await service.register('serviceAccountId', token);
-    expect(permToken).toBe('permToken');
-
-    expect(spy).toHaveBeenCalledWith('https://budget-insight/auth/token/access', {
-      client_id: 'clientId',
-      client_secret: 'clientSecret',
-      code: token,
-    });
   });
 
   it('returns the JWT token', async () => {
-    const response = {
+    const jwtReturn: JWTokenResponse = {
       jwt_token: 'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9',
       payload: {
         domain: 'algoan-testa-sandbox.biapi.pro',
-        id_user: 1,
-        iss: 81423725,
-        exp: 1586180719,
-        scope: '',
-        iat: 1586178919,
-        type: 'sharedAccess',
       },
     };
-    const spy = jest.spyOn(httpService, 'post').mockReturnValue(Promise.resolve([response, {}, 201]));
+    result.data = jwtReturn;
+    const spy = jest.spyOn(httpService, 'post').mockImplementationOnce(() => of(result));
 
-    const jwtResponse = await service.getUserJWT('serviceAccountId');
-    expect(jwtResponse).toEqual(response);
+    const jwtResponse = await service.getUserJWT();
+    expect(jwtResponse).toEqual(jwtReturn);
 
-    expect(spy).toHaveBeenCalledWith('https://budget-insight/auth/jwt', {
-      client_id: 'clientId',
-      client_secret: 'clientSecret',
+    expect(spy).toHaveBeenCalledWith('http://localhost:4000/auth/jwt', {
+      client_id: 'budgetInsightClientId',
+      client_secret: 'budgetInsightClientSecret',
     });
   });
 
@@ -91,21 +98,57 @@ describe('BudgetInsightClient', () => {
       total: 3,
     };
 
-    jest.spyOn(service, 'getClientConfig').mockReturnValue({
-      baseUrl: 'https://test.coum',
-      clientId: '1',
-      clientSecret: 'secret',
-    });
+    result.data = sentResponse;
 
-    const spy = jest.spyOn(httpService, 'get').mockReturnValue(Promise.resolve([sentResponse, {}, 200]));
+    const spy = jest.spyOn(httpService, 'get').mockImplementationOnce(() => of(result));
 
-    const actualResponse = await service.fetchConnection('serviceAccountId', token);
+    const actualResponse = await service.fetchConnection(token);
     expect(actualResponse).toEqual([makeConnection(0), makeConnection(2)]);
 
-    expect(spy).toHaveBeenCalledWith('https://test.coum/users/me/connections?expand=accounts,bank', {
+    expect(spy).toHaveBeenCalledWith('http://localhost:4000//users/me/connections', {
       headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
+        ...headers.headers,
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  });
+
+  it('returns the bank accounts', async () => {
+    const accountsResponse: AccountWrapper = { accounts: [mockAccount] };
+    result.data = accountsResponse;
+    const token = 'token';
+    const spy = jest.spyOn(httpService, 'get').mockImplementationOnce(() => of(result));
+
+    const accounts = await service.fetchBankAccounts(token);
+    expect(accounts).toEqual([mockAccount]);
+    expect(spy).toHaveBeenCalledWith('http://localhost:4000//users/me/accounts', {
+      headers: {
+        ...headers.headers,
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  });
+  it('returns the transactions', async () => {
+    const moment = jest.requireActual('moment');
+    const dateTime = new Date('2019-04-22T10:20:30Z').getTime();
+    global.Date.now = jest.fn(() => dateTime);
+    Date.now = () => dateTime;
+    const transactionResponse: TransactionWrapper = { transactions: [mockTransaction] };
+    result.data = transactionResponse;
+    const token = 'token';
+    const accountId = 7;
+    const spy = jest.spyOn(httpService, 'get').mockImplementationOnce(() => of(result));
+
+    const startDate: Date = moment(new Date(Date.now())).subtract(3, 'month').toDate();
+    const url: string = `http://localhost:4000//users/me/accounts/${accountId}/transactions?min_date=${startDate.toISOString()}&max_date=${new Date(
+      Date.now(),
+    ).toISOString()}`;
+
+    const transactions = await service.fetchTransactions(token, accountId);
+    expect(transactions).toEqual([mockTransaction]);
+    expect(spy).toHaveBeenCalledWith(url, {
+      headers: {
+        ...headers.headers,
         Authorization: `Bearer ${token}`,
       },
     });

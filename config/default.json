@@ -6,8 +6,8 @@
   },
   "budgetInsight": {
     "url": "http://localhost:4000/",
-    "clientId": "c",
-    "clientSecret": "d"
+    "clientId": "budgetInsightClientId",
+    "clientSecret": "budgetInsightClientSecret"
   },
   "targetUrl": "http://localhost:8080/hooks",
   "eventList": [
