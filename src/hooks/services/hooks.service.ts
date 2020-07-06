@@ -7,6 +7,8 @@ import {
   BanksUserStatus,
   PostBanksUserTransactionDTO,
   PostBanksUserAccountDTO,
+  MultiResourceCreationResponse,
+  BanksUserTransaction,
 } from '@algoan/rest';
 import { UnauthorizedException, Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { config } from 'node-config-ts';
@@ -162,8 +164,16 @@ export class HooksService {
         permanentToken,
         Number(account.reference),
       );
+      this.logger.debug({
+        message: `Transactions retrieved from BI for banks user "${banksUser.id}" and account "${account.id}"`,
+        transactions,
+      });
       const algoanTransactions: PostBanksUserTransactionDTO[] = mapBudgetInsightTransactions(transactions);
-      await banksUser.createTransactions(account.id, algoanTransactions);
+      const multiStatusResult: MultiResourceCreationResponse<BanksUserTransaction> = await banksUser.createTransactions(account.id, algoanTransactions);
+      this.logger.debug({
+        message: `Transactions created for Algoan for banks user "${banksUser.id}" and account "${account.id}"`,
+        multiStatusResult,
+      });
     }
 
     /**
