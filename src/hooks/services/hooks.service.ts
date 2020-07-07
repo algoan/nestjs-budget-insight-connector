@@ -64,6 +64,10 @@ export class HooksService {
         break;
 
       case EventName.BANKREADER_CONFIGURATION_REQUIRED:
+        await this.handleBankreaderConfigurationRequiredEvent(
+          serviceAccount,
+          event.payload as BankreaderConfigurationRequiredDTO,
+        );
         break;
 
       case EventName.BANKREADER_REQUIRED:
@@ -84,7 +88,7 @@ export class HooksService {
    * @param serviceAccount Concerned Algoan service account attached to the subscription
    * @param payload Payload sent, containing the Banks User id
    */
-  private async handleBankreaderLinkRequiredEvent(
+  public async handleBankreaderLinkRequiredEvent(
     serviceAccount: ServiceAccount,
     payload: BankreaderLinkRequiredDTO,
   ): Promise<void> {
@@ -121,7 +125,7 @@ export class HooksService {
    * @param serviceAccount Concerned Algoan service account attached to the subscription
    * @param payload Payload sent, containing the Banks User id
    */
-  private async handleBankReaderRequiredEvent(
+  public async handleBankReaderRequiredEvent(
     serviceAccount: ServiceAccount,
     payload: BankreaderRequiredDTO,
   ): Promise<void> {
@@ -169,7 +173,10 @@ export class HooksService {
         transactions,
       });
       const algoanTransactions: PostBanksUserTransactionDTO[] = mapBudgetInsightTransactions(transactions);
-      const multiStatusResult: MultiResourceCreationResponse<BanksUserTransaction> = await banksUser.createTransactions(account.id, algoanTransactions);
+      const multiStatusResult: MultiResourceCreationResponse<BanksUserTransaction> = await banksUser.createTransactions(
+        account.id,
+        algoanTransactions,
+      );
       this.logger.debug({
         message: `Transactions created for Algoan for banks user "${banksUser.id}" and account "${account.id}"`,
         multiStatusResult,
@@ -211,7 +218,7 @@ export class HooksService {
   /**
    * Gets the Service Account given the event
    */
-  private async getServiceAccount(event: EventDTO): Promise<ServiceAccount> {
+  public async getServiceAccount(event: EventDTO): Promise<ServiceAccount> {
     const serviceAccount = this.algoanService.algoanClient.getServiceAccountBySubscriptionId(event.subscription.id);
     if (serviceAccount === undefined) {
       throw new UnauthorizedException(`No service account found for subscription ${event.subscription.id}`);
