@@ -20,6 +20,7 @@ import {
   JWTokenResponse,
   BudgetInsightAccount,
   BudgetInsightTransaction,
+  Connection,
 } from '../../aggregator/interfaces/budget-insight.interface';
 import { AggregatorService } from '../../aggregator/services/aggregator.service';
 import {
@@ -140,10 +141,19 @@ export class HooksService {
     }
 
     /**
-     * @todo Add a retry policy to wait for accounts synchronization to be finished
-     * NOTE: Synchronization is finished if an error status is defined or if status === null and last_update !== null
      * 2. Fetch user active connections
      */
+    let synchronizationCompleted = false;
+    while (!synchronizationCompleted) {
+      const connections: Connection[] = await this.aggregator.getConnections(permanentToken);
+      synchronizationCompleted = true;
+      for (const connection of connections) {
+        // eslint-disable-next-line no-null/no-null
+        if (connection.state !== null || connection.last_update === null) {
+          synchronizationCompleted = false;
+        }
+      }
+    }
 
     /**
      * 3. Retrieves BI banks accounts and send them to Algoan
