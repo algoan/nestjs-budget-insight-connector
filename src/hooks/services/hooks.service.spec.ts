@@ -74,7 +74,7 @@ describe('HooksService', () => {
     it('handles bankreader link required', async () => {
       mockEvent.subscription.eventName = EventName.BANKREADER_LINK_REQUIRED;
       const spy = jest.spyOn(hooksService, 'handleBankreaderLinkRequiredEvent').mockReturnValue(null);
-      hooksService.handleWebhook(mockEvent as EventDTO, 'mockSignature');
+      await hooksService.handleWebhook(mockEvent as EventDTO, 'mockSignature');
 
       expect(spy).toBeCalledWith(mockServiceAccount, mockEvent.payload);
     });
@@ -82,7 +82,7 @@ describe('HooksService', () => {
     it('handles configuration required', async () => {
       mockEvent.subscription.eventName = EventName.BANKREADER_CONFIGURATION_REQUIRED;
       const spy = jest.spyOn(hooksService, 'handleBankreaderConfigurationRequiredEvent').mockReturnValue(null);
-      hooksService.handleWebhook(mockEvent as EventDTO, 'mockSignature');
+      await hooksService.handleWebhook(mockEvent as EventDTO, 'mockSignature');
 
       expect(spy).toBeCalledWith(mockServiceAccount, mockEvent.payload);
     });
@@ -90,7 +90,7 @@ describe('HooksService', () => {
     it('handles bankreader required', async () => {
       mockEvent.subscription.eventName = EventName.BANKREADER_REQUIRED;
       const spy = jest.spyOn(hooksService, 'handleBankReaderRequiredEvent').mockReturnValue(null);
-      hooksService.handleWebhook(mockEvent as EventDTO, 'mockSignature');
+      await hooksService.handleWebhook(mockEvent as EventDTO, 'mockSignature');
 
       expect(spy).toBeCalledWith(mockServiceAccount, mockEvent.payload);
     });

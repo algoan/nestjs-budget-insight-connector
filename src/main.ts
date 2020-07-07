@@ -21,12 +21,7 @@ const bootstrap = async (): Promise<void> => {
   const app: NestApplication = await NestFactory.create(AppModule, {
     logger: WinstonModule.createLogger({
       format:
-        nodeEnv === 'production'
-          ? format.json()
-          : format.combine(
-              format.timestamp(),
-              utilities.format.nestLike(),
-            ),
+        nodeEnv === 'production' ? format.json() : format.combine(format.timestamp(), utilities.format.nestLike()),
       level: defaultLevel,
       transports: [
         new transports.Console({
