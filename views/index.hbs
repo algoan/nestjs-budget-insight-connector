@@ -1,6 +1,7 @@
 
 <!DOCTYPE html>
 <html>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css" integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk" crossorigin="anonymous">
   <head>
     <meta charset="utf-8" />
     <title>Fake Algoan Website</title>
@@ -30,6 +31,10 @@
         width: 290px;
         max-width: 90%;
       }
+      .column {
+        width: 50%;
+        padding: 5px;
+      }
       html, body {
         width: 100%;
         height: 100%;
@@ -37,19 +42,28 @@
     </style>
   </head>
   <body>
-    <div class="button-group">
-      <button class="redirect-button" id="bi-redirection" onclick="onButtonClick()">Launch BI redirection process</button>
-      <button class="redirect-button" id="redirect-to-bi" onclick="redirectUser()">Redirect to BI</button>
+    <div class="container">
+      <div class="row">
+        <div class="col">
+          <img class="align-middle" src="https://media.licdn.com/dms/image/C4E0BAQH-hIlc5g9g7w/company-logo_200_200/0?e=2159024400&v=beta&t=j5y9KO1P22GsMx3vBNawrpvyvjD2iyBWGeVPUsRkn5s" width="320" alt="Algoan Logo" />
+        </div>
+        <div class="col">
+          <img class="align-middle" src="https://www.canton-consulting.com/wp-content/uploads/2017/07/Logo-Budgea.png" width="320" alt="BI Logo" />
+        </div>
+      </div>
+      <div class="row">
+        <button type="button" class="btn btn-primary redirect-button" id="bi-redirection" onclick="onButtonClick()">Launch BI redirection process</button>
+        <button type="button" class="btn btn-primary redirect-button" id="redirect-to-bi" onclick="redirectUser()">Redirect to BI</button>
+      </div>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.0.0/crypto-js.min.js"></script>
     <script>
       let banksUserId;
-
-      if ('{{ id }}' !== '' && '{{ code }}' !== '') {
+      if (localStorage.getItem('banksUserId') && '{{ code }}' !== '') {
         const payload = {
-          banksUserId: '{{ id }}',
-          code: '{{ code }}',
+          banksUserId: localStorage.getItem('banksUserId'),
+          temporaryCode: '{{ code }}',
         };
         axios.post('{{ bankreaderRequiredSubscription.target }}', {
           payload,
@@ -67,6 +81,8 @@
             'x-hub-signature': CryptoJS.HmacSHA256(JSON.stringify(payload), '{{ bankreaderRequiredSubscription.secret }}').toString()
           }
         });
+
+        localStorage.removeItem('banksUserId');
       }
 
       function onButtonClick() {
@@ -81,6 +97,7 @@
           }
         })
         .then(function(response) {
+          localStorage.setItem('banksUserId', response.data.id);
           banksUserId = response.data.id;
           const payload = {
             banksUserId,

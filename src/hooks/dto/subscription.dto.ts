@@ -14,3 +14,10 @@ export class SubscriptionDTO {
   @IsNotEmpty()
   public readonly status: SubscriptionStatus;
 }
+
+/**
+ * BudgetInsight EventName
+ */
+export enum BIEventName {
+  CONNECTION_SYNCED = 'CONNECTION_SYNCED',
+}

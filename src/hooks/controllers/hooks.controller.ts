@@ -1,7 +1,7 @@
 import { Body, Controller, Headers, HttpCode, HttpStatus, Post } from '@nestjs/common';
-
 import { EventDTO } from '../dto/event.dto';
 import { HooksService } from '../services/hooks.service';
+
 /**
  * Headers interface
  */
@@ -17,7 +17,8 @@ export class HooksController {
   constructor(private readonly hooksService: HooksService) {}
 
   /**
-   * Hooks route
+   * Hooks router
+   * This is the entry point of the connector, where Algoan will call the target subscription
    */
   @Post('/hooks')
   @HttpCode(HttpStatus.NO_CONTENT)

@@ -38,6 +38,7 @@ export class AppController {
       subscription,
       token: await this.algoanService.algoanClient.serviceAccounts[0].getAuthorizationHeader(),
       algoanBaseUrl: config.algoan.baseUrl,
+      callbackUrl: `${appUrl}/triggers`,
     };
   }
 
@@ -46,19 +47,17 @@ export class AppController {
    * @param banksUserId Banks User id
    * @param code Code returned by budget insight, in case of a success
    */
-  @Get('/:id/triggers')
+  @Get('/triggers')
   @Render('index')
   public async triggerEvent(
-    @Param('id') id: string,
     @Query('code') code: string,
-  ): Promise<IRootResult & { id: string; code: string; bankreaderRequiredSubscription: Subscription }> {
+  ): Promise<IRootResult & { code: string; bankreaderRequiredSubscription: Subscription }> {
     const bankreaderRequiredSubscription: Subscription = this.algoanService.algoanClient.serviceAccounts[0].subscriptions.find(
       (sub: Subscription) => sub.eventName === EventName.BANKREADER_REQUIRED,
     );
 
     return {
       ...(await this.root()),
-      id,
       code,
       bankreaderRequiredSubscription,
     };
@@ -72,4 +71,5 @@ interface IRootResult {
   algoanBaseUrl: string;
   subscription: Subscription;
   token: string;
+  callbackUrl: string;
 }
