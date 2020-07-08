@@ -18,7 +18,7 @@ export const mockAccount: BudgetInsightAccount = {
   currency: { id: 'id1' },
   balance: 100,
   name: 'mockName',
-  last_update: 'mockLastUpdate',
+  last_update: '2011-10-05T14:48:00.000Z',
   type: AccountType.CHECKING,
   iban: 'mockIban',
   bic: 'mockBic',

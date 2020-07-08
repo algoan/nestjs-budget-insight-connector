@@ -8,6 +8,12 @@ import {
   RequestBuilder,
   BanksUser,
   BanksUserStatus,
+  BanksUserAccount,
+  AccountType,
+  UsageType,
+  MultiResourceCreationResponse,
+  BanksUserTransaction,
+  BanksUserTransactionType,
 } from '@algoan/rest';
 import { Connection } from '../../aggregator/interfaces/budget-insight.interface';
 import { EventDTO } from '../dto/event.dto';
@@ -17,6 +23,11 @@ import { AlgoanModule } from '../../algoan/algoan.module';
 import { AppModule } from '../../app.module';
 import { AlgoanService } from '../../algoan/algoan.service';
 import { BankreaderLinkRequiredDTO } from '../dto/bandreader-link-required.dto';
+import { mockAccount, mockTransaction } from '../../aggregator/interfaces/budget-insight-mock';
+import {
+  mapBudgetInsightAccount,
+  mapBudgetInsightTransactions,
+} from '../../aggregator/services/budget-insight/budget-insight.utils';
 import { HooksService } from './hooks.service';
 
 describe('HooksService', () => {
@@ -172,20 +183,69 @@ describe('HooksService', () => {
       id: 4,
       id_user: 6,
       id_connector: 5,
-      last_update: 'mockLastUpdate',
+      last_update: null,
       state: null,
       active: true,
       created: null,
       next_try: null,
     };
+    const banksUserAccount: BanksUserAccount = {
+      id: 'accountId1',
+      balance: 100,
+      balanceDate: '23/06/2020',
+      connectionSource: 'mockConnectionSource',
+      currency: 'EUR',
+      type: AccountType.SAVINGS,
+      usage: UsageType.PERSONAL,
+      reference: '10',
+    };
+    const banksUserTransactionResponse: MultiResourceCreationResponse<BanksUserTransaction> = {
+      elements: [
+        {
+          resource: {
+            id: 'transactionId1',
+            amount: 50,
+            category: 'mockCategory',
+            date: '23/06/2020',
+            description: 'mockDescription',
+            type: BanksUserTransactionType.ATM,
+          },
+          status: 200,
+        },
+      ],
+      metadata: { failure: 0, success: 1, total: 1 },
+    };
+
     const serviceAccountSpy = jest
       .spyOn(mockServiceAccount, 'getBanksUserById')
       .mockReturnValue(Promise.resolve(mockBanksUser));
     const resgisterSpy = jest.spyOn(aggregatorService, 'registerClient').mockResolvedValue('mockPermToken');
-    const connectionSpy = jest.spyOn(aggregatorService, 'getConnections').mockResolvedValue([connection]);
+    const connectionSpy = jest
+      .spyOn(aggregatorService, 'getConnections')
+      .mockReturnValueOnce(Promise.resolve([connection]))
+      .mockReturnValueOnce(Promise.resolve([{ ...connection, last_update: 'mockLastUpdate' }]));
+    const accountSpy = jest.spyOn(aggregatorService, 'getAccounts').mockResolvedValue([mockAccount]);
+    const banksUserAccountSpy = jest.spyOn(mockBanksUser, 'createAccounts').mockResolvedValue([banksUserAccount]);
+    const transactionSpy = jest.spyOn(aggregatorService, 'getTransactions').mockResolvedValue([mockTransaction]);
+    const banksUserTransactionSpy = jest
+      .spyOn(mockBanksUser, 'createTransactions')
+      .mockResolvedValue(banksUserTransactionResponse);
+    const banksUserUpdateSpy = jest.spyOn(mockBanksUser, 'update').mockResolvedValue();
     await hooksService.handleBankReaderRequiredEvent(mockServiceAccount, mockEvent.payload);
 
     expect(serviceAccountSpy).toBeCalledWith(mockEvent.payload.banksUserId);
     expect(resgisterSpy).toBeCalledWith(mockEvent.payload.temporaryCode);
+    expect(connectionSpy).toBeCalledWith('mockPermToken');
+    expect(connectionSpy).toBeCalledTimes(2);
+    expect(accountSpy).toBeCalledWith('mockPermToken');
+    expect(banksUserAccountSpy).toBeCalledWith(mapBudgetInsightAccount([mockAccount]));
+    expect(transactionSpy).toBeCalledWith('mockPermToken', Number(banksUserAccount.reference));
+    expect(banksUserTransactionSpy).toBeCalledWith(
+      banksUserAccount.id,
+      mapBudgetInsightTransactions([mockTransaction]),
+    );
+    expect(banksUserUpdateSpy).toBeCalledWith({
+      status: BanksUserStatus.FINISHED,
+    });
   });
 });
