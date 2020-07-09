@@ -101,16 +101,28 @@ interface AccountTypeMapping {
 const ACCOUNT_TYPE_MAPPING: AccountTypeMapping = {
   [BiAccountType.CHECKING]: AccountType.CHECKINGS,
   [BiAccountType.SAVINGS]: AccountType.SAVINGS,
-  [BiAccountType.CARD]: AccountType.CREDIT_CARD,
+  [BiAccountType.DEPOSIT]: AccountType.SAVINGS,
   [BiAccountType.LOAN]: AccountType.LOAN,
+  [BiAccountType.MARKET]: AccountType.SAVINGS,
+  [BiAccountType.JOINT]: AccountType.CHECKINGS,
+  [BiAccountType.CARD]: AccountType.CREDIT_CARD,
+  [BiAccountType.LIFE_INSURANCE]: AccountType.SAVINGS,
+  [BiAccountType.PEE]: AccountType.SAVINGS,
+  [BiAccountType.PERCO]: AccountType.SAVINGS,
+  [BiAccountType.ARTICLE_83]: AccountType.SAVINGS,
+  [BiAccountType.RSP]: AccountType.SAVINGS,
+  [BiAccountType.PEA]: AccountType.SAVINGS,
+  [BiAccountType.CAPITALISATION]: AccountType.SAVINGS,
+  [BiAccountType.PERP]: AccountType.SAVINGS,
+  [BiAccountType.MADELIN]: AccountType.SAVINGS,
 };
 
 /**
  * mapAccountType map the banksUser type from the budget Insight type
  * @param accountType BudgetInsight type
  */
-const mapAccountType = (accountType: BiAccountType): AccountType =>
-  ACCOUNT_TYPE_MAPPING[accountType] || AccountType.SAVINGS;
+// eslint-disable-next-line no-null/no-null
+const mapAccountType = (accountType: BiAccountType): AccountType => ACCOUNT_TYPE_MAPPING[accountType] || null;
 
 /**
  * TransactionTypeMapping
