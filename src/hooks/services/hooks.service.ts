@@ -182,7 +182,11 @@ export class HooksService {
         message: `Transactions retrieved from BI for banks user "${banksUser.id}" and account "${account.id}"`,
         transactions,
       });
-      const algoanTransactions: PostBanksUserTransactionDTO[] = mapBudgetInsightTransactions(transactions);
+      const algoanTransactions: PostBanksUserTransactionDTO[] = await mapBudgetInsightTransactions(
+        transactions,
+        permanentToken,
+        this.aggregator,
+      );
       const multiStatusResult: MultiResourceCreationResponse<BanksUserTransaction> = await banksUser.createTransactions(
         account.id,
         algoanTransactions,

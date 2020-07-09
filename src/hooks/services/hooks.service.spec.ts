@@ -23,7 +23,7 @@ import { AlgoanModule } from '../../algoan/algoan.module';
 import { AppModule } from '../../app.module';
 import { AlgoanService } from '../../algoan/algoan.service';
 import { BankreaderLinkRequiredDTO } from '../dto/bandreader-link-required.dto';
-import { mockAccount, mockTransaction } from '../../aggregator/interfaces/budget-insight-mock';
+import { mockAccount, mockTransaction, mockCategory } from '../../aggregator/interfaces/budget-insight-mock';
 import {
   mapBudgetInsightAccount,
   mapBudgetInsightTransactions,
@@ -227,10 +227,12 @@ describe('HooksService', () => {
     const accountSpy = jest.spyOn(aggregatorService, 'getAccounts').mockResolvedValue([mockAccount]);
     const banksUserAccountSpy = jest.spyOn(mockBanksUser, 'createAccounts').mockResolvedValue([banksUserAccount]);
     const transactionSpy = jest.spyOn(aggregatorService, 'getTransactions').mockResolvedValue([mockTransaction]);
+    const categorySpy = jest.spyOn(aggregatorService, 'getCategory').mockResolvedValue(mockCategory);
     const banksUserTransactionSpy = jest
       .spyOn(mockBanksUser, 'createTransactions')
       .mockResolvedValue(banksUserTransactionResponse);
     const banksUserUpdateSpy = jest.spyOn(mockBanksUser, 'update').mockResolvedValue();
+    const mappedTransaction = await mapBudgetInsightTransactions([mockTransaction], 'mockPermToken', aggregatorService);
     await hooksService.handleBankReaderRequiredEvent(mockServiceAccount, mockEvent.payload);
 
     expect(serviceAccountSpy).toBeCalledWith(mockEvent.payload.banksUserId);
@@ -240,10 +242,8 @@ describe('HooksService', () => {
     expect(accountSpy).toBeCalledWith('mockPermToken');
     expect(banksUserAccountSpy).toBeCalledWith(mapBudgetInsightAccount([mockAccount]));
     expect(transactionSpy).toBeCalledWith('mockPermToken', Number(banksUserAccount.reference));
-    expect(banksUserTransactionSpy).toBeCalledWith(
-      banksUserAccount.id,
-      mapBudgetInsightTransactions([mockTransaction]),
-    );
+    expect(categorySpy).toBeCalledWith('mockPermToken', mockTransaction.id_category);
+    expect(banksUserTransactionSpy).toBeCalledWith(banksUserAccount.id, mappedTransaction);
     expect(banksUserUpdateSpy).toBeCalledWith({
       status: BanksUserStatus.FINISHED,
     });

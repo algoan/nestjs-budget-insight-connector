@@ -11,7 +11,7 @@ import {
   TransactionWrapper,
   AccountWrapper,
 } from '../../interfaces/budget-insight.interface';
-import { mockAccount, mockTransaction } from '../../interfaces/budget-insight-mock';
+import { mockAccount, mockTransaction, mockCategory } from '../../interfaces/budget-insight-mock';
 
 describe('BudgetInsightClient', () => {
   let service: BudgetInsightClient;
@@ -147,6 +147,22 @@ describe('BudgetInsightClient', () => {
     const transactions = await service.fetchTransactions(token, accountId);
     expect(transactions).toEqual([mockTransaction]);
     expect(spy).toHaveBeenCalledWith(url, {
+      headers: {
+        ...headers.headers,
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  });
+
+  it('returns a category', async () => {
+    result.data = mockCategory;
+    const token = 'token';
+    const categoryId = 9;
+    const spy = jest.spyOn(httpService, 'get').mockImplementationOnce(() => of(result));
+
+    const category = await service.fetchCategory(token, categoryId);
+    expect(category).toEqual(mockCategory);
+    expect(spy).toHaveBeenCalledWith(`http://localhost:4000//banks/categories/${categoryId}`, {
       headers: {
         ...headers.headers,
         Authorization: `Bearer ${token}`,

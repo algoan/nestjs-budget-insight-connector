@@ -11,6 +11,7 @@ import {
   BudgetInsightAccount,
   TransactionWrapper,
   AccountWrapper,
+  BudgetInsightCategory,
 } from '../../interfaces/budget-insight.interface';
 
 /**
@@ -141,6 +142,22 @@ export class BudgetInsightClient {
       .toPromise();
 
     return resp.data.transactions;
+  }
+
+  /**
+   * Fetch the transaction category
+   * https://docs.budget-insight.com/reference/categories
+   * @param permanentToken The Budget Insight token
+   */
+  public async fetchCategory(permanentToken: string, categoryId: number): Promise<BudgetInsightCategory> {
+    const baseUrl: string = this.getClientConfig().baseUrl;
+
+    const url: string = `${baseUrl}/banks/categories/${categoryId}`;
+    const resp: AxiosResponse<BudgetInsightCategory> = await this.httpService
+      .get(url, this.setHeaders(permanentToken))
+      .toPromise();
+
+    return resp.data;
   }
 
   /**

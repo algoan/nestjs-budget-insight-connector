@@ -6,7 +6,7 @@ import {
   AccountType,
   PostBanksUserAccountDTO,
 } from '@algoan/rest';
-
+import { AggregatorService } from '../aggregator.service';
 import {
   BudgetInsightTransaction,
   AccountType as BiAccountType,
@@ -63,19 +63,25 @@ const fromBIToAlgoanAccounts = (account: BudgetInsightAccount): PostBanksUserAcc
  * an array of banks user transactions
  * @param transactions TransactionWrapper from Budget Insight
  */
-export const mapBudgetInsightTransactions = (transactions: BudgetInsightTransaction[]): PostBanksUserTransactionDTO[] =>
-  transactions.map(
-    (transaction: BudgetInsightTransaction): PostBanksUserTransactionDTO => ({
-      amount: transaction.value,
-      simplifiedDescription: transaction.simplified_wording,
-      description: transaction.original_wording,
-      banksUserCardId: transaction.card,
-      reference: transaction.id.toString(),
-      userDescription: transaction.wording,
-      category: transaction?.category?.name,
-      type: mapTransactionType(transaction.type),
-      date: moment.tz(transaction.rdate, 'Europe/Paris').toISOString(),
-    }),
+export const mapBudgetInsightTransactions = async (
+  transactions: BudgetInsightTransaction[],
+  accessToken: string,
+  aggregator: AggregatorService,
+): Promise<PostBanksUserTransactionDTO[]> =>
+  Promise.all(
+    transactions.map(
+      async (transaction: BudgetInsightTransaction): Promise<PostBanksUserTransactionDTO> => ({
+        amount: transaction.value,
+        simplifiedDescription: transaction.simplified_wording,
+        description: transaction.original_wording,
+        banksUserCardId: transaction.card,
+        reference: transaction.id.toString(),
+        userDescription: transaction.wording,
+        category: (await aggregator.getCategory(accessToken, transaction.id_category)).name,
+        type: mapTransactionType(transaction.type),
+        date: moment.tz(transaction.rdate, 'Europe/Paris').toISOString(),
+      }),
+    ),
   );
 
 /**

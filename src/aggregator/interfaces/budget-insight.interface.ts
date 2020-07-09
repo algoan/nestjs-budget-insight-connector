@@ -145,8 +145,8 @@ export interface BudgetInsightTransaction {
   card: string;
   wording: string;
   original_wording: string;
-  category: Category;
   type: TransactionType;
+  id_category: number | null;
 }
 
 /**
@@ -176,13 +176,6 @@ export enum UsageType {
 }
 
 /**
- * Category
- */
-export interface Category {
-  name: string;
-}
-
-/**
  * JSON Web Token Response
  */
 export interface JWTokenResponse {
@@ -208,4 +201,18 @@ export enum BankAccountUsage {
   PRIVATE = 'PRIV',
   PROFESSIONAL = 'ORGA',
   ASSOCIATION = 'ASSO',
+}
+
+/**
+ * Budget Insight Category
+ * https://docs.budget-insight.com/reference/categories
+ */
+export interface BudgetInsightCategory {
+  id: number;
+  id_parent_category: number;
+  name: string;
+  color: string;
+  income: boolean | null;
+  refundable: boolean;
+  id_logo: number | null;
 }

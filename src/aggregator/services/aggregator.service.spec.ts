@@ -4,7 +4,7 @@ import { IBanksUser, BanksUserStatus } from '@algoan/rest';
 import { AlgoanModule } from '../../algoan/algoan.module';
 import { AppModule } from '../../app.module';
 import { Connection } from '../interfaces/budget-insight.interface';
-import { mockAccount, mockTransaction } from '../interfaces/budget-insight-mock';
+import { mockAccount, mockTransaction, mockCategory } from '../interfaces/budget-insight-mock';
 import { AggregatorService } from './aggregator.service';
 import { BudgetInsightClient } from './budget-insight/budget-insight.client';
 
@@ -104,5 +104,14 @@ describe('AggregatorService', () => {
     await service.getConnections(token);
 
     expect(spy).toBeCalledWith(token);
+  });
+
+  it('should get the categories', async () => {
+    const spy = jest.spyOn(client, 'fetchCategory').mockReturnValue(Promise.resolve(mockCategory));
+    const token = 'token';
+    const categoryId = 7;
+    await service.getCategory(token, categoryId);
+
+    expect(spy).toBeCalledWith(token, categoryId);
   });
 });

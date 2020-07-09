@@ -5,6 +5,7 @@ import {
   JWTokenResponse,
   BudgetInsightTransaction,
   BudgetInsightAccount,
+  BudgetInsightCategory,
 } from '../interfaces/budget-insight.interface';
 import { BudgetInsightClient, ClientConfig } from './budget-insight/budget-insight.client';
 
@@ -64,5 +65,12 @@ export class AggregatorService {
    */
   public async getConnections(token: string): Promise<Connection[]> {
     return this.budgetInsightClient.fetchConnection(token);
+  }
+
+  /**
+   * Gets a budget insight category
+   */
+  public async getCategory(token: string, categoryId: number): Promise<BudgetInsightCategory> {
+    return this.budgetInsightClient.fetchCategory(token, categoryId);
   }
 }
