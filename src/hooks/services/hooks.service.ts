@@ -163,7 +163,10 @@ export class HooksService {
       message: `Budget Insight accounts retrieved for Banks User "${banksUser.id}"`,
       accounts,
     });
-    const algoanAccounts: PostBanksUserAccountDTO[] = mapBudgetInsightAccount(accounts);
+    const algoanAccounts: PostBanksUserAccountDTO[] = mapBudgetInsightAccount(accounts).filter(
+      // eslint-disable-next-line no-null/no-null
+      (account) => account.type !== null,
+    );
     const createdAccounts: BanksUserAccount[] = await banksUser.createAccounts(algoanAccounts);
     this.logger.debug({
       message: `Algoan accounts created for Banks User "${banksUser.id}"`,
@@ -182,7 +185,11 @@ export class HooksService {
         message: `Transactions retrieved from BI for banks user "${banksUser.id}" and account "${account.id}"`,
         transactions,
       });
-      const algoanTransactions: PostBanksUserTransactionDTO[] = mapBudgetInsightTransactions(transactions);
+      const algoanTransactions: PostBanksUserTransactionDTO[] = await mapBudgetInsightTransactions(
+        transactions,
+        permanentToken,
+        this.aggregator,
+      );
       const multiStatusResult: MultiResourceCreationResponse<BanksUserTransaction> = await banksUser.createTransactions(
         account.id,
         algoanTransactions,

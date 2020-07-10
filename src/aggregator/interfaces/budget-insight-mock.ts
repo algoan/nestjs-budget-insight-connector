@@ -3,6 +3,7 @@ import {
   AccountType,
   BudgetInsightTransaction,
   TransactionType,
+  BudgetInsightCategory,
 } from './budget-insight.interface';
 
 export const mockAccount: BudgetInsightAccount = {
@@ -35,7 +36,17 @@ export const mockTransaction: BudgetInsightTransaction = {
   value: 50,
   card: 'mockCard',
   wording: 'mockWording',
-  original_wording: 'mockSimplifiedWording',
-  category: { name: 'mockName' },
+  id_category: 10,
   type: TransactionType.BANK,
+  original_wording: 'mockOriginalWording',
+};
+
+export const mockCategory: BudgetInsightCategory = {
+  id: 10,
+  id_parent_category: 15,
+  name: 'mockCategoryName',
+  color: 'mockColor',
+  income: true,
+  refundable: false,
+  id_logo: 20,
 };

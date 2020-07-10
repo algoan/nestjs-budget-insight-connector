@@ -1,3 +1,4 @@
+import { Test, TestingModule } from '@nestjs/testing';
 import {
   PostBanksUserTransactionDTO,
   BanksUserTransactionType as TransactionType,
@@ -12,7 +13,10 @@ import {
   AccountType as BIAccountType,
   BankAccountUsage as BIUsageType,
 } from '../../interfaces/budget-insight.interface';
+import { AggregatorModule } from '../../aggregator.module';
+import { AggregatorService } from '../aggregator.service';
 import { mapBudgetInsightAccount, mapBudgetInsightTransactions } from './budget-insight.utils';
+import { mockCategory } from '../../interfaces/budget-insight-mock';
 
 describe('BudgetInsightUtils', () => {
   it('should map the budget insight connections to banksUser', () => {
@@ -114,13 +118,15 @@ describe('BudgetInsightUtils', () => {
     expect(mapBudgetInsightAccount(budgetInsightAccounts)).toEqual(expectedAccounts);
   });
 
-  it('should map the budget insight transactions to banksUser', () => {
+  it('should map the budget insight transactions to banksUser', async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      imports: [AggregatorModule],
+    }).compile();
+    const aggregatorService = module.get<AggregatorService>(AggregatorService);
     const budgetInsightTransactions: BudgetInsightTransaction[] = [
       {
         type: BiTransactionType.WITHDRAWAL,
-        category: {
-          name: 'category',
-        },
+        id_category: 20,
         original_wording: 'original_wording',
         wording: 'wording',
         card: 'card',
@@ -136,7 +142,7 @@ describe('BudgetInsightUtils', () => {
       {
         amount: 1,
         banksUserCardId: 'card',
-        category: 'category',
+        category: 'mockCategoryName',
         date: '2010-01-15T14:55:00.000Z',
         description: 'original_wording',
         reference: 'id',
@@ -146,6 +152,14 @@ describe('BudgetInsightUtils', () => {
       },
     ];
 
-    expect(mapBudgetInsightTransactions(budgetInsightTransactions)).toEqual(expectedTransaction);
+    const spy = jest.spyOn(aggregatorService, 'getCategory').mockReturnValue(Promise.resolve(mockCategory));
+    const mappedTransaction = await mapBudgetInsightTransactions(
+      budgetInsightTransactions,
+      'mockAccessToken',
+      aggregatorService,
+    );
+
+    expect(mappedTransaction).toEqual(expectedTransaction);
+    expect(spy).toBeCalledWith('mockAccessToken', budgetInsightTransactions[0].id_category);
   });
 });

@@ -6,7 +6,7 @@ import {
   AccountType,
   PostBanksUserAccountDTO,
 } from '@algoan/rest';
-
+import { AggregatorService } from '../aggregator.service';
 import {
   BudgetInsightTransaction,
   AccountType as BiAccountType,
@@ -55,7 +55,7 @@ const fromBIToAlgoanAccounts = (account: BudgetInsightAccount): PostBanksUserAcc
           type: 'OTHER',
         }
       : undefined,
-  savingsDetails: account.type === BiAccountType.SAVINGS ? account.company_name : account.original_name,
+  savingsDetails: account.type,
 });
 
 /**
@@ -63,20 +63,38 @@ const fromBIToAlgoanAccounts = (account: BudgetInsightAccount): PostBanksUserAcc
  * an array of banks user transactions
  * @param transactions TransactionWrapper from Budget Insight
  */
-export const mapBudgetInsightTransactions = (transactions: BudgetInsightTransaction[]): PostBanksUserTransactionDTO[] =>
-  transactions.map(
-    (transaction: BudgetInsightTransaction): PostBanksUserTransactionDTO => ({
-      amount: transaction.value,
-      simplifiedDescription: transaction.simplified_wording,
-      description: transaction.original_wording,
-      banksUserCardId: transaction.card,
-      reference: transaction.id.toString(),
-      userDescription: transaction.wording,
-      category: transaction?.category?.name,
-      type: mapTransactionType(transaction.type),
-      date: moment.tz(transaction.rdate, 'Europe/Paris').toISOString(),
-    }),
+export const mapBudgetInsightTransactions = async (
+  transactions: BudgetInsightTransaction[],
+  accessToken: string,
+  aggregator: AggregatorService,
+): Promise<PostBanksUserTransactionDTO[]> =>
+  Promise.all(
+    transactions.map(
+      async (transaction: BudgetInsightTransaction): Promise<PostBanksUserTransactionDTO> => ({
+        amount: transaction.value,
+        simplifiedDescription: transaction.simplified_wording,
+        description: transaction.original_wording,
+        banksUserCardId: transaction.card,
+        reference: transaction.id.toString(),
+        userDescription: transaction.wording,
+        category: await getCategory(aggregator, accessToken, transaction.id_category),
+        type: mapTransactionType(transaction.type),
+        date: moment.tz(transaction.rdate, 'Europe/Paris').toISOString(),
+      }),
+    ),
   );
+
+const getCategory = async (
+  aggregator: AggregatorService,
+  accessToken: string,
+  transactionId: number,
+): Promise<string> => {
+  try {
+    return (await aggregator.getCategory(accessToken, transactionId)).name;
+  } catch (e) {
+    return 'UNKNOWN';
+  }
+};
 
 /**
  * mapDate transforms an iso date in string into a timestamp or undefined
@@ -95,16 +113,28 @@ interface AccountTypeMapping {
 const ACCOUNT_TYPE_MAPPING: AccountTypeMapping = {
   [BiAccountType.CHECKING]: AccountType.CHECKINGS,
   [BiAccountType.SAVINGS]: AccountType.SAVINGS,
-  [BiAccountType.CARD]: AccountType.CREDIT_CARD,
+  [BiAccountType.DEPOSIT]: AccountType.SAVINGS,
   [BiAccountType.LOAN]: AccountType.LOAN,
+  [BiAccountType.MARKET]: AccountType.SAVINGS,
+  [BiAccountType.JOINT]: AccountType.CHECKINGS,
+  [BiAccountType.CARD]: AccountType.CREDIT_CARD,
+  [BiAccountType.LIFE_INSURANCE]: AccountType.SAVINGS,
+  [BiAccountType.PEE]: AccountType.SAVINGS,
+  [BiAccountType.PERCO]: AccountType.SAVINGS,
+  [BiAccountType.ARTICLE_83]: AccountType.SAVINGS,
+  [BiAccountType.RSP]: AccountType.SAVINGS,
+  [BiAccountType.PEA]: AccountType.SAVINGS,
+  [BiAccountType.CAPITALISATION]: AccountType.SAVINGS,
+  [BiAccountType.PERP]: AccountType.SAVINGS,
+  [BiAccountType.MADELIN]: AccountType.SAVINGS,
 };
 
 /**
  * mapAccountType map the banksUser type from the budget Insight type
  * @param accountType BudgetInsight type
  */
-const mapAccountType = (accountType: BiAccountType): AccountType =>
-  ACCOUNT_TYPE_MAPPING[accountType] || AccountType.SAVINGS;
+// eslint-disable-next-line no-null/no-null
+const mapAccountType = (accountType: BiAccountType): AccountType => ACCOUNT_TYPE_MAPPING[accountType] || null;
 
 /**
  * TransactionTypeMapping
