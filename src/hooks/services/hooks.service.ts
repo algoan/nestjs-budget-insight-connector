@@ -163,7 +163,10 @@ export class HooksService {
       message: `Budget Insight accounts retrieved for Banks User "${banksUser.id}"`,
       accounts,
     });
-    const algoanAccounts: PostBanksUserAccountDTO[] = mapBudgetInsightAccount(accounts);
+    const algoanAccounts: PostBanksUserAccountDTO[] = mapBudgetInsightAccount(accounts).filter(
+      // eslint-disable-next-line no-null/no-null
+      (account) => account.type !== null,
+    );
     const createdAccounts: BanksUserAccount[] = await banksUser.createAccounts(algoanAccounts);
     this.logger.debug({
       message: `Algoan accounts created for Banks User "${banksUser.id}"`,

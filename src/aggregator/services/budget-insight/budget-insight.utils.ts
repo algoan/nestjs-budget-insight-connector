@@ -55,7 +55,7 @@ const fromBIToAlgoanAccounts = (account: BudgetInsightAccount): PostBanksUserAcc
           type: 'OTHER',
         }
       : undefined,
-  savingsDetails: account.type === BiAccountType.SAVINGS ? account.company_name : account.original_name,
+  savingsDetails: account.type,
 });
 
 /**
@@ -77,12 +77,24 @@ export const mapBudgetInsightTransactions = async (
         banksUserCardId: transaction.card,
         reference: transaction.id.toString(),
         userDescription: transaction.wording,
-        category: (await aggregator.getCategory(accessToken, transaction.id_category)).name,
+        category: await getCategory(aggregator, accessToken, transaction.id_category),
         type: mapTransactionType(transaction.type),
         date: moment.tz(transaction.rdate, 'Europe/Paris').toISOString(),
       }),
     ),
   );
+
+const getCategory = async (
+  aggregator: AggregatorService,
+  accessToken: string,
+  transactionId: number,
+): Promise<string> => {
+  try {
+    return (await aggregator.getCategory(accessToken, transactionId)).name;
+  } catch (e) {
+    return 'UNKNOWN';
+  }
+};
 
 /**
  * mapDate transforms an iso date in string into a timestamp or undefined
