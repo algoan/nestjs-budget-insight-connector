@@ -20,15 +20,15 @@ export class AggregatorService {
    *
    * @param tmpToken Budget Insight token returned from the web view
    */
-  public async registerClient(tmpToken: string): Promise<string> {
-    return this.budgetInsightClient.register(tmpToken);
+  public async registerClient(tmpToken: string, clientConfig?: ClientConfig): Promise<string> {
+    return this.budgetInsightClient.register(tmpToken, clientConfig);
   }
 
   /**
    * Get user JSON Web Token
    */
-  public async getJWToken(): Promise<JWTokenResponse> {
-    return this.budgetInsightClient.getUserJWT();
+  public async getJWToken(clientConfig?: ClientConfig): Promise<JWTokenResponse> {
+    return this.budgetInsightClient.getUserJWT(clientConfig);
   }
 
   /**
@@ -36,8 +36,8 @@ export class AggregatorService {
    *
    * @param banksUser The bank user for which we generate the redirectUrl
    */
-  public generateRedirectUrl(banksUser: IBanksUser): string {
-    const config: ClientConfig = this.budgetInsightClient.getClientConfig();
+  public generateRedirectUrl(banksUser: IBanksUser, clientConfig?: ClientConfig): string {
+    const config: ClientConfig = this.budgetInsightClient.getClientConfig(clientConfig);
 
     return `${config.baseUrl}auth/webview/fr/connect?client_id=${config.clientId}&redirect_uri=${banksUser.callbackUrl}&response_type=code&state=&types=banks`;
   }
@@ -47,8 +47,8 @@ export class AggregatorService {
    *
    * @param token The permanent token shared with BudgetInsight
    */
-  public async getAccounts(token: string): Promise<BudgetInsightAccount[]> {
-    return this.budgetInsightClient.fetchBankAccounts(token);
+  public async getAccounts(token: string, clientConfig?: ClientConfig): Promise<BudgetInsightAccount[]> {
+    return this.budgetInsightClient.fetchBankAccounts(token, clientConfig);
   }
 
   /**
@@ -56,21 +56,29 @@ export class AggregatorService {
    *
    * @param token The permanent token shared with BudgetInsight
    */
-  public async getTransactions(token: string, accountId: number): Promise<BudgetInsightTransaction[]> {
-    return this.budgetInsightClient.fetchTransactions(token, accountId);
+  public async getTransactions(
+    token: string,
+    accountId: number,
+    clientConfig?: ClientConfig,
+  ): Promise<BudgetInsightTransaction[]> {
+    return this.budgetInsightClient.fetchTransactions(token, accountId, clientConfig);
   }
 
   /**
    * Get user's connections
    */
-  public async getConnections(token: string): Promise<Connection[]> {
-    return this.budgetInsightClient.fetchConnection(token);
+  public async getConnections(token: string, clientConfig?: ClientConfig): Promise<Connection[]> {
+    return this.budgetInsightClient.fetchConnection(token, clientConfig);
   }
 
   /**
    * Gets a budget insight category
    */
-  public async getCategory(token: string, categoryId: number): Promise<BudgetInsightCategory> {
-    return this.budgetInsightClient.fetchCategory(token, categoryId);
+  public async getCategory(
+    token: string,
+    categoryId: number,
+    clientConfig?: ClientConfig,
+  ): Promise<BudgetInsightCategory> {
+    return this.budgetInsightClient.fetchCategory(token, categoryId, clientConfig);
   }
 }

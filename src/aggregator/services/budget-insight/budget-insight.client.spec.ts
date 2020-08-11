@@ -12,7 +12,7 @@ import {
   AccountWrapper,
 } from '../../interfaces/budget-insight.interface';
 import { mockAccount, mockTransaction, mockCategory } from '../../interfaces/budget-insight-mock';
-
+import { ClientConfig } from '../budget-insight/budget-insight.client';
 describe('BudgetInsightClient', () => {
   let service: BudgetInsightClient;
   let httpService: HttpService;
@@ -167,6 +167,37 @@ describe('BudgetInsightClient', () => {
         ...headers.headers,
         Authorization: `Bearer ${token}`,
       },
+    });
+  });
+
+  it('returns the configs from the parameter if defined, from the configmap otherwise', async () => {
+    let config: ClientConfig;
+
+    /** Configs from the configmap */
+    config = service.getClientConfig();
+    expect(config).toEqual({
+      baseUrl: 'http://localhost:4000/',
+      clientId: 'budgetInsightClientId',
+      clientSecret: 'budgetInsightClientSecret',
+    });
+
+    config = service.getClientConfig({ baseUrl: 'test.url' } as ClientConfig);
+    expect(config).toEqual({
+      baseUrl: 'http://localhost:4000/',
+      clientId: 'budgetInsightClientId',
+      clientSecret: 'budgetInsightClientSecret',
+    });
+
+    /** Configs from the parameter */
+    config = service.getClientConfig({
+      baseUrl: 'test.url',
+      clientId: 'testClientId',
+      clientSecret: 'testClientSecret',
+    } as ClientConfig);
+    expect(config).toEqual({
+      baseUrl: 'test.url',
+      clientId: 'testClientId',
+      clientSecret: 'testClientSecret',
     });
   });
 });
