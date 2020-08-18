@@ -92,6 +92,11 @@ describe('HooksService', () => {
     await algoanService.onModuleInit();
   });
 
+  afterEach(() => {
+    /** Reset all spies and mocks */
+    jest.clearAllMocks();
+  });
+
   it('should be defined', () => {
     expect(hooksService).toBeDefined();
   });
@@ -244,7 +249,14 @@ describe('HooksService', () => {
     expect(transactionSpy).toBeCalledWith('mockPermToken', Number(banksUserAccount.reference), undefined);
     expect(categorySpy).toBeCalledWith('mockPermToken', mockTransaction.id_category);
     expect(banksUserTransactionSpy).toBeCalledWith(banksUserAccount.id, mappedTransaction);
-    expect(banksUserUpdateSpy).toBeCalledWith({
+    expect(banksUserUpdateSpy).toBeCalledTimes(3);
+    expect(banksUserUpdateSpy).toHaveBeenNthCalledWith(1, {
+      status: BanksUserStatus.SYNCHRONIZING,
+    });
+    expect(banksUserUpdateSpy).toHaveBeenNthCalledWith(2, {
+      status: BanksUserStatus.ACCOUNTS_SYNCHRONIZED,
+    });
+    expect(banksUserUpdateSpy).toHaveBeenNthCalledWith(3, {
       status: BanksUserStatus.FINISHED,
     });
   });
