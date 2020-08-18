@@ -130,10 +130,18 @@ export class HooksService {
     serviceAccount: ServiceAccount,
     payload: BankreaderRequiredDTO,
   ): Promise<void> {
+    const banksUser: BanksUser = await serviceAccount.getBanksUserById(payload.banksUserId);
+
+    /**
+     * 0. Notify Algoan that the synchronization is starting
+     */
+    await banksUser.update({
+      status: BanksUserStatus.SYNCHRONIZING,
+    });
+
     /**
      * 1. Retrieves an access token from Budget Insight to access to the user accounts
      */
-    const banksUser: BanksUser = await serviceAccount.getBanksUserById(payload.banksUserId);
     let permanentToken: string | undefined = banksUser.plugIn?.budgetInsightBank?.token;
 
     if (permanentToken === undefined && payload.temporaryCode !== undefined) {
@@ -183,7 +191,14 @@ export class HooksService {
     });
 
     /**
-     * 4. For each synchronized accounts, get transactions
+     * 4. Notify Algoan that the accounts have been synchronized
+     */
+    await banksUser.update({
+      status: BanksUserStatus.ACCOUNTS_SYNCHRONIZED,
+    });
+
+    /**
+     * 5. For each synchronized accounts, get transactions
      */
     for (const account of createdAccounts) {
       const transactions: BudgetInsightTransaction[] = await this.aggregator.getTransactions(
@@ -211,7 +226,7 @@ export class HooksService {
     }
 
     /**
-     * 5. Notify Algoan that the process is finished
+     * 6. Notify Algoan that the process is finished
      */
     await banksUser.update({
       status: BanksUserStatus.FINISHED,
