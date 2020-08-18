@@ -147,7 +147,7 @@ describe('HooksService', () => {
     );
 
     expect(serviceAccountSpy).toBeCalledWith(mockEvent.payload.banksUserId);
-    expect(agreggatorSpy).toBeCalledWith(mockBanksUser);
+    expect(agreggatorSpy).toBeCalledWith(mockBanksUser, undefined);
     expect(banksUserSpy).toBeCalledWith({ redirectUrl: 'mockRedirectUrl' });
   });
 
@@ -236,12 +236,12 @@ describe('HooksService', () => {
     await hooksService.handleBankReaderRequiredEvent(mockServiceAccount, mockEvent.payload);
 
     expect(serviceAccountSpy).toBeCalledWith(mockEvent.payload.banksUserId);
-    expect(resgisterSpy).toBeCalledWith(mockEvent.payload.temporaryCode);
-    expect(connectionSpy).toBeCalledWith('mockPermToken');
+    expect(resgisterSpy).toBeCalledWith(mockEvent.payload.temporaryCode, undefined);
+    expect(connectionSpy).toBeCalledWith('mockPermToken', undefined);
     expect(connectionSpy).toBeCalledTimes(2);
-    expect(accountSpy).toBeCalledWith('mockPermToken');
+    expect(accountSpy).toBeCalledWith('mockPermToken', undefined);
     expect(banksUserAccountSpy).toBeCalledWith(mapBudgetInsightAccount([mockAccount]));
-    expect(transactionSpy).toBeCalledWith('mockPermToken', Number(banksUserAccount.reference));
+    expect(transactionSpy).toBeCalledWith('mockPermToken', Number(banksUserAccount.reference), undefined);
     expect(categorySpy).toBeCalledWith('mockPermToken', mockTransaction.id_category);
     expect(banksUserTransactionSpy).toBeCalledWith(banksUserAccount.id, mappedTransaction);
     expect(banksUserUpdateSpy).toBeCalledWith({

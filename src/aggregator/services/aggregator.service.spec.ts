@@ -47,7 +47,7 @@ describe('AggregatorService', () => {
     const token = 'token';
     await service.registerClient(token);
 
-    expect(spy).toBeCalledWith(token);
+    expect(spy).toBeCalledWith(token, undefined);
   });
 
   it('should get the jwt token', async () => {
@@ -76,7 +76,7 @@ describe('AggregatorService', () => {
     const token = 'token';
     await service.getAccounts(token);
 
-    expect(spy).toBeCalledWith(token);
+    expect(spy).toBeCalledWith(token, undefined);
   });
 
   it('should get the transactions', async () => {
@@ -85,7 +85,7 @@ describe('AggregatorService', () => {
     const accountId = 7;
     await service.getTransactions(token, accountId);
 
-    expect(spy).toBeCalledWith(token, accountId);
+    expect(spy).toBeCalledWith(token, accountId, undefined);
   });
 
   it('should get the connections', async () => {
@@ -103,7 +103,7 @@ describe('AggregatorService', () => {
     const token = 'token';
     await service.getConnections(token);
 
-    expect(spy).toBeCalledWith(token);
+    expect(spy).toBeCalledWith(token, undefined);
   });
 
   it('should get the categories', async () => {
@@ -112,6 +112,6 @@ describe('AggregatorService', () => {
     const categoryId = 7;
     await service.getCategory(token, categoryId);
 
-    expect(spy).toBeCalledWith(token, categoryId);
+    expect(spy).toBeCalledWith(token, categoryId, undefined);
   });
 });

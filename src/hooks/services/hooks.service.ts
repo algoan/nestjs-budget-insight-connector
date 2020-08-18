@@ -30,7 +30,7 @@ import {
 import { BankreaderLinkRequiredDTO } from '../dto/bandreader-link-required.dto';
 import { BankreaderConfigurationRequiredDTO } from '../dto/bankreader-configuration-required.dto';
 import { BankreaderRequiredDTO } from '../dto/bankreader-required.dto';
-
+import { ClientConfig } from '../../aggregator/services/budget-insight/budget-insight.client';
 /**
  * Hook service
  */
@@ -106,7 +106,7 @@ export class HooksService {
     /**
      * 2. Generates a redirect URL
      */
-    const redirectUrl: string = this.aggregator.generateRedirectUrl(banksUser);
+    const redirectUrl: string = this.aggregator.generateRedirectUrl(banksUser, serviceAccount.config as ClientConfig);
 
     /**
      * 3. Update the Banks-User, sending to Algoan the generated URL
@@ -137,7 +137,10 @@ export class HooksService {
     let permanentToken: string | undefined = banksUser.plugIn?.budgetInsightBank?.token;
 
     if (permanentToken === undefined && payload.temporaryCode !== undefined) {
-      permanentToken = await this.aggregator.registerClient(payload.temporaryCode);
+      permanentToken = await this.aggregator.registerClient(
+        payload.temporaryCode,
+        serviceAccount.config as ClientConfig,
+      );
     }
 
     /**
@@ -145,7 +148,10 @@ export class HooksService {
      */
     let synchronizationCompleted = false;
     while (!synchronizationCompleted) {
-      const connections: Connection[] = await this.aggregator.getConnections(permanentToken);
+      const connections: Connection[] = await this.aggregator.getConnections(
+        permanentToken,
+        serviceAccount.config as ClientConfig,
+      );
       synchronizationCompleted = true;
       for (const connection of connections) {
         // eslint-disable-next-line no-null/no-null
@@ -158,7 +164,10 @@ export class HooksService {
     /**
      * 3. Retrieves BI banks accounts and send them to Algoan
      */
-    const accounts: BudgetInsightAccount[] = await this.aggregator.getAccounts(permanentToken);
+    const accounts: BudgetInsightAccount[] = await this.aggregator.getAccounts(
+      permanentToken,
+      serviceAccount.config as ClientConfig,
+    );
     this.logger.debug({
       message: `Budget Insight accounts retrieved for Banks User "${banksUser.id}"`,
       accounts,
@@ -180,6 +189,7 @@ export class HooksService {
       const transactions: BudgetInsightTransaction[] = await this.aggregator.getTransactions(
         permanentToken,
         Number(account.reference),
+        serviceAccount.config as ClientConfig,
       );
       this.logger.debug({
         message: `Transactions retrieved from BI for banks user "${banksUser.id}" and account "${account.id}"`,
@@ -220,7 +230,7 @@ export class HooksService {
     payload: BankreaderConfigurationRequiredDTO,
   ): Promise<void> {
     const banksUser = await serviceAccount.getBanksUserById(payload.banksUserId);
-    const jsonWT: JWTokenResponse = await this.aggregator.getJWToken();
+    const jsonWT: JWTokenResponse = await this.aggregator.getJWToken(serviceAccount.config as ClientConfig);
 
     const plugIn = {
       budgetInsightBank: {

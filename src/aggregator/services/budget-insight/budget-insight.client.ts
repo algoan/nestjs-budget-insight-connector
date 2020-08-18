@@ -2,6 +2,7 @@ import { HttpService, Injectable, LoggerService, Logger } from '@nestjs/common';
 import * as moment from 'moment-timezone';
 import { AxiosResponse } from 'axios';
 import { config } from 'node-config-ts';
+import { isNil } from 'lodash';
 import {
   Connection,
   ConnectionWrapper,
@@ -41,8 +42,8 @@ export class BudgetInsightClient {
    * @param tmpToken A budget insight temporary token
    * @returns The permanent token
    */
-  public async register(tmpToken: string): Promise<string> {
-    const biConfig: ClientConfig = this.getClientConfig();
+  public async register(tmpToken: string, clientConfig?: ClientConfig): Promise<string> {
+    const biConfig: ClientConfig = this.getClientConfig(clientConfig);
     const url: string = `${biConfig.baseUrl}auth/token/access`;
 
     this.logger.debug(`Create user with tmpToken ${tmpToken} on ${url}`);
@@ -70,8 +71,8 @@ export class BudgetInsightClient {
    * Get a user JWT
    * @returns The user JWT token
    */
-  public async getUserJWT(): Promise<JWTokenResponse> {
-    const biConfig: ClientConfig = this.getClientConfig();
+  public async getUserJWT(clientConfig?: ClientConfig): Promise<JWTokenResponse> {
+    const biConfig: ClientConfig = this.getClientConfig(clientConfig);
     const url: string = `${biConfig.baseUrl}auth/jwt`;
     this.logger.debug(`Get a user JWT on ${url}`);
 
@@ -91,8 +92,8 @@ export class BudgetInsightClient {
    * @param permanentToken The Budget Insight token
    * @param expand Return connections with the accounts and the corresponding bank
    */
-  public async fetchConnection(permanentToken: string): Promise<Connection[]> {
-    const baseUrl: string = this.getClientConfig().baseUrl;
+  public async fetchConnection(permanentToken: string, clientConfig?: ClientConfig): Promise<Connection[]> {
+    const baseUrl: string = this.getClientConfig(clientConfig).baseUrl;
     const url: string = `${baseUrl}/users/me/connections`;
     const resp: AxiosResponse<ConnectionWrapper> = await this.httpService
       .get(url, this.setHeaders(permanentToken))
@@ -104,19 +105,22 @@ export class BudgetInsightClient {
   /**
    * Get the client config for budget insight.
    */
-  public getClientConfig = (): ClientConfig => ({
-    clientId: config.budgetInsight.clientId,
-    clientSecret: config.budgetInsight.clientSecret,
-    baseUrl: config.budgetInsight.url,
-  });
+  public getClientConfig = (clientConfig?: ClientConfig): ClientConfig =>
+    !isNil(clientConfig?.baseUrl) && !isNil(clientConfig?.clientSecret) && !isNil(clientConfig?.baseUrl)
+      ? clientConfig
+      : {
+          clientId: config.budgetInsight.clientId,
+          clientSecret: config.budgetInsight.clientSecret,
+          baseUrl: config.budgetInsight.url,
+        };
 
   /**
    * Retrieves all user's accounts from Budget Insight
    https://docs.budget-insight.com/reference/bank-accounts#list-bank-accounts
    * @param permanentToken Permanent user token
    */
-  public async fetchBankAccounts(permanentToken: string): Promise<BudgetInsightAccount[]> {
-    const baseUrl: string = this.getClientConfig().baseUrl;
+  public async fetchBankAccounts(permanentToken: string, clientConfig?: ClientConfig): Promise<BudgetInsightAccount[]> {
+    const baseUrl: string = this.getClientConfig(clientConfig).baseUrl;
     const url: string = `${baseUrl}/users/me/accounts`;
     const resp: AxiosResponse<AccountWrapper> = await this.httpService
       .get(url, this.setHeaders(permanentToken))
@@ -130,8 +134,12 @@ export class BudgetInsightClient {
    * https://docs.budget-insight.com/reference/bank-transactions#list-transactions
    * @param permanentToken The Budget Insight token
    */
-  public async fetchTransactions(permanentToken: string, accountId: number): Promise<BudgetInsightTransaction[]> {
-    const baseUrl: string = this.getClientConfig().baseUrl;
+  public async fetchTransactions(
+    permanentToken: string,
+    accountId: number,
+    clientConfig?: ClientConfig,
+  ): Promise<BudgetInsightTransaction[]> {
+    const baseUrl: string = this.getClientConfig(clientConfig).baseUrl;
     const endDate: Date = new Date(Date.now());
     const nbOfMonths: number = 3;
     const startDate: Date = moment(endDate).subtract(nbOfMonths, 'month').toDate();
@@ -149,8 +157,12 @@ export class BudgetInsightClient {
    * https://docs.budget-insight.com/reference/categories
    * @param permanentToken The Budget Insight token
    */
-  public async fetchCategory(permanentToken: string, categoryId: number): Promise<BudgetInsightCategory> {
-    const baseUrl: string = this.getClientConfig().baseUrl;
+  public async fetchCategory(
+    permanentToken: string,
+    categoryId: number,
+    clientConfig?: ClientConfig,
+  ): Promise<BudgetInsightCategory> {
+    const baseUrl: string = this.getClientConfig(clientConfig).baseUrl;
 
     const url: string = `${baseUrl}/banks/categories/${categoryId}`;
     const resp: AxiosResponse<BudgetInsightCategory> = await this.httpService
