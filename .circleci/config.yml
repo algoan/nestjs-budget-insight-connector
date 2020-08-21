@@ -8,14 +8,13 @@ workflows:
   test-publish:
     jobs:
       - test
-      # NOTE: Disable publish job for now
-      # - publish:
-      #     context: semantic_release
-      #     requires:
-      #       - test
-      #     filters:
-      #       branches:
-      #          only: master
+      - publish:
+          context: semantic_release
+          requires:
+            - test
+          filters:
+            branches:
+               only: master
 
 
 
