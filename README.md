@@ -4,7 +4,7 @@
 
 # Algoan NestJS Budget Insight connector
 
-A simple connector using [NestJS](https://github.com/nestjs/nest) framework to connect your service to [Budget Insight](https://wwww.budget-insight.com).
+A simple connector using [NestJS](https://github.com/nestjs/nest) framework to connect your service to [Budget Insight](https://www.budget-insight.com).
 
 ## Table of contents
 
@@ -63,11 +63,17 @@ Refers to the [`bankreader_configuration_required`](https://developers.algoan.co
 
 ### Bankreader required
 
-When the user has finished the aggregation process, the connector has to retrieve user's banks accounts and transactions:
+When the user has finished the aggregation process, the connector has to retrieve user's banks accounts and transactions. The behavior is slightly different is you use the [`bankreader_link_required`](#bankreader-link-required) or the [`bankreader_configuration_required`](#bankreader-configuration-required) event.
+
+Refers to the [`bankreader_required`](https://developers.algoan.com/public/docs/algoan_documentation/resthooks_and_events/event_list.html#bankreader_required) event.
+
+#### Redirection to BI user interface
 
 ![bankreader_required](assets/bankreader_required_1.png)
 
-Refers to the [`bankreader_required`](https://developers.algoan.com/public/docs/algoan_documentation/resthooks_and_events/event_list.html#bankreader_required) event.
+#### Using Algoan's BI plug-in
+
+![bankreader_required_2](assets/bankreader_required_2.png)
 
 ## Application Structure
 
@@ -163,7 +169,34 @@ _NOTE_: Default values are defined in the [`config/default.json`](./config/defau
 
 If you use a Docker environment, you can pull the latest version of the connector on [Algoan's docker hub registry](https://hub.docker.com/u/algoan).
 
-As the docker image uses a production `NODE_ENV` and the [node-config-ts](https://github.com/tusharmath/node-config-ts) library, you need to create a `config/deployment/production.secret.json` file with your configurations.
+```bash
+$ docker pull algoan/nestjs-budget-insight-connector
+```
+
+Then run the application:
+
+```bash
+$ docker run -p 8080:8080 algoan/nestjs-budget-insight-connector
+```
+
+As the docker image uses a production `NODE_ENV` and the [node-config-ts](https://github.com/tusharmath/node-config-ts) library, you need to create a `config/deployment/production.secret.json` file with your configurations or use environment variables:
+
+| Variable | Description |
+|-|-|
+| ALGOAN_BASE_URL | Algoan host to retrieve service accounts |
+| ALGOAN_CLIENT_ID | Client ID used to connect to Algoan |
+| ALGOAN_CLIENT_SECRET | Client Secret used to connect to Algoan |
+
+_Example_:
+
+```bash
+docker run -p 8080:8080 -e ALGOAN_BASE_URL=https://api.preprod.algoan.com \ 
+  -e ALGOAN_CLIENT_ID=test \
+  -e ALGOAN_CLIENT_SECRET=password \
+  algoan/nestjs-budget-insight-connector
+```
+
+_NOTE_: For security reasons, the `index.html` is not served in production environment.
  
 ## Contributing
 

@@ -1,0 +1,20 @@
+title Bankreader required (from bankreader_configuration_required)
+
+User -> Algoan: Aggregation process finished
+note right of User: The user has connected his bank accounts
+Algoan -> BI connector: Send a "bankreader_required" event with a BI code
+BI connector -> Algoan: GET /banks-users/:id
+note left of BI connector: Retrieves the permanent token from the Banks User plug-in property
+Algoan -> BI connector: Returns the Banks User with the BI plug-in
+loop Retrieves connection until all states are defined
+    BI connector -> BI: GET /users/me/connections
+end
+BI connector -> BI: GET /users/{userId}/accounts
+BI -> BI connector: Returns a list of synchronized accounts
+BI connector -> Algoan: POST /banks-users/{banksUserId}/accounts
+BI connector -> BI: GET /users/{userId}/accounts/{accountId}/transactions
+BI -> BI connector: Returns a list of transactions
+BI connector -> Algoan: POST /banks-users/{banksUserId}/accounts/{accountId}/transactions
+
+BI connector -> Algoan: PATCH /banks-users/:id
+note left of BI connector: Update the banks user status to "FINISHED"
