@@ -1,8 +1,8 @@
 {
-  "name": "nestjs-connector-boilerplate",
+  "name": "@algoan/nestjs-budget-insight-connector",
   "version": "0.0.1",
-  "description": "",
-  "author": "",
+  "description": "Budget Insight connector for Algoan",
+  "author": "ccoeurderoy",
   "private": true,
   "license": "UNLICENSED",
   "scripts": {

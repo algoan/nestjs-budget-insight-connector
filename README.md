@@ -183,14 +183,14 @@ As the docker image uses a production `NODE_ENV` and the [node-config-ts](https:
 
 | Variable | Description |
 |-|-|
-| ALGOAN_BASE_URL | Algoan host to retrieve service accounts |
-| ALGOAN_CLIENT_ID | Client ID used to connect to Algoan |
-| ALGOAN_CLIENT_SECRET | Client Secret used to connect to Algoan |
+| `ALGOAN_BASE_URL` | Algoan host to retrieve service accounts |
+| `ALGOAN_CLIENT_ID` | Client ID used to connect to Algoan |
+| `ALGOAN_CLIENT_SECRET` | Client Secret used to connect to Algoan |
 
 _Example_:
 
 ```bash
-docker run -p 8080:8080 -e ALGOAN_BASE_URL=https://api.preprod.algoan.com \ 
+$ docker run -p 8080:8080 -e ALGOAN_BASE_URL=https://api.preprod.algoan.com \ 
   -e ALGOAN_CLIENT_ID=test \
   -e ALGOAN_CLIENT_SECRET=password \
   algoan/nestjs-budget-insight-connector
@@ -209,7 +209,7 @@ If you want to add missing APIs, or correct an issue, you will have to follow th
 - Set up your local environment by forking the repository.
 - When you are about to commit, [commitlint](https://github.com/conventional-changelog/commitlint) is running to check if your commit message respects [conventional commit](https://www.conventionalcommits.org/en/v1.0.0/).
 - Write tests, there is a high coverage on the repository. Simply run `npm run test:cov` to generate a `coverage/` directory.
-- Respect [coding style](#code-style): We use [eslint](https://eslintjs.com/)) for coding guidelines. Run `npm run lint` to check if there are errors.
+- Respect [coding style](#code-style). Run `npm run lint` to check if there are errors.
 - Open a Pull Request where you describe the feature/issue you are about to publish.
 
 ### Code Style

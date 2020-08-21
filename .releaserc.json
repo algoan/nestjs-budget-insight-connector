@@ -11,7 +11,7 @@
         "prepareCmd": "docker build -t algoan/budget-insight-connector ."
       }],
       ["semantic-release-docker", {
-        "name": "algoan/budget-insight-connector"
+        "name": "algoan/nestjs-budget-insight-connector"
       }]
     ],
     "preset": "angular"
