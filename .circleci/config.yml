@@ -61,6 +61,4 @@ jobs:
           at: ~/tmp
       - run:
           name: Build and Publish Docker
-          command: |
-            docker build -t algoan/nestjs-budget-insight-connector .
-            npm run semantic-release
+          command: npm run semantic-release
