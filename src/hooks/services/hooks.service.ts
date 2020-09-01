@@ -14,6 +14,7 @@ import { UnauthorizedException, Injectable, NotFoundException, Logger } from '@n
 import { config } from 'node-config-ts';
 
 import * as moment from 'moment';
+import * as delay from 'delay';
 import { AlgoanService } from '../../algoan/algoan.service';
 import { EventDTO } from '../dto/event.dto';
 
@@ -32,6 +33,9 @@ import { BankreaderLinkRequiredDTO } from '../dto/bandreader-link-required.dto';
 import { BankreaderConfigurationRequiredDTO } from '../dto/bankreader-configuration-required.dto';
 import { BankreaderRequiredDTO } from '../dto/bankreader-required.dto';
 import { ClientConfig } from '../../aggregator/services/budget-insight/budget-insight.client';
+
+const WAITING_TIME: number = config.budgetInsight.waitingTime;
+
 /**
  * Hook service
  */
@@ -167,6 +171,8 @@ export class HooksService {
         // eslint-disable-next-line no-null/no-null
         if (connection.state !== null || connection.last_update === null) {
           synchronizationCompleted = false;
+          // Wait 5 seconds between each call
+          await delay(WAITING_TIME);
         }
       }
     }

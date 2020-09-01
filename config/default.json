@@ -8,7 +8,8 @@
     "url": "http://localhost:4000/",
     "clientId": "budgetInsightClientId",
     "clientSecret": "budgetInsightClientSecret",
-    "synchronizationTimeout": 1200
+    "synchronizationTimeout": 1200,
+    "waitingTime": 5000
   },
   "targetUrl": "http://localhost:8080/hooks",
   "eventList": [
