@@ -156,7 +156,7 @@ export class HooksService {
      * 2. Fetch user active connections
      */
     let synchronizationCompleted = false;
-    const timeout = moment().add(config.budgetInsight.synchronizationTimeout as number, 'seconds');
+    const timeout = moment().add(config.budgetInsight.synchronizationTimeout, 'seconds');
     while (!synchronizationCompleted && moment().isBefore(timeout)) {
       const connections: Connection[] = await this.aggregator.getConnections(
         permanentToken,
@@ -169,6 +169,16 @@ export class HooksService {
           synchronizationCompleted = false;
         }
       }
+    }
+
+    if (!synchronizationCompleted) {
+      const err = new Error('Synchronization failed');
+      this.logger.warn({
+        message: 'Synchronization failed after a timeout',
+        banksUserId: banksUser.id,
+        timeout: config.budgetInsight.synchronizationTimeout,
+      });
+      throw err;
     }
 
     /**
