@@ -158,6 +158,7 @@ To configure your application properly, here is a list of key to set:
 | `budgetInsight.url` | No | _string_ | Budget Insight sandbox URL |
 | `budgetInsight.clientId` | No | _string_ | Budget Insight Client ID for the sandbox |
 | `budgetInsight.clientSecret` | No | _string_ | Budget Insight Client secret for the sandbox |
+| `budgetInsight.synchronizationTimeout` | No | _number_ | Timeout after each the synchronization trial is cancelled |
 | `targetUrl` | No | _string_ | Target URL for your resthook. See [the documentation](https://developers.algoan.com/public/docs/algoan_documentation/resthooks_and_events/resthooks.html#managing-your-resthook) for more information |
 | `eventList` | No | _array<string>_ | Event List you want to subscribe to |
 | `restHooksSecret` | No | _string_ | Resthooks secrets ensuring that all calls are made by Algoan. See [the documentation](https://developers.algoan.com/public/docs/algoan_documentation/resthooks_and_events/resthooks.html#validating-resthook-events) for more information |

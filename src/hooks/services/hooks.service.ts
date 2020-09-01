@@ -13,6 +13,7 @@ import {
 import { UnauthorizedException, Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { config } from 'node-config-ts';
 
+import * as moment from 'moment';
 import { AlgoanService } from '../../algoan/algoan.service';
 import { EventDTO } from '../dto/event.dto';
 
@@ -155,7 +156,8 @@ export class HooksService {
      * 2. Fetch user active connections
      */
     let synchronizationCompleted = false;
-    while (!synchronizationCompleted) {
+    const timeout = moment().add(config.budgetInsight.synchronizationTimeout as number, 'seconds');
+    while (!synchronizationCompleted && moment().isBefore(timeout)) {
       const connections: Connection[] = await this.aggregator.getConnections(
         permanentToken,
         serviceAccount.config as ClientConfig,
