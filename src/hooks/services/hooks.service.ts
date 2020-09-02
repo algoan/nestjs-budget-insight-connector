@@ -13,6 +13,8 @@ import {
 import { UnauthorizedException, Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { config } from 'node-config-ts';
 
+import * as moment from 'moment';
+import * as delay from 'delay';
 import { AlgoanService } from '../../algoan/algoan.service';
 import { EventDTO } from '../dto/event.dto';
 
@@ -31,6 +33,9 @@ import { BankreaderLinkRequiredDTO } from '../dto/bandreader-link-required.dto';
 import { BankreaderConfigurationRequiredDTO } from '../dto/bankreader-configuration-required.dto';
 import { BankreaderRequiredDTO } from '../dto/bankreader-required.dto';
 import { ClientConfig } from '../../aggregator/services/budget-insight/budget-insight.client';
+
+const WAITING_TIME: number = config.budgetInsight.waitingTime;
+
 /**
  * Hook service
  */
@@ -155,7 +160,8 @@ export class HooksService {
      * 2. Fetch user active connections
      */
     let synchronizationCompleted = false;
-    while (!synchronizationCompleted) {
+    const timeout = moment().add(config.budgetInsight.synchronizationTimeout, 'seconds');
+    while (!synchronizationCompleted && moment().isBefore(timeout)) {
       const connections: Connection[] = await this.aggregator.getConnections(
         permanentToken,
         serviceAccount.config as ClientConfig,
@@ -165,8 +171,20 @@ export class HooksService {
         // eslint-disable-next-line no-null/no-null
         if (connection.state !== null || connection.last_update === null) {
           synchronizationCompleted = false;
+          // Wait 5 seconds between each call
+          await delay(WAITING_TIME);
         }
       }
+    }
+
+    if (!synchronizationCompleted) {
+      const err = new Error('Synchronization failed');
+      this.logger.warn({
+        message: 'Synchronization failed after a timeout',
+        banksUserId: banksUser.id,
+        timeout: config.budgetInsight.synchronizationTimeout,
+      });
+      throw err;
     }
 
     /**
