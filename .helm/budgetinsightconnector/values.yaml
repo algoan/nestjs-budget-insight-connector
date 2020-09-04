@@ -6,7 +6,7 @@ fullnameOverride: "budgetinsightconnector"
 
 replicaCount: 1
 
-terminationGracePeriodSeconds : 60
+terminationGracePeriodSeconds: 60
 
 image:
   repository: algoan/nestjs-budget-insight-connector
@@ -19,9 +19,6 @@ datadog:
   enabled: true
 
 readinessProbe:
-  httpGet:
-    path: /ping
-    port: 8080
   initialDelaySeconds: 3
   periodSeconds: 10
   timeoutSeconds: 5

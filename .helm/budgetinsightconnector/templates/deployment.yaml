@@ -7,18 +7,14 @@ metadata:
     chart: {{ include "..chart" . }}
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
-    cluster: {{ .Values.cluster }}
     name: {{ include "..name" . }}
-    role: {{ .Values.role }}
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
       app: {{ include "..name" . }}
       release: {{ .Release.Name }}
-      cluster: {{ .Values.cluster }}
       name: {{ include "..name" . }}
-      role: {{ .Values.role }}
   strategy:
     type: RollingUpdate
   minReadySeconds: 20
@@ -27,9 +23,7 @@ spec:
       labels:
         app: {{ include "..name" . }}
         release: {{ .Release.Name }}
-        cluster: {{ .Values.cluster }}
         name: {{ include "..name" . }}
-        role: {{ .Values.role }}
     spec:
       affinity:
         podAntiAffinity:
@@ -48,15 +42,14 @@ spec:
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           readinessProbe:
-            failureThreshold: 3
             httpGet:
               path: /ping
               port: 8080
-              scheme: HTTP
-            initialDelaySeconds: 20
-            periodSeconds: 10
-            successThreshold: 1
-            timeoutSeconds: 1
+            initialDelaySeconds: {{ .Values.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.readinessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.readinessProbe.timeoutSeconds }}
+            successThreshold: {{ .Values.readinessProbe.successThreshold }}
+            failureThreshold: {{ .Values.readinessProbe.failureThreshold }}
           env:
           {{- range $k, $v := .Values.environmentVariables }}
             - name: {{ quote $k }}
@@ -83,7 +76,7 @@ spec:
       tolerations:
         {{- toYaml . | nindent 8 }}
     {{- end }}
-      terminationGracePeriodSeconds: 5
+      terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
       {{ toYaml . | indent 8 }}
