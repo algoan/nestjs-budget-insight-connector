@@ -31,21 +31,9 @@ environmentVariables:
   DEPLOYMENT: production.secret
   DEBUG_LEVEL: debug
 
-volumes:
-  - name: budgetinsightconnector-secret
-    secret:
-      secretName: budgetinsightconnector-secret
-  - name: budgetinsightconnector-config
-    configMap:
-      name: budgetinsightconnector-config
-
 volumeMounts:
-  - name: budgetinsightconnector-secret
-    readOnly: true
-    mountPath: /usr/src/app/config/deployment
-  - name: budgetinsightconnector-config
-    readOnly: true
-    mountPath: /usr/src/app/config/env
+  secret: /usr/src/app/config/deployment
+  config: /usr/src/app/config/env
 
 service:
   type: ClusterIP
