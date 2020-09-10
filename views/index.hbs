@@ -78,7 +78,7 @@
           id: makeid(12),
         }, {
           headers: {
-            'x-hub-signature': CryptoJS.HmacSHA256(JSON.stringify(payload), '{{ bankreaderRequiredSubscription.secret }}').toString()
+            'x-hub-signature': 'sha256=' + CryptoJS.HmacSHA256(JSON.stringify(payload), '{{ bankreaderRequiredSubscription.secret }}').toString()
           }
         });
 
@@ -115,7 +115,7 @@
             id: makeid(12),
           }, {
             headers: {
-              'x-hub-signature': CryptoJS.HmacSHA256(JSON.stringify(payload), '{{ subscription.secret }}').toString()
+              'x-hub-signature': 'sha256=' + CryptoJS.HmacSHA256(JSON.stringify(payload), '{{ subscription.secret }}').toString()
             }
           });
         });
