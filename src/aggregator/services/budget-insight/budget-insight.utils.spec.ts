@@ -38,7 +38,7 @@ describe('BudgetInsightUtils', () => {
         name: 'account-name',
         type: BIAccountType.LOAN,
         usage: BIUsageType.PRIVATE,
-        disabled: true,
+        disabled: false,
         company_name: 'mockCompanyName',
         loan: {
           total_amount: 250,
@@ -67,7 +67,7 @@ describe('BudgetInsightUtils', () => {
         name: 'account-name',
         type: BIAccountType.CARD,
         usage: BIUsageType.PRIVATE,
-        disabled: true,
+        disabled: false,
         company_name: 'mockCompanyName',
       },
     ];
