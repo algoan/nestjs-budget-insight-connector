@@ -263,11 +263,12 @@ export class HooksService {
     payload: BankreaderConfigurationRequiredDTO,
   ): Promise<void> {
     const banksUser = await serviceAccount.getBanksUserById(payload.banksUserId);
-    const jsonWT: JWTokenResponse = await this.aggregator.getJWToken(serviceAccount.config as ClientConfig);
+    const serviceAccountConfig: ClientConfig = serviceAccount.config as ClientConfig;
+    const jsonWT: JWTokenResponse = await this.aggregator.getJWToken(serviceAccountConfig);
 
     const plugIn = {
       budgetInsightBank: {
-        baseUrl: config.budgetInsight.url,
+        baseUrl: serviceAccountConfig?.baseUrl ?? config.budgetInsight.url,
         token: jsonWT.jwt_token,
       },
     };
