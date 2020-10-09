@@ -212,6 +212,7 @@ export class HooksService {
       });
       const algoanTransactions: PostBanksUserTransactionDTO[] = await mapBudgetInsightTransactions(
         transactions,
+        account.type,
         permanentToken,
         this.aggregator,
       );

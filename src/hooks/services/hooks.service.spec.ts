@@ -237,7 +237,12 @@ describe('HooksService', () => {
       .spyOn(mockBanksUser, 'createTransactions')
       .mockResolvedValue(banksUserTransactionResponse);
     const banksUserUpdateSpy = jest.spyOn(mockBanksUser, 'update').mockResolvedValue();
-    const mappedTransaction = await mapBudgetInsightTransactions([mockTransaction], 'mockPermToken', aggregatorService);
+    const mappedTransaction = await mapBudgetInsightTransactions(
+      [mockTransaction],
+      AccountType.SAVINGS,
+      'mockPermToken',
+      aggregatorService,
+    );
     await hooksService.handleBankReaderRequiredEvent(mockServiceAccount, mockEvent.payload);
 
     expect(serviceAccountSpy).toBeCalledWith(mockEvent.payload.banksUserId);

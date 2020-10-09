@@ -65,6 +65,7 @@ const fromBIToAlgoanAccounts = (account: BudgetInsightAccount): PostBanksUserAcc
  */
 export const mapBudgetInsightTransactions = async (
   transactions: BudgetInsightTransaction[],
+  accountType: AccountType,
   accessToken: string,
   aggregator: AggregatorService,
 ): Promise<PostBanksUserTransactionDTO[]> =>
@@ -79,7 +80,10 @@ export const mapBudgetInsightTransactions = async (
         userDescription: transaction.wording,
         category: await getCategory(aggregator, accessToken, transaction.id_category),
         type: mapTransactionType(transaction.type),
-        date: moment.tz(transaction.rdate, 'Europe/Paris').toISOString(),
+        date:
+          accountType === AccountType.CREDIT_CARD
+            ? moment.tz(transaction.rdate, 'Europe/Paris').toISOString()
+            : moment.tz(transaction.date, 'Europe/Paris').toISOString(),
       }),
     ),
   );
