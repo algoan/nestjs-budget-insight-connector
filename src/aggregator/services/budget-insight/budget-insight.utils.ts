@@ -47,7 +47,7 @@ const fromBIToAlgoanAccounts = (account: BudgetInsightAccount, bankName?: string
   currency: account.currency.id,
   name: account.name,
   reference: account.id.toString(),
-  status: account.disabled ? 'ACTIVE' : 'CLOSED',
+  status: account.disabled ? 'CLOSED' : 'ACTIVE',
   usage: mapUsageType(account.usage),
   loanDetails:
     // eslint-disable-next-line no-null/no-null

@@ -7,7 +7,8 @@
   "budgetInsight": {
     "url": "http://localhost:4000/",
     "clientId": "budgetInsightClientId",
-    "clientSecret": "budgetInsightClientSecret"
+    "clientSecret": "budgetInsightClientSecret",
+    "waitingTime": 0
   },
   "targetUrl": "https://test",
   "eventList": [
