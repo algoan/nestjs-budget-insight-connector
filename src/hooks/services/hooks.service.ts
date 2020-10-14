@@ -155,11 +155,9 @@ export class HooksService {
      * 2. Fetch user active connections
      */
     let synchronizationCompleted = false;
+    let connections: Connection[];
     while (!synchronizationCompleted) {
-      const connections: Connection[] = await this.aggregator.getConnections(
-        permanentToken,
-        serviceAccount.config as ClientConfig,
-      );
+      connections = await this.aggregator.getConnections(permanentToken, serviceAccount.config as ClientConfig);
       synchronizationCompleted = true;
       for (const connection of connections) {
         // eslint-disable-next-line no-null/no-null
@@ -180,7 +178,7 @@ export class HooksService {
       message: `Budget Insight accounts retrieved for Banks User "${banksUser.id}"`,
       accounts,
     });
-    const algoanAccounts: PostBanksUserAccountDTO[] = mapBudgetInsightAccount(accounts).filter(
+    const algoanAccounts: PostBanksUserAccountDTO[] = mapBudgetInsightAccount(accounts, connections).filter(
       // eslint-disable-next-line no-null/no-null
       (account) => account.type !== null,
     );
