@@ -161,8 +161,9 @@ export class HooksService {
      */
     let synchronizationCompleted = false;
     const timeout = moment().add(config.budgetInsight.synchronizationTimeout, 'seconds');
+    let connections: Connection[];
     while (!synchronizationCompleted && moment().isBefore(timeout)) {
-      const connections: Connection[] = await this.aggregator.getConnections(
+      connections = await this.aggregator.getConnections(
         permanentToken,
         serviceAccount.config as ClientConfig,
       );
@@ -198,7 +199,7 @@ export class HooksService {
       message: `Budget Insight accounts retrieved for Banks User "${banksUser.id}"`,
       accounts,
     });
-    const algoanAccounts: PostBanksUserAccountDTO[] = mapBudgetInsightAccount(accounts).filter(
+    const algoanAccounts: PostBanksUserAccountDTO[] = mapBudgetInsightAccount(accounts, connections).filter(
       // eslint-disable-next-line no-null/no-null
       (account) => account.type !== null,
     );
@@ -230,6 +231,7 @@ export class HooksService {
       });
       const algoanTransactions: PostBanksUserTransactionDTO[] = await mapBudgetInsightTransactions(
         transactions,
+        account.type,
         permanentToken,
         this.aggregator,
       );

@@ -12,6 +12,7 @@ import {
   TransactionType as BiTransactionType,
   AccountType as BIAccountType,
   BankAccountUsage as BIUsageType,
+  Connection,
 } from '../../interfaces/budget-insight.interface';
 import { AggregatorModule } from '../../aggregator.module';
 import { AggregatorService } from '../aggregator.service';
@@ -20,6 +21,21 @@ import { mockCategory } from '../../interfaces/budget-insight-mock';
 
 describe('BudgetInsightUtils', () => {
   it('should map the budget insight connections to banksUser', () => {
+    const budgetInsightConnections: Connection[] = [
+      {
+        id: 32,
+        id_user: 2,
+        id_connector: 3,
+        last_update: '',
+        state: null,
+        active: true,
+        bank: {
+          name: 'bank-name',
+        },
+        created: new Date(),
+        next_try: new Date(),
+      },
+    ];
     const budgetInsightAccounts: BudgetInsightAccount[] = [
       {
         id: 1,
@@ -52,7 +68,7 @@ describe('BudgetInsightUtils', () => {
       },
       {
         id: 9,
-        id_connection: 27,
+        id_connection: 32,
         id_user: 28,
         id_source: 29,
         id_parent: 210,
@@ -75,7 +91,7 @@ describe('BudgetInsightUtils', () => {
       {
         balance: -10000,
         balanceDate: '2011-10-05T14:48:00.000Z',
-        bank: 'account-name',
+        bank: 'bank-name',
         connectionSource: 'BUDGET_INSIGHT',
         currency: 'USD',
         bic: 'bic',
@@ -100,7 +116,7 @@ describe('BudgetInsightUtils', () => {
       {
         balance: 100,
         balanceDate: '2020-10-05T14:48:00.000Z',
-        bank: 'account-name',
+        bank: 'bank-name',
         connectionSource: 'BUDGET_INSIGHT',
         currency: 'USD',
         bic: 'bic',
@@ -115,7 +131,7 @@ describe('BudgetInsightUtils', () => {
       },
     ];
 
-    expect(mapBudgetInsightAccount(budgetInsightAccounts)).toEqual(expectedAccounts);
+    expect(mapBudgetInsightAccount(budgetInsightAccounts, budgetInsightConnections)).toEqual(expectedAccounts);
   });
 
   it('should map the budget insight transactions to banksUser', async () => {
@@ -134,6 +150,7 @@ describe('BudgetInsightUtils', () => {
         value: 1,
         id_account: 9,
         id: 'id',
+        date: '2010-01-15 15:55:00',
         rdate: '2010-01-15 15:55:00',
         application_date: 'mockApplicationDate',
       },
@@ -155,6 +172,54 @@ describe('BudgetInsightUtils', () => {
     const spy = jest.spyOn(aggregatorService, 'getCategory').mockReturnValue(Promise.resolve(mockCategory));
     const mappedTransaction = await mapBudgetInsightTransactions(
       budgetInsightTransactions,
+      AccountType.CHECKINGS,
+      'mockAccessToken',
+      aggregatorService,
+    );
+
+    expect(mappedTransaction).toEqual(expectedTransaction);
+    expect(spy).toBeCalledWith('mockAccessToken', budgetInsightTransactions[0].id_category);
+  });
+
+  it('should map the budget insight transactions to banksUser (CREDIT_CARD account)', async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      imports: [AggregatorModule],
+    }).compile();
+    const aggregatorService = module.get<AggregatorService>(AggregatorService);
+    const budgetInsightTransactions: BudgetInsightTransaction[] = [
+      {
+        type: BiTransactionType.WITHDRAWAL,
+        id_category: 20,
+        original_wording: 'original_wording',
+        wording: 'wording',
+        card: 'card',
+        simplified_wording: 'simplifiedWording',
+        value: 1,
+        id_account: 9,
+        id: 'id',
+        date: '2010-01-15 15:55:00',
+        rdate: '2010-02-15 15:55:00',
+        application_date: 'mockApplicationDate',
+      },
+    ];
+    const expectedTransaction: PostBanksUserTransactionDTO[] = [
+      {
+        amount: 1,
+        banksUserCardId: 'card',
+        category: 'mockCategoryName',
+        date: '2010-02-15T14:55:00.000Z',
+        description: 'original_wording',
+        reference: 'id',
+        simplifiedDescription: 'simplifiedWording',
+        type: TransactionType.ATM,
+        userDescription: 'wording',
+      },
+    ];
+
+    const spy = jest.spyOn(aggregatorService, 'getCategory').mockReturnValue(Promise.resolve(mockCategory));
+    const mappedTransaction = await mapBudgetInsightTransactions(
+      budgetInsightTransactions,
+      AccountType.CREDIT_CARD,
       'mockAccessToken',
       aggregatorService,
     );

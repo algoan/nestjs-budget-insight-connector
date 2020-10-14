@@ -237,7 +237,12 @@ describe('HooksService', () => {
       .spyOn(mockBanksUser, 'createTransactions')
       .mockResolvedValue(banksUserTransactionResponse);
     const banksUserUpdateSpy = jest.spyOn(mockBanksUser, 'update').mockResolvedValue();
-    const mappedTransaction = await mapBudgetInsightTransactions([mockTransaction], 'mockPermToken', aggregatorService);
+    const mappedTransaction = await mapBudgetInsightTransactions(
+      [mockTransaction],
+      AccountType.SAVINGS,
+      'mockPermToken',
+      aggregatorService,
+    );
     await hooksService.handleBankReaderRequiredEvent(mockServiceAccount, mockEvent.payload);
 
     expect(serviceAccountSpy).toBeCalledWith(mockEvent.payload.banksUserId);
@@ -245,7 +250,7 @@ describe('HooksService', () => {
     expect(connectionSpy).toBeCalledWith('mockPermToken', undefined);
     expect(connectionSpy).toBeCalledTimes(2);
     expect(accountSpy).toBeCalledWith('mockPermToken', undefined);
-    expect(banksUserAccountSpy).toBeCalledWith(mapBudgetInsightAccount([mockAccount]));
+    expect(banksUserAccountSpy).toBeCalledWith(mapBudgetInsightAccount([mockAccount], [connection]));
     expect(transactionSpy).toBeCalledWith('mockPermToken', Number(banksUserAccount.reference), undefined);
     expect(categorySpy).toBeCalledWith('mockPermToken', mockTransaction.id_category);
     expect(banksUserTransactionSpy).toBeCalledWith(banksUserAccount.id, mappedTransaction);

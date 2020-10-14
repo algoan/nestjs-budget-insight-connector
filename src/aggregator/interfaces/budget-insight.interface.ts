@@ -139,6 +139,7 @@ export interface BudgetInsightTransaction {
   id_account: number;
   id: string;
   application_date: string | null;
+  date: string;
   rdate: string;
   simplified_wording: string;
   value: number;

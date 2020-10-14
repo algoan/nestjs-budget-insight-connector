@@ -13,6 +13,7 @@ import {
   BankAccountUsage as BiUsageType,
   TransactionType as BiTransactionType,
   BudgetInsightAccount,
+  Connection,
 } from '../../interfaces/budget-insight.interface';
 
 /**
@@ -21,17 +22,24 @@ import {
  * @param connections arrays from Budget Insight
  * @param transactions The complete list of transactions
  */
-export const mapBudgetInsightAccount = (accounts: BudgetInsightAccount[]): PostBanksUserAccountDTO[] =>
-  accounts.map(fromBIToAlgoanAccounts);
+export const mapBudgetInsightAccount = (
+  accounts: BudgetInsightAccount[],
+  connections: Connection[],
+): PostBanksUserAccountDTO[] =>
+  accounts.map((acc: BudgetInsightAccount) => {
+    const connection: Connection = connections.find((con) => con.id === acc.id_connection);
+
+    return fromBIToAlgoanAccounts(acc, connection?.bank?.name);
+  });
 
 /**
  * Converts a single BI account instance to Algoan format
  * @param account
  */
-const fromBIToAlgoanAccounts = (account: BudgetInsightAccount): PostBanksUserAccountDTO => ({
+const fromBIToAlgoanAccounts = (account: BudgetInsightAccount, bankName?: string): PostBanksUserAccountDTO => ({
   balanceDate: new Date(mapDate(account.last_update)).toISOString(),
   balance: account.balance,
-  bank: account.name,
+  bank: bankName,
   connectionSource: 'BUDGET_INSIGHT',
   type: mapAccountType(account.type),
   bic: account.bic,
@@ -65,6 +73,7 @@ const fromBIToAlgoanAccounts = (account: BudgetInsightAccount): PostBanksUserAcc
  */
 export const mapBudgetInsightTransactions = async (
   transactions: BudgetInsightTransaction[],
+  accountType: AccountType,
   accessToken: string,
   aggregator: AggregatorService,
 ): Promise<PostBanksUserTransactionDTO[]> =>
@@ -79,7 +88,10 @@ export const mapBudgetInsightTransactions = async (
         userDescription: transaction.wording,
         category: await getCategory(aggregator, accessToken, transaction.id_category),
         type: mapTransactionType(transaction.type),
-        date: moment.tz(transaction.rdate, 'Europe/Paris').toISOString(),
+        date:
+          accountType === AccountType.CREDIT_CARD
+            ? moment.tz(transaction.rdate, 'Europe/Paris').toISOString()
+            : moment.tz(transaction.date, 'Europe/Paris').toISOString(),
       }),
     ),
   );
