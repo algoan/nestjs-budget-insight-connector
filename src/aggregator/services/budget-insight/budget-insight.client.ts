@@ -32,7 +32,7 @@ export class BudgetInsightClient {
   /**
    * Budget insight logger
    */
-  private readonly logger: LoggerService = new Logger(BudgetInsightClient.name);
+  private readonly logger: Logger = new Logger(BudgetInsightClient.name);
 
   constructor(private readonly httpService: HttpService) {}
 
@@ -106,7 +106,7 @@ export class BudgetInsightClient {
    * Get the client config for budget insight.
    */
   public getClientConfig = (clientConfig?: ClientConfig): ClientConfig =>
-    !isNil(clientConfig?.baseUrl) && !isNil(clientConfig?.clientSecret) && !isNil(clientConfig?.baseUrl)
+    clientConfig?.baseUrl !== undefined && !isNil(clientConfig?.clientSecret) && !isNil(clientConfig?.clientId)
       ? clientConfig
       : {
           clientId: config.budgetInsight.clientId,
@@ -159,7 +159,7 @@ export class BudgetInsightClient {
    */
   public async fetchCategory(
     permanentToken: string,
-    categoryId: number,
+    categoryId: number | null,
     clientConfig?: ClientConfig,
   ): Promise<BudgetInsightCategory> {
     const baseUrl: string = this.getClientConfig(clientConfig).baseUrl;

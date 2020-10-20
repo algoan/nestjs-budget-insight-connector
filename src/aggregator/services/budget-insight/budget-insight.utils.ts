@@ -27,7 +27,7 @@ export const mapBudgetInsightAccount = (
   connections: Connection[],
 ): PostBanksUserAccountDTO[] =>
   accounts.map((acc: BudgetInsightAccount) => {
-    const connection: Connection = connections.find((con) => con.id === acc.id_connection);
+    const connection: Connection | undefined = connections.find((con) => con.id === acc.id_connection);
 
     return fromBIToAlgoanAccounts(acc, connection?.bank?.name);
   });
@@ -43,7 +43,8 @@ const fromBIToAlgoanAccounts = (account: BudgetInsightAccount, bankName?: string
   connectionSource: 'BUDGET_INSIGHT',
   type: mapAccountType(account.type),
   bic: account.bic,
-  iban: account.iban,
+  // eslint-disable-next-line no-null/no-null
+  iban: account.iban === null ? undefined : account.iban,
   currency: account.currency.id,
   name: account.name,
   reference: account.id.toString(),
@@ -99,7 +100,7 @@ export const mapBudgetInsightTransactions = async (
 const getCategory = async (
   aggregator: AggregatorService,
   accessToken: string,
-  transactionId: number,
+  transactionId: number | null,
 ): Promise<string> => {
   try {
     return (await aggregator.getCategory(accessToken, transactionId)).name;
@@ -146,7 +147,7 @@ const ACCOUNT_TYPE_MAPPING: AccountTypeMapping = {
  * @param accountType BudgetInsight type
  */
 // eslint-disable-next-line no-null/no-null
-const mapAccountType = (accountType: BiAccountType): AccountType => ACCOUNT_TYPE_MAPPING[accountType] || null;
+const mapAccountType = (accountType: BiAccountType): AccountType => ACCOUNT_TYPE_MAPPING[accountType];
 
 /**
  * TransactionTypeMapping
