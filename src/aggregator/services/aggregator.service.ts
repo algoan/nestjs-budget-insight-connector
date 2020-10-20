@@ -76,7 +76,7 @@ export class AggregatorService {
    */
   public async getCategory(
     token: string,
-    categoryId: number,
+    categoryId: number | null,
     clientConfig?: ClientConfig,
   ): Promise<BudgetInsightCategory> {
     return this.budgetInsightClient.fetchCategory(token, categoryId, clientConfig);

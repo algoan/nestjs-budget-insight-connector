@@ -9,6 +9,7 @@ import {
   PostBanksUserAccountDTO,
   MultiResourceCreationResponse,
   BanksUserTransaction,
+  AccountType,
 } from '@algoan/rest';
 import { UnauthorizedException, Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { config } from 'node-config-ts';
@@ -56,9 +57,13 @@ export class HooksService {
   public async handleWebhook(event: EventDTO, signature: string): Promise<void> {
     const serviceAccount = await this.getServiceAccount(event);
 
-    const subscription: Subscription = serviceAccount.subscriptions.find(
+    const subscription: Subscription | undefined = serviceAccount.subscriptions.find(
       (sub: Subscription) => sub.id === event.subscription.id,
     );
+
+    if (subscription === undefined) {
+      return;
+    }
 
     if (!subscription.validateSignature(signature, (event.payload as unknown) as { [key: string]: string })) {
       throw new UnauthorizedException('Invalid X-Hub-Signature: you cannot call this API');
@@ -156,17 +161,20 @@ export class HooksService {
       );
     }
 
+    if (permanentToken === undefined) {
+      this.logger.warn('Aggregation process stopped: no permanent token generated');
+
+      return;
+    }
+
     /**
      * 2. Fetch user active connections
      */
     let synchronizationCompleted = false;
     const timeout = moment().add(config.budgetInsight.synchronizationTimeout, 'seconds');
-    let connections: Connection[];
+    let connections: Connection[] | undefined;
     while (!synchronizationCompleted && moment().isBefore(timeout)) {
-      connections = await this.aggregator.getConnections(
-        permanentToken,
-        serviceAccount.config as ClientConfig,
-      );
+      connections = await this.aggregator.getConnections(permanentToken, serviceAccount.config as ClientConfig);
       synchronizationCompleted = true;
       for (const connection of connections) {
         // eslint-disable-next-line no-null/no-null
@@ -199,9 +207,17 @@ export class HooksService {
       message: `Budget Insight accounts retrieved for Banks User "${banksUser.id}"`,
       accounts,
     });
+
+    if (connections === undefined) {
+      this.logger.warn('Aggregation process stopped: no active connection found');
+
+      return;
+    }
+
     const algoanAccounts: PostBanksUserAccountDTO[] = mapBudgetInsightAccount(accounts, connections).filter(
-      // eslint-disable-next-line no-null/no-null
-      (account) => account.type !== null,
+      // Disable this rule because the type can be undefined even if it should never happen
+      // eslint-disable-next-line @typescript-eslint/tslint/config
+      (account: PostBanksUserAccountDTO & { type?: AccountType }) => account.type !== undefined,
     );
     const createdAccounts: BanksUserAccount[] = await banksUser.createAccounts(algoanAccounts);
     this.logger.debug({

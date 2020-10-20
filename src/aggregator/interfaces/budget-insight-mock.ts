@@ -4,6 +4,7 @@ import {
   BudgetInsightTransaction,
   TransactionType,
   BudgetInsightCategory,
+  BankAccountUsage,
 } from './budget-insight.interface';
 
 export const mockAccount: BudgetInsightAccount = {
@@ -25,6 +26,7 @@ export const mockAccount: BudgetInsightAccount = {
   bic: 'mockBic',
   disabled: false,
   company_name: 'mockCompany',
+  usage: BankAccountUsage.PRIVATE,
 };
 
 export const mockTransaction: BudgetInsightTransaction = {

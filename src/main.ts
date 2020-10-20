@@ -15,8 +15,8 @@ const logger: Logger = new Logger(__filename);
  */
 const bootstrap = async (): Promise<void> => {
   const port: number = config.port;
-  const defaultLevel: string = process.env.DEBUG_LEVEL || 'info';
-  const nodeEnv: string = process.env.NODE_ENV;
+  const defaultLevel: string = process.env.DEBUG_LEVEL ?? 'info';
+  const nodeEnv: string | undefined = process.env.NODE_ENV;
 
   const app: NestApplication = await NestFactory.create(AppModule, {
     logger: WinstonModule.createLogger({

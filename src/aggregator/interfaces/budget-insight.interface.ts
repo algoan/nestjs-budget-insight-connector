@@ -60,8 +60,8 @@ export interface BudgetInsightAccount {
   type: AccountType;
   iban: string | null;
   bic: string;
-  loan?: Loan;
-  usage?: BankAccountUsage;
+  loan?: Loan | null;
+  usage: BankAccountUsage;
   disabled: boolean;
   company_name: string | null;
 }

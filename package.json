@@ -24,7 +24,7 @@
   "dependencies": {
     "@algoan/nestjs-http-exception-filter": "^1.0.3",
     "@algoan/nestjs-logging-interceptor": "^2.1.3",
-    "@algoan/rest": "^1.15.3",
+    "@algoan/rest": "^1.17.1",
     "@nestjs/common": "^7.0.0",
     "@nestjs/core": "^7.0.0",
     "@nestjs/platform-express": "^7.0.0",
@@ -46,7 +46,7 @@
     "winston": "^3.3.3"
   },
   "devDependencies": {
-    "@algoan/eslint-config": "^1.0.6",
+    "@algoan/eslint-config": "^1.1.1",
     "@commitlint/config-conventional": "^11.0.0",
     "@nestjs/cli": "^7.0.0",
     "@nestjs/schematics": "^7.0.0",
@@ -58,13 +58,8 @@
     "@types/lodash": "^4.14.159",
     "@types/node": "^14.11.10",
     "@types/supertest": "^2.0.10",
-    "@typescript-eslint/eslint-plugin": "3.0.2",
-    "@typescript-eslint/parser": "3.0.2",
     "commitlint": "^11.0.0",
     "cz-conventional-changelog": "^3.2.0",
-    "eslint": "^7.11.0",
-    "eslint-config-prettier": "^6.12.0",
-    "eslint-plugin-import": "^2.22.1",
     "eslint-plugin-nestjs": "^1.2.3",
     "husky": "^4.2.5",
     "jest": "26.5.3",
