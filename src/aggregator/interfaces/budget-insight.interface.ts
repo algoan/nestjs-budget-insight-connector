@@ -33,9 +33,9 @@ export interface Connection {
   last_update: string | null;
   state: ConnectionErrorState | null;
   active: boolean;
-  bank?: Bank;
   created: Date | null;
   next_try: Date | null;
+  connector?: Bank;
 }
 
 /**
