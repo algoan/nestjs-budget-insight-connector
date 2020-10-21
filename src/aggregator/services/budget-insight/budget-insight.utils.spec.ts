@@ -29,7 +29,7 @@ describe('BudgetInsightUtils', () => {
         last_update: '',
         state: null,
         active: true,
-        bank: {
+        connector: {
           name: 'bank-name',
         },
         created: new Date(),

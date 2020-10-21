@@ -94,7 +94,7 @@ export class BudgetInsightClient {
    */
   public async fetchConnection(permanentToken: string, clientConfig?: ClientConfig): Promise<Connection[]> {
     const baseUrl: string = this.getClientConfig(clientConfig).baseUrl;
-    const url: string = `${baseUrl}/users/me/connections`;
+    const url: string = `${baseUrl}/users/me/connections?expand=connector`;
     const resp: AxiosResponse<ConnectionWrapper> = await this.httpService
       .get(url, this.setHeaders(permanentToken))
       .toPromise();

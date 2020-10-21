@@ -29,7 +29,7 @@ export const mapBudgetInsightAccount = (
   accounts.map((acc: BudgetInsightAccount) => {
     const connection: Connection | undefined = connections.find((con) => con.id === acc.id_connection);
 
-    return fromBIToAlgoanAccounts(acc, connection?.bank?.name);
+    return fromBIToAlgoanAccounts(acc, connection?.connector?.name);
   });
 
 /**

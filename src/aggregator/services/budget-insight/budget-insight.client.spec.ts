@@ -105,7 +105,7 @@ describe('BudgetInsightClient', () => {
     const actualResponse = await service.fetchConnection(token);
     expect(actualResponse).toEqual([makeConnection(0), makeConnection(2)]);
 
-    expect(spy).toHaveBeenCalledWith('http://localhost:4000//users/me/connections', {
+    expect(spy).toHaveBeenCalledWith('http://localhost:4000//users/me/connections?expand=connector', {
       headers: {
         ...headers.headers,
         Authorization: `Bearer ${token}`,
