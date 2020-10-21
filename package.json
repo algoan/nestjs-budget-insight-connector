@@ -28,7 +28,7 @@
     "@nestjs/common": "^7.0.0",
     "@nestjs/core": "^7.0.0",
     "@nestjs/platform-express": "^7.4.4",
-    "axios": "^0.19.2",
+    "axios": "^0.20.0",
     "class-transformer": "^0.3.1",
     "class-validator": "^0.12.2",
     "delay": "^4.4.0",
