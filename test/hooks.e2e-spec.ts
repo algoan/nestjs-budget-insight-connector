@@ -1,6 +1,9 @@
 import { INestApplication, HttpStatus } from '@nestjs/common';
+import * as assert from 'assert';
+import * as nock from 'nock';
 import * as request from 'supertest';
-import { buildFakeApp } from './utils/app';
+import { buildFakeApp, fakeAlgoanBaseUrl } from './utils/app';
+import { fakeAPI } from './utils/fake-server';
 
 describe('HooksController (e2e)', () => {
   let app: INestApplication;
@@ -47,7 +50,15 @@ describe('HooksController (e2e)', () => {
     });
 
     it('HK004 - should be ok', async () => {
-      return request(app.getHttpServer())
+      const fakeSubEventServer: nock.Scope = fakeAPI({
+        baseUrl: fakeAlgoanBaseUrl,
+        method: 'patch',
+        result: {},
+        path: '/v1/subscriptions/1/events/random',
+        nbOfCalls: 1,
+      });
+
+      await request(app.getHttpServer())
         .post('/hooks')
         .send({
           subscription: {
@@ -65,6 +76,8 @@ describe('HooksController (e2e)', () => {
           },
         })
         .expect(HttpStatus.NO_CONTENT);
+
+      assert.equal(fakeSubEventServer.isDone(), true);
     });
   });
 });
