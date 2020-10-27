@@ -104,6 +104,20 @@ export class BudgetInsightClient {
   }
 
   /**
+   * Get personal information about the connection
+   * @param token Permanent token
+   * @param id Connection id
+   * @param clientConfig Optional client configuration
+   */
+  public async getConnectionInfo(token: string, id: string, clientConfig?: ClientConfig): Promise<unknown> {
+    const baseUrl: string = this.getClientConfig(clientConfig).baseUrl;
+    const url: string = `${baseUrl}/users/me/connections/${id}/informations`;
+    const resp: AxiosResponse<ConnectionWrapper> = await this.httpService.get(url, this.setHeaders(token)).toPromise();
+
+    return resp.data;
+  }
+
+  /**
    * Get the client config for budget insight.
    */
   public getClientConfig = (clientConfig?: ClientConfig): ClientConfig =>
