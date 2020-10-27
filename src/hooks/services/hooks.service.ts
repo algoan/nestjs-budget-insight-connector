@@ -229,6 +229,24 @@ export class HooksService {
       return;
     }
 
+    /**
+     * 3.b. Get personal information
+     * NOTE: this is temporary and should not be called like this
+     */
+    if (connections[0]?.id) {
+      this.logger.debug(
+        {
+          result: await this.aggregator.getInfo(
+            permanentToken,
+            `${connections[0].id}`,
+            serviceAccount.config as ClientConfig,
+          ),
+          connections,
+        },
+        'Connection info',
+      );
+    }
+
     const algoanAccounts: PostBanksUserAccountDTO[] = mapBudgetInsightAccount(accounts, connections).filter(
       // Disable this rule because the type can be undefined even if it should never happen
       // eslint-disable-next-line @typescript-eslint/tslint/config

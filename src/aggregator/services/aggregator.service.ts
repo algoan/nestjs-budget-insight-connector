@@ -72,6 +72,16 @@ export class AggregatorService {
   }
 
   /**
+   * Get personal information from the associated connection
+   * @param token Permanent token
+   * @param id Connection id
+   * @param clientConfig Optional client configuration
+   */
+  public async getInfo(token: string, id: string, clientConfig?: ClientConfig): Promise<unknown> {
+    return this.budgetInsightClient.getConnectionInfo(token, id, clientConfig);
+  }
+
+  /**
    * Gets a budget insight category
    */
   public async getCategory(
