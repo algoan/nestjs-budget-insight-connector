@@ -139,7 +139,7 @@ describe('BudgetInsightClient', () => {
     const accountId = 7;
     const spy = jest.spyOn(httpService, 'get').mockImplementationOnce(() => of(result));
 
-    const startDate: Date = moment(new Date(Date.now())).subtract(3, 'month').toDate();
+    const startDate: Date = moment(new Date(Date.now())).subtract(5, 'month').toDate();
     const url: string = `http://localhost:4000//users/me/accounts/${accountId}/transactions?min_date=${startDate.toISOString()}&max_date=${new Date(
       Date.now(),
     ).toISOString()}`;
