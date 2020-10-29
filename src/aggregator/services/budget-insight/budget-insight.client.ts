@@ -14,7 +14,7 @@ import {
   AccountWrapper,
   BudgetInsightCategory,
 } from '../../interfaces/budget-insight.interface';
-
+const DEFAULT_NUMBER_OF_MONTHS: number = 5;
 /**
  * Budget Insight Client Config
  */
@@ -22,6 +22,7 @@ export interface ClientConfig {
   clientId: string;
   clientSecret: string;
   baseUrl: string;
+  nbOfMonths?: number;
 }
 
 /**
@@ -141,7 +142,7 @@ export class BudgetInsightClient {
   ): Promise<BudgetInsightTransaction[]> {
     const baseUrl: string = this.getClientConfig(clientConfig).baseUrl;
     const endDate: Date = new Date(Date.now());
-    const nbOfMonths: number = 3;
+    const nbOfMonths: number = clientConfig?.nbOfMonths ?? DEFAULT_NUMBER_OF_MONTHS;
     const startDate: Date = moment(endDate).subtract(nbOfMonths, 'month').toDate();
 
     const url: string = `${baseUrl}/users/me/accounts/${accountId}/transactions?min_date=${startDate.toISOString()}&max_date=${endDate.toISOString()}`;
