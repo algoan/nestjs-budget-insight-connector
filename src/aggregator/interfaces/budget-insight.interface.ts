@@ -148,6 +148,7 @@ export interface BudgetInsightTransaction {
   original_wording: string;
   type: TransactionType;
   id_category: number | null;
+  original_currency: Currency | null;
 }
 
 /**

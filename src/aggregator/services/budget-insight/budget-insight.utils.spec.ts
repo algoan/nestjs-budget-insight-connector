@@ -153,6 +153,7 @@ describe('BudgetInsightUtils', () => {
         date: '2010-01-15 15:55:00',
         rdate: '2010-01-15 15:55:00',
         application_date: 'mockApplicationDate',
+        original_currency: { id: 'USD' },
       },
     ];
     const expectedTransaction: PostBanksUserTransactionDTO[] = [
@@ -166,6 +167,7 @@ describe('BudgetInsightUtils', () => {
         simplifiedDescription: 'simplifiedWording',
         type: TransactionType.ATM,
         userDescription: 'wording',
+        currency: 'USD',
       },
     ];
 
@@ -200,6 +202,56 @@ describe('BudgetInsightUtils', () => {
         date: '2010-01-15 15:55:00',
         rdate: '2010-02-15 15:55:00',
         application_date: 'mockApplicationDate',
+        original_currency: { id: 'USD' },
+      },
+    ];
+    const expectedTransaction: PostBanksUserTransactionDTO[] = [
+      {
+        amount: 1,
+        banksUserCardId: 'card',
+        category: 'mockCategoryName',
+        date: '2010-02-15T14:55:00.000Z',
+        description: 'original_wording',
+        reference: 'id',
+        simplifiedDescription: 'simplifiedWording',
+        type: TransactionType.ATM,
+        userDescription: 'wording',
+        currency: 'USD',
+      },
+    ];
+
+    const spy = jest.spyOn(aggregatorService, 'getCategory').mockReturnValue(Promise.resolve(mockCategory));
+    const mappedTransaction = await mapBudgetInsightTransactions(
+      budgetInsightTransactions,
+      AccountType.CREDIT_CARD,
+      'mockAccessToken',
+      aggregatorService,
+    );
+
+    expect(mappedTransaction).toEqual(expectedTransaction);
+    expect(spy).toBeCalledWith('mockAccessToken', budgetInsightTransactions[0].id_category);
+  });
+
+  it('should map the budget insight transactions to banksUser (currency=null)', async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      imports: [AggregatorModule],
+    }).compile();
+    const aggregatorService = module.get<AggregatorService>(AggregatorService);
+    const budgetInsightTransactions: BudgetInsightTransaction[] = [
+      {
+        type: BiTransactionType.WITHDRAWAL,
+        id_category: 20,
+        original_wording: 'original_wording',
+        wording: 'wording',
+        card: 'card',
+        simplified_wording: 'simplifiedWording',
+        value: 1,
+        id_account: 9,
+        id: 'id',
+        date: '2010-01-15 15:55:00',
+        rdate: '2010-02-15 15:55:00',
+        application_date: 'mockApplicationDate',
+        original_currency: null,
       },
     ];
     const expectedTransaction: PostBanksUserTransactionDTO[] = [

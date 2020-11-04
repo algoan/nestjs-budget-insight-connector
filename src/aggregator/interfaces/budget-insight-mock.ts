@@ -42,6 +42,7 @@ export const mockTransaction: BudgetInsightTransaction = {
   id_category: 10,
   type: TransactionType.BANK,
   original_wording: 'mockOriginalWording',
+  original_currency: { id: 'USD' },
 };
 
 export const mockCategory: BudgetInsightCategory = {

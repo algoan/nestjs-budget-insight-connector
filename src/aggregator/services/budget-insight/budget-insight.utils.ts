@@ -93,6 +93,7 @@ export const mapBudgetInsightTransactions = async (
           accountType === AccountType.CREDIT_CARD
             ? moment.tz(transaction.rdate, 'Europe/Paris').toISOString()
             : moment.tz(transaction.date, 'Europe/Paris').toISOString(),
+        currency: transaction.original_currency?.id,
       }),
     ),
   );
