@@ -37,7 +37,7 @@
     "lodash": "^4.17.20",
     "moment": "^2.29.1",
     "moment-timezone": "^0.5.31",
-    "mongoose": "^5.10.12",
+    "mongoose": "^5.10.13",
     "nest-winston": "^1.4.0",
     "node-config-ts": "^3.1.0",
     "reflect-metadata": "^0.1.13",
