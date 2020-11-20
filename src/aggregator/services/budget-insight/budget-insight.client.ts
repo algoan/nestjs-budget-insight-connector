@@ -13,6 +13,7 @@ import {
   TransactionWrapper,
   AccountWrapper,
   BudgetInsightCategory,
+  BudgetInsightOwner,
 } from '../../interfaces/budget-insight.interface';
 const DEFAULT_NUMBER_OF_MONTHS: number = 5;
 /**
@@ -101,6 +102,20 @@ export class BudgetInsightClient {
       .toPromise();
 
     return resp.data.connections.filter((co: Connection) => co.active);
+  }
+
+  /**
+   * Get personal information about the connection
+   * @param token Permanent token
+   * @param id Connection id
+   * @param clientConfig Optional client configuration
+   */
+  public async getConnectionInfo(token: string, id: string, clientConfig?: ClientConfig): Promise<BudgetInsightOwner> {
+    const baseUrl: string = this.getClientConfig(clientConfig).baseUrl;
+    const url: string = `${baseUrl}/users/me/connections/${id}/informations`;
+    const resp: AxiosResponse<BudgetInsightOwner> = await this.httpService.get(url, this.setHeaders(token)).toPromise();
+
+    return resp.data;
   }
 
   /**

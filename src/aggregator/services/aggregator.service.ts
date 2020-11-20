@@ -6,6 +6,7 @@ import {
   BudgetInsightTransaction,
   BudgetInsightAccount,
   BudgetInsightCategory,
+  BudgetInsightOwner,
 } from '../interfaces/budget-insight.interface';
 import { BudgetInsightClient, ClientConfig } from './budget-insight/budget-insight.client';
 
@@ -69,6 +70,16 @@ export class AggregatorService {
    */
   public async getConnections(token: string, clientConfig?: ClientConfig): Promise<Connection[]> {
     return this.budgetInsightClient.fetchConnection(token, clientConfig);
+  }
+
+  /**
+   * Get personal information from the associated connection
+   * @param token Permanent token
+   * @param id Connection id
+   * @param clientConfig Optional client configuration
+   */
+  public async getInfo(token: string, id: string, clientConfig?: ClientConfig): Promise<BudgetInsightOwner> {
+    return this.budgetInsightClient.getConnectionInfo(token, id, clientConfig);
   }
 
   /**

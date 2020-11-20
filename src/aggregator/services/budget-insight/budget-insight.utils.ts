@@ -6,6 +6,7 @@ import {
   AccountType,
   PostBanksUserAccountDTO,
 } from '@algoan/rest';
+import { get, isNil } from 'lodash';
 import { AggregatorService } from '../aggregator.service';
 import {
   BudgetInsightTransaction,
@@ -13,6 +14,7 @@ import {
   BankAccountUsage as BiUsageType,
   TransactionType as BiTransactionType,
   BudgetInsightAccount,
+  BudgetInsightOwner,
   Connection,
 } from '../../interfaces/budget-insight.interface';
 
@@ -25,18 +27,24 @@ import {
 export const mapBudgetInsightAccount = (
   accounts: BudgetInsightAccount[],
   connections: Connection[],
+  connectionsInfo: { [key: string]: BudgetInsightOwner },
 ): PostBanksUserAccountDTO[] =>
   accounts.map((acc: BudgetInsightAccount) => {
     const connection: Connection | undefined = connections.find((con) => con.id === acc.id_connection);
+    const ownerInfo: BudgetInsightOwner | undefined = get(connectionsInfo, `${connection?.id}`);
 
-    return fromBIToAlgoanAccounts(acc, connection?.connector?.name);
+    return fromBIToAlgoanAccounts(acc, connection?.connector?.name, ownerInfo);
   });
 
 /**
  * Converts a single BI account instance to Algoan format
  * @param account
  */
-const fromBIToAlgoanAccounts = (account: BudgetInsightAccount, bankName?: string): PostBanksUserAccountDTO => ({
+const fromBIToAlgoanAccounts = (
+  account: BudgetInsightAccount,
+  bankName?: string,
+  ownerInfo?: BudgetInsightOwner,
+): PostBanksUserAccountDTO => ({
   balanceDate: new Date(mapDate(account.last_update)).toISOString(),
   balance: account.balance,
   bank: bankName,
@@ -65,6 +73,7 @@ const fromBIToAlgoanAccounts = (account: BudgetInsightAccount, bankName?: string
         }
       : undefined,
   savingsDetails: account.type,
+  owner: !isNil(ownerInfo) && !isNil(ownerInfo?.owner?.name) ? { name: ownerInfo.owner.name } : undefined,
 });
 
 /**

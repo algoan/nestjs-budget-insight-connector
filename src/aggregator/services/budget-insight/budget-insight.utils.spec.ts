@@ -13,6 +13,7 @@ import {
   AccountType as BIAccountType,
   BankAccountUsage as BIUsageType,
   Connection,
+  BudgetInsightOwner,
 } from '../../interfaces/budget-insight.interface';
 import { AggregatorModule } from '../../aggregator.module';
 import { AggregatorService } from '../aggregator.service';
@@ -36,6 +37,16 @@ describe('BudgetInsightUtils', () => {
         next_try: new Date(),
       },
     ];
+    const ownerInfo: { [key: string]: BudgetInsightOwner } = {
+      [budgetInsightConnections[0].id]: {
+        owner: {
+          company_name: 'Algoan',
+          job: 'Developer',
+          job_start_date: '2020-09-01',
+          name: 'M. JOHN DOE',
+        },
+      },
+    };
     const budgetInsightAccounts: BudgetInsightAccount[] = [
       {
         id: 1,
@@ -112,6 +123,7 @@ describe('BudgetInsightUtils', () => {
         status: 'ACTIVE',
         type: AccountType.LOAN,
         usage: UsageType.PERSONAL,
+        owner: { name: 'M. JOHN DOE' },
       },
       {
         balance: 100,
@@ -128,10 +140,13 @@ describe('BudgetInsightUtils', () => {
         status: 'ACTIVE',
         type: AccountType.CREDIT_CARD,
         usage: UsageType.PERSONAL,
+        owner: { name: 'M. JOHN DOE' },
       },
     ];
 
-    expect(mapBudgetInsightAccount(budgetInsightAccounts, budgetInsightConnections)).toEqual(expectedAccounts);
+    expect(mapBudgetInsightAccount(budgetInsightAccounts, budgetInsightConnections, ownerInfo)).toEqual(
+      expectedAccounts,
+    );
   });
 
   it('should map the budget insight transactions to banksUser', async () => {

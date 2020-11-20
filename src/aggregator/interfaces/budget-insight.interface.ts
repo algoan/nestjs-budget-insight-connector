@@ -218,3 +218,24 @@ export interface BudgetInsightCategory {
   refundable: boolean;
   id_logo: number | null;
 }
+
+/**
+ * Budget Insight Owner
+ * Personal User information for a connection
+ */
+export interface BudgetInsightOwner {
+  owner: {
+    name: string;
+    firstname?: string | null;
+    lastname?: string | null;
+    company_name?: string | null;
+    job?: string | null;
+    job_start_date?: string | null;
+    socioprofessional_category?: string | null;
+    family_situation?: string | null;
+    housing_status?: string | null;
+    phone?: string | null;
+    email?: string | null;
+    postal_address?: { full_address?: string | null };
+  };
+}

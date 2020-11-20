@@ -10,6 +10,7 @@ import {
   JWTokenResponse,
   TransactionWrapper,
   AccountWrapper,
+  ConnectionWrapper,
 } from '../../interfaces/budget-insight.interface';
 import { mockAccount, mockTransaction, mockCategory } from '../../interfaces/budget-insight-mock';
 import { ClientConfig } from '../budget-insight/budget-insight.client';
@@ -106,6 +107,35 @@ describe('BudgetInsightClient', () => {
     expect(actualResponse).toEqual([makeConnection(0), makeConnection(2)]);
 
     expect(spy).toHaveBeenCalledWith('http://localhost:4000//users/me/connections?expand=connector', {
+      headers: {
+        ...headers.headers,
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  });
+
+  it('returns the user connection information', async () => {
+    const connectionsResponse: ConnectionWrapper = {
+      connections: [
+        {
+          id: 4,
+          id_user: 6,
+          id_connector: 5,
+          last_update: null,
+          state: null,
+          active: true,
+          created: null,
+          next_try: null,
+        },
+      ],
+    };
+    result.data = connectionsResponse;
+    const token = 'token';
+    const spy = jest.spyOn(httpService, 'get').mockImplementationOnce(() => of(result));
+
+    const connections = await service.getConnectionInfo(token, '1');
+    expect(connections).toEqual(connectionsResponse);
+    expect(spy).toHaveBeenCalledWith('http://localhost:4000//users/me/connections/1/informations', {
       headers: {
         ...headers.headers,
         Authorization: `Bearer ${token}`,

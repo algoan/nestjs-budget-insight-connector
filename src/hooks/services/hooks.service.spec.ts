@@ -230,6 +230,7 @@ describe('HooksService', () => {
       .mockReturnValueOnce(Promise.resolve([connection]))
       .mockReturnValueOnce(Promise.resolve([{ ...connection, last_update: 'mockLastUpdate' }]));
     const accountSpy = jest.spyOn(aggregatorService, 'getAccounts').mockResolvedValue([mockAccount]);
+    const userInfoSpy = jest.spyOn(aggregatorService, 'getInfo').mockResolvedValue({ owner: { name: 'JOHN DOE' } });
     const banksUserAccountSpy = jest.spyOn(mockBanksUser, 'createAccounts').mockResolvedValue([banksUserAccount]);
     const transactionSpy = jest.spyOn(aggregatorService, 'getTransactions').mockResolvedValue([mockTransaction]);
     const categorySpy = jest.spyOn(aggregatorService, 'getCategory').mockResolvedValue(mockCategory);
@@ -250,7 +251,11 @@ describe('HooksService', () => {
     expect(connectionSpy).toBeCalledWith('mockPermToken', undefined);
     expect(connectionSpy).toBeCalledTimes(2);
     expect(accountSpy).toBeCalledWith('mockPermToken', undefined);
-    expect(banksUserAccountSpy).toBeCalledWith(mapBudgetInsightAccount([mockAccount], [connection]));
+    expect(userInfoSpy).toBeCalledWith('mockPermToken', '4', undefined);
+    expect(userInfoSpy).toBeCalledTimes(1);
+    expect(banksUserAccountSpy).toBeCalledWith(
+      mapBudgetInsightAccount([mockAccount], [connection], { [connection.id]: { owner: { name: 'JOHN DOE' } } }),
+    );
     expect(transactionSpy).toBeCalledWith('mockPermToken', Number(banksUserAccount.reference), undefined);
     expect(categorySpy).toBeCalledWith('mockPermToken', mockTransaction.id_category);
     expect(banksUserTransactionSpy).toBeCalledWith(banksUserAccount.id, mappedTransaction);

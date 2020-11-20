@@ -26,6 +26,7 @@ import {
   BudgetInsightAccount,
   BudgetInsightTransaction,
   Connection,
+  BudgetInsightOwner,
 } from '../../aggregator/interfaces/budget-insight.interface';
 import { AggregatorService } from '../../aggregator/services/aggregator.service';
 import {
@@ -243,7 +244,31 @@ export class HooksService {
       return;
     }
 
-    const algoanAccounts: PostBanksUserAccountDTO[] = mapBudgetInsightAccount(accounts, connections).filter(
+    /**
+     * 3.b. Get personal information from every connection
+     */
+    const connectionsInfo: { [key: string]: BudgetInsightOwner } = {};
+    for (const connection of connections) {
+      try {
+        connectionsInfo[connection.id] = await this.aggregator.getInfo(
+          permanentToken,
+          `${connection.id}`,
+          serviceAccount.config as ClientConfig,
+        );
+      } catch (err) {
+        this.logger.warn({
+          message: `Unable to get user personal information`,
+          error: err,
+          connection,
+        });
+      }
+    }
+
+    const algoanAccounts: PostBanksUserAccountDTO[] = mapBudgetInsightAccount(
+      accounts,
+      connections,
+      connectionsInfo,
+    ).filter(
       // Disable this rule because the type can be undefined even if it should never happen
       // eslint-disable-next-line @typescript-eslint/tslint/config
       (account: PostBanksUserAccountDTO & { type?: AccountType }) => account.type !== undefined,
