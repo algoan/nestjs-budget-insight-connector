@@ -22,6 +22,7 @@ describe('AggregatorService', () => {
       budgetInsightBank: {
         baseUrl: 'mockBaseUrl',
         token: 'mockToken',
+        clientId: 'mockClientId',
       },
     },
     scores: [],

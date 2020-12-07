@@ -178,6 +178,7 @@ describe('HooksService', () => {
         budgetInsightBank: {
           baseUrl: 'http://localhost:4000/',
           token: 'mockJwtToken',
+          clientId: 'mockClientId',
         },
       },
     });

@@ -342,6 +342,7 @@ export class HooksService {
       budgetInsightBank: {
         baseUrl: serviceAccountConfig?.baseUrl ?? config.budgetInsight.url,
         token: jsonWT.jwt_token,
+        clientId: serviceAccountConfig?.clientId ?? serviceAccount.clientId,
       },
     };
 
