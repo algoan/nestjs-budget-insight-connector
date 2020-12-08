@@ -51,18 +51,30 @@ describe('HooksService', () => {
     id: 'eventId',
   };
 
+  const subscriptions: Subscription[] = [
+    new Subscription(
+      { id: 'mockEventSubId', eventName: EventName.BANKREADER_COMPLETED, status: 'ACTIVE', target: 'mockSubTarget' },
+      new RequestBuilder('mockBaseURL', { clientId: 'mockClientId' }),
+    ),
+  ];
+
   const mockServiceAccount: ServiceAccount = new ServiceAccount('mockBaseURL', {
     id: 'mockServiceAccountId',
     clientId: 'mockClientId',
     clientSecret: 'mockClientSecret',
     createdAt: 'mockCreatedAt',
   });
-  mockServiceAccount.subscriptions = [
-    new Subscription(
-      { id: 'mockEventSubId', eventName: EventName.BANKREADER_COMPLETED, status: 'ACTIVE', target: 'mockSubTarget' },
-      new RequestBuilder('mockBaseURL', { clientId: 'mockClientId' }),
-    ),
-  ];
+  mockServiceAccount.subscriptions = subscriptions;
+  const mockServiceAccountWithConfig: ServiceAccount = new ServiceAccount('mockBaseURL', {
+    id: 'mockServiceAccountId',
+    clientId: 'mockClientId',
+    clientSecret: 'mockClientSecret',
+    createdAt: 'mockCreatedAt',
+    config: {
+      clientId: 'mockClientIdFromConfig',
+    },
+  });
+  mockServiceAccountWithConfig.subscriptions = subscriptions;
 
   const mockBanksUser = new BanksUser(
     {
@@ -158,7 +170,7 @@ describe('HooksService', () => {
 
   it('updates the bank user on configuration required', async () => {
     const serviceAccountSpy = jest
-      .spyOn(mockServiceAccount, 'getBanksUserById')
+      .spyOn(mockServiceAccountWithConfig, 'getBanksUserById')
       .mockReturnValue(Promise.resolve(mockBanksUser));
     const agreggatorSpy = jest.spyOn(aggregatorService, 'getJWToken').mockReturnValue(
       Promise.resolve({
@@ -169,7 +181,7 @@ describe('HooksService', () => {
       }),
     );
     const banksUserSpy = jest.spyOn(mockBanksUser, 'update').mockResolvedValue();
-    await hooksService.handleBankreaderConfigurationRequiredEvent(mockServiceAccount, mockEvent.payload);
+    await hooksService.handleBankreaderConfigurationRequiredEvent(mockServiceAccountWithConfig, mockEvent.payload);
 
     expect(serviceAccountSpy).toBeCalledWith(mockEvent.payload.banksUserId);
     expect(agreggatorSpy).toBeCalled();
@@ -178,7 +190,7 @@ describe('HooksService', () => {
         budgetInsightBank: {
           baseUrl: 'http://localhost:4000/',
           token: 'mockJwtToken',
-          clientId: 'mockClientId',
+          clientId: 'mockClientIdFromConfig',
         },
       },
     });
