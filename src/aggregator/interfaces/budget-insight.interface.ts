@@ -179,6 +179,7 @@ export enum UsageType {
 
 /**
  * JSON Web Token Response
+ * https://docs.budget-insight.com/reference/authentication#generate-a-user-scoped-token
  */
 export interface JWTokenResponse {
   jwt_token: string;
