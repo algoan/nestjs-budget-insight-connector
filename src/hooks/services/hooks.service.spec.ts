@@ -1,5 +1,6 @@
 /* eslint-disable max-lines */
 import { Test, TestingModule } from '@nestjs/testing';
+import { ContextIdFactory } from '@nestjs/core';
 import { Algoan, ServiceAccount, EventName, Subscription, RequestBuilder } from '@algoan/rest';
 
 import { EventDTO } from '../dto/event.dto';
@@ -7,12 +8,16 @@ import { AggregatorModule } from '../../aggregator/aggregator.module';
 import { AlgoanModule } from '../../algoan/algoan.module';
 import { AppModule } from '../../app.module';
 import { AlgoanService } from '../../algoan/services/algoan.service';
+import { AlgoanCustomerService } from '../../algoan/services/algoan-customer.service';
+import { AlgoanHttpService } from '../../algoan/services/algoan-http.service';
 import { ConfigModule } from '../../config/config.module';
 import { HooksService } from './hooks.service';
 
 describe('HooksService', () => {
   let hooksService: HooksService;
   let algoanService: AlgoanService;
+  let algoanHttpService: AlgoanHttpService;
+  let algoanCustomerService: AlgoanCustomerService;
   const mockEvent = {
     subscription: {
       id: 'mockEventSubId',
@@ -56,6 +61,10 @@ describe('HooksService', () => {
   mockServiceAccountWithConfig.subscriptions = subscriptions;
 
   beforeEach(async () => {
+    // To mock scoped DI
+    const contextId = ContextIdFactory.create();
+    jest.spyOn(ContextIdFactory, 'getByRequest').mockImplementation(() => contextId);
+
     const module: TestingModule = await Test.createTestingModule({
       imports: [AppModule, AggregatorModule, AlgoanModule, ConfigModule],
       providers: [HooksService],
@@ -63,8 +72,10 @@ describe('HooksService', () => {
 
     jest.spyOn(Algoan.prototype, 'initRestHooks').mockResolvedValue();
 
-    hooksService = module.get<HooksService>(HooksService);
-    algoanService = module.get<AlgoanService>(AlgoanService);
+    hooksService = await module.resolve<HooksService>(HooksService, contextId);
+    algoanService = await module.resolve<AlgoanService>(AlgoanService, contextId);
+    algoanHttpService = await module.resolve<AlgoanHttpService>(AlgoanHttpService, contextId);
+    algoanCustomerService = await module.resolve<AlgoanCustomerService>(AlgoanCustomerService, contextId);
     await algoanService.onModuleInit();
   });
 

@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { ContextIdFactory } from '@nestjs/core';
 import { EventName } from '@algoan/rest';
 
 import { EventDTO } from '../dto/event.dto';
@@ -14,14 +15,18 @@ describe('Hooks Controller', () => {
   let hooksService: HooksService;
 
   beforeEach(async () => {
+    // To mock scoped DI
+    const contextId = ContextIdFactory.create();
+    jest.spyOn(ContextIdFactory, 'getByRequest').mockImplementation(() => contextId);
+
     const module: TestingModule = await Test.createTestingModule({
       imports: [AppModule, AggregatorModule, AlgoanModule, ConfigModule],
       providers: [HooksService],
       controllers: [HooksController],
     }).compile();
 
-    controller = module.get<HooksController>(HooksController);
-    hooksService = module.get<HooksService>(HooksService);
+    controller = await module.resolve<HooksController>(HooksController, contextId);
+    hooksService = await module.resolve<HooksService>(HooksService, contextId);
   });
 
   it('should be defined', () => {
@@ -47,7 +52,7 @@ describe('Hooks Controller', () => {
     const spy = jest.spyOn(hooksService, 'handleWebhook').mockReturnValue(Promise.resolve());
     controller.controlHook(event, {
       'x-hub-signature': 'sha256=7a21851efc6fb1dd6d526d22f9bed739b5a26d54f0ef6b03ef662dc184fdd27d',
-    }),
-      expect(spy).toBeCalledWith(event, 'sha256=7a21851efc6fb1dd6d526d22f9bed739b5a26d54f0ef6b03ef662dc184fdd27d');
+    });
+    expect(spy).toBeCalledWith(event, 'sha256=7a21851efc6fb1dd6d526d22f9bed739b5a26d54f0ef6b03ef662dc184fdd27d');
   });
 });
