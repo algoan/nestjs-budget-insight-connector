@@ -1,7 +1,7 @@
 import { ServiceAccount, Subscription, EventStatus, SubscriptionEvent } from '@algoan/rest';
 import { UnauthorizedException, Injectable, Logger } from '@nestjs/common';
 
-import { AlgoanService } from '../../algoan/algoan.service';
+import { AlgoanService } from '../../algoan/services/algoan.service';
 import { EventDTO } from '../dto/event.dto';
 
 /**

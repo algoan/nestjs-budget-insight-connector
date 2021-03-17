@@ -1,3 +1,4 @@
+import { Subscription } from '@algoan/rest';
 import { INestApplication, HttpStatus } from '@nestjs/common';
 import * as assert from 'assert';
 import * as nock from 'nock';
@@ -49,13 +50,14 @@ describe('HooksController (e2e)', () => {
         .expect(HttpStatus.UNAUTHORIZED);
     });
 
-    it('HK004 - should be ok', async () => {
-      const fakeSubEventServer: nock.Scope = fakeAPI({
+    it('HK004 - should be failed - event not handled', async () => {
+      const spy = jest.spyOn(Subscription.prototype, 'validateSignature').mockImplementation(() => true);
+
+      const fakeGetEvent: nock.Scope = fakeAPI({
         baseUrl: fakeAlgoanBaseUrl,
         method: 'patch',
-        result: {},
+        result: { status: 'FAILED' },
         path: '/v1/subscriptions/1/events/random',
-        nbOfCalls: 1,
       });
 
       await request(app.getHttpServer())
@@ -77,7 +79,8 @@ describe('HooksController (e2e)', () => {
         })
         .expect(HttpStatus.NO_CONTENT);
 
-      assert.equal(fakeSubEventServer.isDone(), true);
+      expect(spy).toHaveBeenCalled();
+      assert.strictEqual(fakeGetEvent.isDone(), true);
     });
   });
 });

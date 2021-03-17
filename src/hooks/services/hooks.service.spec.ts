@@ -5,7 +5,7 @@ import { EventDTO } from '../dto/event.dto';
 import { AggregatorModule } from '../../aggregator/aggregator.module';
 import { AlgoanModule } from '../../algoan/algoan.module';
 import { AppModule } from '../../app.module';
-import { AlgoanService } from '../../algoan/algoan.service';
+import { AlgoanService } from '../../algoan/services/algoan.service';
 import { HooksService } from './hooks.service';
 
 describe('HooksService', () => {
