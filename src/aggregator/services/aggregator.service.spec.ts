@@ -1,6 +1,5 @@
 import { HttpModule } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { IBanksUser, BanksUserStatus } from '@algoan/rest';
 import { AlgoanModule } from '../../algoan/algoan.module';
 import { AppModule } from '../../app.module';
 import { Connection } from '../interfaces/budget-insight.interface';
@@ -11,23 +10,6 @@ import { BudgetInsightClient } from './budget-insight/budget-insight.client';
 describe('AggregatorService', () => {
   let service: AggregatorService;
   let client: BudgetInsightClient;
-  const mockBanksUser: IBanksUser = {
-    id: 'id',
-    callbackUrl: 'callbackUrl',
-    status: BanksUserStatus.NEW,
-    redirectUrl: 'mockRedirectUrl',
-    redirectUrlCreatedAt: 1234567,
-    redirectUrlTTL: 500,
-    plugIn: {
-      budgetInsightBank: {
-        baseUrl: 'mockBaseUrl',
-        token: 'mockToken',
-        clientId: 'mockClientId',
-      },
-    },
-    scores: [],
-    analysis: { alerts: [], regularCashFlows: [], reliability: 'HIGH' },
-  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -66,7 +48,7 @@ describe('AggregatorService', () => {
   });
 
   it('should create the webviewUrl base on the callbackUrl', () => {
-    const url: string = service.generateRedirectUrl(mockBanksUser);
+    const url: string = service.generateRedirectUrl('callbackUrl');
     expect(url).toBe(
       'http://localhost:4000/auth/webview/fr/connect?client_id=budgetInsightClientId&redirect_uri=callbackUrl&response_type=code&state=&types=banks',
     );
