@@ -1,11 +1,13 @@
 /* eslint-disable max-lines */
 import { Test, TestingModule } from '@nestjs/testing';
 import { Algoan, ServiceAccount, EventName, Subscription, RequestBuilder } from '@algoan/rest';
+
 import { EventDTO } from '../dto/event.dto';
 import { AggregatorModule } from '../../aggregator/aggregator.module';
 import { AlgoanModule } from '../../algoan/algoan.module';
 import { AppModule } from '../../app.module';
 import { AlgoanService } from '../../algoan/services/algoan.service';
+import { ConfigModule } from '../../config/config.module';
 import { HooksService } from './hooks.service';
 
 describe('HooksService', () => {
@@ -55,7 +57,7 @@ describe('HooksService', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      imports: [AppModule, AggregatorModule, AlgoanModule],
+      imports: [AppModule, AggregatorModule, AlgoanModule, ConfigModule],
       providers: [HooksService],
     }).compile();
 
