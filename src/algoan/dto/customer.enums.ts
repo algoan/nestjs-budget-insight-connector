@@ -2,13 +2,13 @@
  * AggregationDetailsMode
  */
 export enum AggregationDetailsMode {
-  redirect = 'REDIRECT',
-  api = 'API',
+  REDIRECT = 'REDIRECT',
+  API = 'API',
 }
 
 /**
  * AggregationDetailsAggregatorName
  */
 export enum AggregationDetailsAggregatorName {
-  tink = 'TINK',
+  BUDGET_INSIGHT = 'BUDGET_INSIGHT',
 }

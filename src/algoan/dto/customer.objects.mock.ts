@@ -5,10 +5,10 @@ import { AggregationDetails, PersonalDetails } from './customer.objects';
  * Mock for `AggregationDetails` object
  */
 export const aggregationDetailsMock: AggregationDetails = {
-  aggregatorName: AggregationDetailsAggregatorName.tink,
+  aggregatorName: AggregationDetailsAggregatorName.BUDGET_INSIGHT,
   callbackUrl: 'callbackUrl',
   token: 'token',
-  mode: AggregationDetailsMode.redirect,
+  mode: AggregationDetailsMode.REDIRECT,
   redirectUrl: 'redirectUrl',
   apiUrl: 'apiUrl',
   userId: undefined,
