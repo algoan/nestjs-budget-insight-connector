@@ -4,7 +4,8 @@ import { Config } from 'node-config-ts';
 
 import { AggregatorService } from '../../aggregator/services/aggregator.service';
 import { ClientConfig } from '../../aggregator/services/budget-insight/budget-insight.client';
-import { Customer } from '../../algoan/dto/customer.objects';
+import { Customer, AggregationDetails } from '../../algoan/dto/customer.objects';
+import { AggregationDetailsAggregatorName, AggregationDetailsMode } from '../../algoan/dto/customer.enums';
 import { AlgoanCustomerService } from '../../algoan/services/algoan-customer.service';
 import { AlgoanHttpService } from '../../algoan/services/algoan-http.service';
 import { AlgoanService } from '../../algoan/services/algoan.service';
@@ -99,24 +100,49 @@ export class HooksService {
     serviceAccount: ServiceAccount,
     payload: AggregatorLinkRequiredDTO,
   ): Promise<void> {
-    // Authenticate to algoan
+    /** Authenticate to algoan */
     this.algoanHttpService.authenticate(serviceAccount.clientId, serviceAccount.clientSecret);
 
-    /** 1. Get the customer to retrieve the callbackUrl */
+    /** Get the customer to retrieve the callbackUrl and connection mode */
     const customer: Customer = await this.algoanCustomerService.getCustomerById(payload.customerId);
-    const callbackUrl: string | undefined = customer.aggregationDetails.callbackUrl;
-    this.logger.debug(`Found customer with id ${payload.customerId} and callbackUrl ${callbackUrl}`);
 
-    if (callbackUrl === undefined) {
-      throw new NotFoundException(`Customer ${customer.id} has no callback URL`);
+    /** Init the aggregationDetails' response  */
+    const serviceAccountConfig: ClientConfig = serviceAccount.config as ClientConfig;
+    const aggregationDetails: AggregationDetails = {
+      aggregatorName: AggregationDetailsAggregatorName.BUDGET_INSIGHT,
+      apiUrl: serviceAccountConfig?.baseUrl ?? this.config.budgetInsight.url,
+      clientId: serviceAccountConfig?.clientId ?? this.config.budgetInsight.clientId,
+    };
+
+    switch (customer.aggregationDetails.mode) {
+      case AggregationDetailsMode.REDIRECT:
+        /** Generate the redirect url */
+        const callbackUrl: string | undefined = customer.aggregationDetails.callbackUrl;
+        this.logger.debug(`Found customer with id ${customer.id} and callbackUrl ${callbackUrl}`);
+
+        if (callbackUrl === undefined) {
+          throw new NotFoundException(`Customer ${customer.id} has no callback URL`);
+        }
+
+        aggregationDetails.redirectUrl = this.aggregator.generateRedirectUrl(callbackUrl, serviceAccountConfig);
+        break;
+
+      case AggregationDetailsMode.API:
+        /** Get the JWT token */
+        const token = await this.aggregator.getJWToken(serviceAccountConfig);
+        aggregationDetails.token = token.jwt_token;
+        aggregationDetails.apiUrl = token.payload.domain ?? aggregationDetails.apiUrl;
+        break;
+
+      default:
+        throw new Error(`Invalid bank connection mode ${customer.aggregationDetails.mode}`);
     }
 
-    /** 2. Generate a redirectUrl */
-    const redirectUrl: string = this.aggregator.generateRedirectUrl(callbackUrl, serviceAccount.config as ClientConfig);
-
-    /** 3. Update the customer, sending to Algoan the generated URL */
-    await this.algoanCustomerService.updateCustomer(payload.customerId, { aggregationDetails: { redirectUrl } });
-    this.logger.debug(`Added redirect URL ${redirectUrl} to customer ${customer.id}`);
+    /** Update the customer, sending to Algoan the aggregationDetails */
+    await this.algoanCustomerService.updateCustomer(customer.id, { aggregationDetails });
+    this.logger.debug(
+      `Added aggregation details to customer ${customer.id} for mode ${customer.aggregationDetails.mode}`,
+    );
 
     return;
   }
