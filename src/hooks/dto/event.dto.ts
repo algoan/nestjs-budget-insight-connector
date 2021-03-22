@@ -1,12 +1,18 @@
 import { Type } from 'class-transformer';
 import { Allow, IsInt, IsNotEmpty, IsOptional, IsString, ValidateNested } from 'class-validator';
 
-import { AggregatorLinkRequiredDTO, ServiceAccountCreatedDTO, ServiceAccountDeletedDTO, SubscriptionDTO } from '.';
+import {
+  AggregatorLinkRequiredDTO,
+  BanksDetailsRequiredDTO,
+  ServiceAccountCreatedDTO,
+  ServiceAccountDeletedDTO,
+  SubscriptionDTO,
+} from '.';
 
 /**
  * Events payload types
  */
-type Events = ServiceAccountCreatedDTO | ServiceAccountDeletedDTO | AggregatorLinkRequiredDTO;
+type Events = ServiceAccountCreatedDTO | ServiceAccountDeletedDTO | AggregatorLinkRequiredDTO | BanksDetailsRequiredDTO;
 
 /**
  * Event
