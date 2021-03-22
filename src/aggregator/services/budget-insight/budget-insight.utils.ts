@@ -1,13 +1,9 @@
 import * as moment from 'moment-timezone';
-import {
-  PostBanksUserTransactionDTO,
-  BanksUserTransactionType as TransactionType,
-  UsageType,
-  AccountType,
-  PostBanksUserAccountDTO,
-} from '@algoan/rest';
+import { BanksUserTransactionType as TransactionType } from '@algoan/rest';
 import { get, isNil } from 'lodash';
 import { AggregatorService } from '../aggregator.service';
+import { AccountLoanType, AccountType, AccountUsage } from '../../../algoan/dto/analysis.enum';
+import { Account as AnalysisAccount, AccountTransactions } from '../../../algoan/dto/analysis.inputs';
 import {
   BudgetInsightTransaction,
   AccountType as BiAccountType,
@@ -16,6 +12,7 @@ import {
   BudgetInsightAccount,
   BudgetInsightOwner,
   Connection,
+  Bank,
 } from '../../interfaces/budget-insight.interface';
 
 /**
@@ -28,12 +25,12 @@ export const mapBudgetInsightAccount = (
   accounts: BudgetInsightAccount[],
   connections: Connection[],
   connectionsInfo: { [key: string]: BudgetInsightOwner },
-): PostBanksUserAccountDTO[] =>
+): AnalysisAccount[] =>
   accounts.map((acc: BudgetInsightAccount) => {
     const connection: Connection | undefined = connections.find((con) => con.id === acc.id_connection);
     const ownerInfo: BudgetInsightOwner | undefined = get(connectionsInfo, `${connection?.id}`);
 
-    return fromBIToAlgoanAccounts(acc, connection?.connector?.name, ownerInfo);
+    return fromBIToAlgoanAccounts(acc, connection?.connector, ownerInfo);
   });
 
 /**
@@ -42,38 +39,46 @@ export const mapBudgetInsightAccount = (
  */
 const fromBIToAlgoanAccounts = (
   account: BudgetInsightAccount,
-  bankName?: string,
+  bank?: Bank,
   ownerInfo?: BudgetInsightOwner,
-): PostBanksUserAccountDTO => ({
-  balanceDate: new Date(mapDate(account.last_update)).toISOString(),
+): AnalysisAccount => ({
   balance: account.balance,
-  bank: bankName,
-  connectionSource: 'BUDGET_INSIGHT',
+  balanceDate: new Date(mapDate(account.last_update)).toISOString(),
+  currency: account.currency?.id,
   type: mapAccountType(account.type),
-  bic: account.bic,
+  usage: mapUsageType(account.usage),
+  owners: !isNil(ownerInfo) && !isNil(ownerInfo?.owner?.name) ? [{ name: ownerInfo.owner.name }] : undefined,
   // eslint-disable-next-line no-null/no-null
   iban: account.iban === null ? undefined : account.iban,
-  currency: account.currency.id,
+  bic: account.bic,
   name: account.name,
-  reference: account.id.toString(),
-  status: account.disabled ? 'CLOSED' : 'ACTIVE',
-  usage: mapUsageType(account.usage),
-  loanDetails:
-    // eslint-disable-next-line no-null/no-null
-    account.loan !== null && account.loan !== undefined
-      ? {
-          amount: account.loan.total_amount,
-          debitedAccountId: account.loan.id_account,
-          startDate: mapDate(account.loan.subscription_date),
-          endDate: mapDate(account.loan.maturity_date),
-          payment: account.loan.next_payment_amount,
-          interestRate: account.loan.rate,
-          remainingCapital: account.balance,
-          type: 'OTHER',
-        }
-      : undefined,
-  savingsDetails: account.type,
-  owner: !isNil(ownerInfo) && !isNil(ownerInfo?.owner?.name) ? { name: ownerInfo.owner.name } : undefined,
+  bank: {
+    id: bank?.id?.toString() ?? bank?.uuid,
+    name: bank?.name,
+  },
+  // eslint-disable-next-line no-null/no-null
+  coming: account.coming === null ? undefined : account.coming,
+  details: {
+    savings: mapAccountType(account.type) === AccountType.SAVINGS ? {} : undefined,
+    loan:
+      // eslint-disable-next-line no-null/no-null
+      account.loan !== null && account.loan !== undefined
+        ? {
+            amount: account.loan.total_amount,
+            startDate: new Date(mapDate(account.loan.subscription_date)).toISOString(),
+            endDate: new Date(mapDate(account.loan.maturity_date)).toISOString(),
+            duration: account.loan.duration,
+            insuranceLabel: account.loan.insurance_label,
+            payment: account.loan.next_payment_amount,
+            interestRate: account.loan.rate,
+            remainingCapital: account.balance,
+            type: AccountLoanType.OTHER,
+          }
+        : undefined,
+  },
+  aggregator: {
+    id: account.id.toString(),
+  },
 });
 
 /**
@@ -83,26 +88,26 @@ const fromBIToAlgoanAccounts = (
  */
 export const mapBudgetInsightTransactions = async (
   transactions: BudgetInsightTransaction[],
-  accountType: AccountType,
+  account: AnalysisAccount,
   accessToken: string,
   aggregator: AggregatorService,
-): Promise<PostBanksUserTransactionDTO[]> =>
+): Promise<AccountTransactions[]> =>
   Promise.all(
     transactions.map(
-      async (transaction: BudgetInsightTransaction): Promise<PostBanksUserTransactionDTO> => ({
-        amount: transaction.value,
-        simplifiedDescription: transaction.simplified_wording,
+      async (transaction: BudgetInsightTransaction): Promise<AccountTransactions> => ({
+        dates: {
+          debitedAt: transaction.date ? moment.tz(transaction.date, 'Europe/Paris').toISOString() : undefined,
+          bookedAt: transaction.rdate ? moment.tz(transaction.rdate, 'Europe/Paris').toISOString() : undefined,
+        },
         description: transaction.original_wording,
-        banksUserCardId: transaction.card,
-        reference: transaction.id.toString(),
-        userDescription: transaction.wording,
-        category: await getCategory(aggregator, accessToken, transaction.id_category),
-        type: mapTransactionType(transaction.type),
-        date:
-          accountType === AccountType.CREDIT_CARD
-            ? moment.tz(transaction.rdate, 'Europe/Paris').toISOString()
-            : moment.tz(transaction.date, 'Europe/Paris').toISOString(),
-        currency: transaction.original_currency?.id,
+        amount: transaction.value,
+        currency: transaction.original_currency?.id ?? account.currency,
+        isComing: transaction.coming,
+        aggregator: {
+          id: transaction.id.toString(),
+          category: await getCategory(aggregator, accessToken, transaction.id_category),
+          type: mapTransactionType(transaction.type),
+        },
       }),
     ),
   );
@@ -157,7 +162,8 @@ const ACCOUNT_TYPE_MAPPING: AccountTypeMapping = {
  * @param accountType BudgetInsight type
  */
 // eslint-disable-next-line no-null/no-null
-const mapAccountType = (accountType: BiAccountType): AccountType => ACCOUNT_TYPE_MAPPING[accountType];
+const mapAccountType = (accountType: BiAccountType): AccountType =>
+  ACCOUNT_TYPE_MAPPING[accountType] ?? AccountType.UNKNOWN;
 
 /**
  * TransactionTypeMapping
@@ -191,17 +197,17 @@ const mapTransactionType = (transactionType: BiTransactionType): TransactionType
  * UsageType TypeMapping
  */
 interface UsageTypeMapping {
-  [index: string]: UsageType;
+  [index: string]: AccountUsage;
 }
 
 const USAGE_TYPE_MAPPING: UsageTypeMapping = {
-  [BiUsageType.PRIVATE]: UsageType.PERSONAL,
-  [BiUsageType.ASSOCIATION]: UsageType.PROFESSIONAL,
-  [BiUsageType.PROFESSIONAL]: UsageType.PROFESSIONAL,
+  [BiUsageType.PRIVATE]: AccountUsage.PERSONAL,
+  [BiUsageType.ASSOCIATION]: AccountUsage.PROFESSIONAL,
+  [BiUsageType.PROFESSIONAL]: AccountUsage.PROFESSIONAL,
 };
 
 /**
  * mapAccountType map the banksUser type from the budget Insight type
  * @param transactionType BudgetInsight type
  */
-const mapUsageType = (usageType: BiUsageType): UsageType => USAGE_TYPE_MAPPING[usageType] || UsageType.PERSONAL;
+const mapUsageType = (usageType: BiUsageType): AccountUsage => USAGE_TYPE_MAPPING[usageType] ?? AccountUsage.UNKNOWN;
