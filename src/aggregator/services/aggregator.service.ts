@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { IBanksUser } from '@algoan/rest';
 import {
   Connection,
   JWTokenResponse,
@@ -35,12 +34,11 @@ export class AggregatorService {
   /**
    * Create the BI Webview url base on the client and it's callbackUrl
    *
-   * @param banksUser The bank user for which we generate the redirectUrl
    */
-  public generateRedirectUrl(banksUser: IBanksUser, clientConfig?: ClientConfig): string {
+  public generateRedirectUrl(callbackUrl: string, clientConfig?: ClientConfig): string {
     const config: ClientConfig = this.budgetInsightClient.getClientConfig(clientConfig);
 
-    return `${config.baseUrl}auth/webview/fr/connect?client_id=${config.clientId}&redirect_uri=${banksUser.callbackUrl}&response_type=code&state=&types=banks`;
+    return `${config.baseUrl}auth/webview/fr/connect?client_id=${config.clientId}&redirect_uri=${callbackUrl}&response_type=code&state=&types=banks`;
   }
 
   /**

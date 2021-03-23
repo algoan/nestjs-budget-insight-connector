@@ -3,7 +3,7 @@ import { config } from 'node-config-ts';
 import { Subscription, EventName } from '@algoan/rest';
 
 import { AppService } from './app.service';
-import { AlgoanService } from './algoan/algoan.service';
+import { AlgoanService } from './algoan/services/algoan.service';
 
 /**
  * App Controller with a GET / API

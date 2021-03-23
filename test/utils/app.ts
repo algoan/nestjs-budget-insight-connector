@@ -31,7 +31,7 @@ export const buildFakeApp = async (): Promise<INestApplication> => {
       expires_in: 3000,
       refresh_expires_in: 10000,
     },
-    path: '/v1/oauth/token',
+    path: '/v2/oauth/token',
     nbOfCalls: 2,
   });
   const fakeServiceAccounts: nock.Scope = fakeAPI({
@@ -52,10 +52,10 @@ export const buildFakeApp = async (): Promise<INestApplication> => {
     result: [],
     path: `/v1/subscriptions?filter=${JSON.stringify({ eventName: { $in: config.eventList } })}`,
   });
-  const fakePostSubscriptions: nock.Scope = fakeAPI({
+  const fakePostSubscriptionsSA: nock.Scope = fakeAPI({
     baseUrl: fakeAlgoanBaseUrl,
     method: 'post',
-    result: { id: '1', eventName: 'bankreader_link_required', target: 'http://...' },
+    result: { id: '1', secret: 'a', eventName: 'service_account_created', target: 'https://test' },
     path: '/v1/subscriptions',
   });
 
@@ -74,10 +74,10 @@ export const buildFakeApp = async (): Promise<INestApplication> => {
 
   await app.init();
 
-  assert.equal(fakeOAuthServer.isDone(), true);
-  assert.equal(fakeServiceAccounts.isDone(), true);
-  assert.equal(fakeGetSubscriptions.isDone(), true);
-  assert.equal(fakePostSubscriptions.isDone(), true);
+  assert.strictEqual(fakeOAuthServer.isDone(), true);
+  assert.strictEqual(fakeServiceAccounts.isDone(), true);
+  assert.strictEqual(fakeGetSubscriptions.isDone(), true);
+  assert.strictEqual(fakePostSubscriptionsSA.isDone(), true);
 
   return app;
 };
