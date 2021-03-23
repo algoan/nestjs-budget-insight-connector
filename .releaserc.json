@@ -1,4 +1,5 @@
 {
+    "branches": ["v2"],
     "plugins": [
       "@semantic-release/commit-analyzer",
       "@semantic-release/release-notes-generator",
@@ -8,10 +9,10 @@
         "message": "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
       }],
       ["@semantic-release/exec", {
-        "prepareCmd": "docker build -t algoan/nestjs-budget-insight-connector ."
+        "prepareCmd": "docker build -t algoan/nestjs-budget-insight-connector-v2 ."
       }],
       ["semantic-release-docker", {
-        "name": "algoan/nestjs-budget-insight-connector"
+        "name": "algoan/nestjs-budget-insight-connector-v2"
       }]
     ],
     "preset": "angular"

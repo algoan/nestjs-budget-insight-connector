@@ -1,0 +1,86 @@
+# Default values for ..
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+nameOverride: "budgetinsightconnectorv2"
+fullnameOverride: "budgetinsightconnectorv2"
+
+replicaCount: 1
+
+terminationGracePeriodSeconds: 60
+
+image:
+  repository: algoan/nestjs-budget-insight-connector-v2
+  tag: latest
+  pullPolicy: Always
+
+containerPort: 8080
+
+datadog:
+  enabled: true
+
+readinessProbe:
+  httpGet:
+    path: /ping
+    port: 8080
+  initialDelaySeconds: 3
+  periodSeconds: 10
+  timeoutSeconds: 5
+  successThreshold: 1
+  failureThreshold: 10
+
+environmentVariables:
+  PORT: 8080
+  NODE_ENV: production
+  DEPLOYMENT: production.secret
+  DEBUG_LEVEL: info
+
+volumes:
+- csi:
+    driver: secrets-store.csi.k8s.io
+    readOnly: true
+    volumeAttributes:
+      secretProviderClass: budgetinsightconnectorv2-secrets
+  name: budgetinsightconnectorv2-secret
+- name: budgetinsightconnectorv2-config
+  configMap:
+    name: budgetinsightconnectorv2-config
+
+volumeMounts:
+  - name: budgetinsightconnectorv2-secret
+    readOnly: true
+    mountPath: /usr/src/app/config/deployment
+  - name: budgetinsightconnectorv2-config
+    readOnly: true
+    mountPath: /usr/src/app/config/env
+
+service:
+  type: ClusterIP
+  port: 80
+
+ingress:
+  enabled: false
+  annotations: {}
+  hosts:
+    - host: chart-example.local
+      paths: []
+  tls: []
+
+
+nodeSelector: {}
+
+tolerations: []
+
+configmap:
+  data:
+    production.json: |-  
+      {
+      }
+
+
+
+priorityClassName: fourth-class
+
+affinity:
+  preferredDuringScheduling:
+    topologyKey: kubernetes.io/hostname
+

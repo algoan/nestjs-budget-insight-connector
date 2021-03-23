@@ -1,5 +1,5 @@
 {
-  "name": "@algoan/nestjs-budget-insight-connector",
+  "name": "@algoan/nestjs-budget-insight-connector-v2",
   "version": "0.0.1",
   "description": "Budget Insight connector for Algoan",
   "author": "ccoeurderoy",
