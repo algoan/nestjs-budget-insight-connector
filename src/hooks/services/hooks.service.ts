@@ -61,7 +61,7 @@ export class HooksService {
    *
    * Allow to asynchronously handle (with `void`) the webhook and firstly respond 204 to the server
    */
-  private async dispatchAndHandleWebhook(
+  public async dispatchAndHandleWebhook(
     event: EventDTO,
     subscription: Subscription,
     serviceAccount: ServiceAccount,
