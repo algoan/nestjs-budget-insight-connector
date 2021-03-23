@@ -124,27 +124,8 @@ describe('HooksService', () => {
     await hooksService.dispatchAndHandleWebhook(event, mockSubscription, mockServiceAccount);
   });
 
-  it('should handle the aggregator_link_required and do nothing in an unknown mode', async () => {
-    const mockSubscription: Subscription = ({
-      event: (_id: string) => ({
-        update: async ({ status }) => {
-          expect(status).toEqual('ERROR');
-        },
-      }),
-    } as unknown) as Subscription;
-
-    const spyHttpService = jest.spyOn(algoanHttpService, 'authenticate');
-
-    const spyGetCustomer = jest.spyOn(algoanCustomerService, 'getCustomerById').mockReturnValue(
-      Promise.resolve(({
-        id: 'mockCustomerId',
-        aggregationDetails: { mode: 'INVALID', callbackUrl: 'http://fake.url' },
-      } as unknown) as Customer),
-    );
-
-    const spyPatchCustomer = jest
-      .spyOn(algoanCustomerService, 'updateCustomer')
-      .mockReturnValue(Promise.resolve(({} as unknown) as Customer));
+  describe('should handle the aggregator_link_required', () => {
+    let spyHttpService: jest.SpyInstance;
 
     const event: EventDTO = ({
       ...mockEvent,
@@ -155,159 +136,180 @@ describe('HooksService', () => {
       payload: { customerId: 'mockCustomerId' },
     } as unknown) as EventDTO;
 
-    try {
-      await hooksService.dispatchAndHandleWebhook(event, mockSubscription, mockServiceAccount);
-    } catch (err) {
-      expect(err.message).toEqual('Invalid bank connection mode INVALID');
-    }
-
-    expect(spyHttpService).toBeCalled();
-    expect(spyGetCustomer).toBeCalledWith('mockCustomerId');
-    expect(spyPatchCustomer).not.toBeCalled();
-  });
-
-  it('should handle the aggregator_link_required and patch the redirect url in redirect mode', async () => {
-    const mockSubscription: Subscription = ({
-      event: (_id: string) => ({
-        update: async ({ status }) => {
-          expect(status).toEqual('PROCESSED');
-        },
-      }),
-    } as unknown) as Subscription;
-
-    const spyHttpService = jest.spyOn(algoanHttpService, 'authenticate');
-
-    const spyGetCustomer = jest.spyOn(algoanCustomerService, 'getCustomerById').mockReturnValue(
-      Promise.resolve(({
-        id: 'mockCustomerId',
-        aggregationDetails: { mode: AggregationDetailsMode.REDIRECT, callbackUrl: 'http://fake.url' },
-      } as unknown) as Customer),
-    );
-
-    const spyPatchCustomer = jest
-      .spyOn(algoanCustomerService, 'updateCustomer')
-      .mockReturnValue(Promise.resolve(({} as unknown) as Customer));
-
-    const event: EventDTO = ({
-      ...mockEvent,
-      subscription: {
-        ...mockEvent,
-        eventName: EventName.AGGREGATOR_LINK_REQUIRED,
-      },
-      payload: { customerId: 'mockCustomerId' },
-    } as unknown) as EventDTO;
-    await hooksService.dispatchAndHandleWebhook(event, mockSubscription, mockServiceAccount);
-
-    expect(spyHttpService).toBeCalled();
-    expect(spyGetCustomer).toBeCalledWith('mockCustomerId');
-    expect(spyPatchCustomer).toBeCalledWith('mockCustomerId', {
-      aggregationDetails: {
-        aggregatorName: 'BUDGET_INSIGHT',
-        apiUrl: 'http://localhost:4000/',
-        clientId: 'budgetInsightClientId',
-        redirectUrl:
-          'http://localhost:4000/auth/webview/fr/connect?client_id=budgetInsightClientId&redirect_uri=http://fake.url&response_type=code&state=&types=banks',
-      },
+    beforeEach(() => {
+      spyHttpService = jest.spyOn(algoanHttpService, 'authenticate');
     });
-  });
+    it('and do nothing in an unknown mode', async () => {
+      const mockSubscription: Subscription = ({
+        event: (_id: string) => ({
+          update: async ({ status }) => {
+            expect(status).toEqual('ERROR');
+          },
+        }),
+      } as unknown) as Subscription;
 
-  it('should handle the aggregator_link_required and not patch the redirect url in redirect mode when no callback url is provided', async () => {
-    const mockSubscription: Subscription = ({
-      event: (_id: string) => ({
-        update: async ({ status }) => {
-          expect(status).toEqual('ERROR');
-        },
-      }),
-    } as unknown) as Subscription;
+      const spyGetCustomer = jest.spyOn(algoanCustomerService, 'getCustomerById').mockReturnValue(
+        Promise.resolve(({
+          id: 'mockCustomerId',
+        } as unknown) as Customer),
+      );
 
-    const spyHttpService = jest.spyOn(algoanHttpService, 'authenticate');
+      const spyPatchCustomer = jest
+        .spyOn(algoanCustomerService, 'updateCustomer')
+        .mockReturnValue(Promise.resolve(({} as unknown) as Customer));
 
-    const spyGetCustomer = jest.spyOn(algoanCustomerService, 'getCustomerById').mockReturnValue(
-      Promise.resolve(({
-        id: 'mockCustomerId',
-        aggregationDetails: { mode: AggregationDetailsMode.REDIRECT },
-      } as unknown) as Customer),
-    );
+      try {
+        await hooksService.dispatchAndHandleWebhook(event, mockSubscription, mockServiceAccount);
+      } catch (err) {
+        expect(err.message).toEqual('Invalid bank connection mode undefined');
+      }
 
-    const spyPatchCustomer = jest
-      .spyOn(algoanCustomerService, 'updateCustomer')
-      .mockReturnValue(Promise.resolve(({} as unknown) as Customer));
+      expect(spyHttpService).toBeCalled();
+      expect(spyGetCustomer).toBeCalledWith('mockCustomerId');
+      expect(spyPatchCustomer).not.toBeCalled();
+    });
 
-    const event: EventDTO = ({
-      ...mockEvent,
-      subscription: {
-        ...mockEvent,
-        eventName: EventName.AGGREGATOR_LINK_REQUIRED,
-      },
-      payload: { customerId: 'mockCustomerId' },
-    } as unknown) as EventDTO;
+    it('and throw when no customer is found', async () => {
+      const mockSubscription: Subscription = ({
+        event: (_id: string) => ({
+          update: async ({ status }) => {
+            expect(status).toEqual('ERROR');
+          },
+        }),
+      } as unknown) as Subscription;
 
-    try {
+      const spyGetCustomer = jest
+        .spyOn(algoanCustomerService, 'getCustomerById')
+        .mockReturnValue(Promise.resolve((undefined as unknown) as Customer));
+
+      const spyPatchCustomer = jest
+        .spyOn(algoanCustomerService, 'updateCustomer')
+        .mockReturnValue(Promise.resolve(({} as unknown) as Customer));
+
+      try {
+        await hooksService.dispatchAndHandleWebhook(event, mockSubscription, mockServiceAccount);
+      } catch (err) {
+        expect(err.message).toBe('Could not retrieve customer for id "mockCustomerId"');
+      }
+
+      expect(spyHttpService).toBeCalled();
+      expect(spyGetCustomer).toBeCalledWith('mockCustomerId');
+      expect(spyPatchCustomer).not.toBeCalled();
+    });
+
+    it('and patch the redirect url in redirect mode', async () => {
+      const mockSubscription: Subscription = ({
+        event: (_id: string) => ({
+          update: async ({ status }) => {
+            expect(status).toEqual('PROCESSED');
+          },
+        }),
+      } as unknown) as Subscription;
+
+      const spyGetCustomer = jest.spyOn(algoanCustomerService, 'getCustomerById').mockReturnValue(
+        Promise.resolve(({
+          id: 'mockCustomerId',
+          aggregationDetails: { mode: AggregationDetailsMode.REDIRECT, callbackUrl: 'http://fake.url' },
+        } as unknown) as Customer),
+      );
+
+      const spyPatchCustomer = jest
+        .spyOn(algoanCustomerService, 'updateCustomer')
+        .mockReturnValue(Promise.resolve(({} as unknown) as Customer));
+
       await hooksService.dispatchAndHandleWebhook(event, mockSubscription, mockServiceAccount);
-    } catch (err) {
-      expect(err.message).toBe('Customer mockCustomerId has no callback URL');
-    }
 
-    expect(spyHttpService).toBeCalled();
-    expect(spyGetCustomer).toBeCalledWith('mockCustomerId');
-    expect(spyPatchCustomer).not.toBeCalled();
-  });
-
-  it('should handle the aggregator_link_required and patch the customer in api mode', async () => {
-    const mockSubscription: Subscription = ({
-      event: (_id: string) => ({
-        update: async ({ status }) => {
-          expect(status).toEqual('PROCESSED');
+      expect(spyHttpService).toBeCalled();
+      expect(spyGetCustomer).toBeCalledWith('mockCustomerId');
+      expect(spyPatchCustomer).toBeCalledWith('mockCustomerId', {
+        aggregationDetails: {
+          aggregatorName: 'BUDGET_INSIGHT',
+          apiUrl: 'http://localhost:4000/',
+          clientId: 'budgetInsightClientId',
+          redirectUrl:
+            'http://localhost:4000/auth/webview/fr/connect?client_id=budgetInsightClientId&redirect_uri=http://fake.url&response_type=code&state=&types=banks',
         },
-      }),
-    } as unknown) as Subscription;
+      });
+    });
 
-    const spyHttpService = jest.spyOn(algoanHttpService, 'authenticate');
+    it('and not patch the redirect url in redirect mode when no callback url is provided', async () => {
+      const mockSubscription: Subscription = ({
+        event: (_id: string) => ({
+          update: async ({ status }) => {
+            expect(status).toEqual('ERROR');
+          },
+        }),
+      } as unknown) as Subscription;
 
-    const spyGetCustomer = jest.spyOn(algoanCustomerService, 'getCustomerById').mockReturnValue(
-      Promise.resolve(({
-        id: 'mockCustomerId',
-        aggregationDetails: { mode: AggregationDetailsMode.API },
-      } as unknown) as Customer),
-    );
+      const spyGetCustomer = jest.spyOn(algoanCustomerService, 'getCustomerById').mockReturnValue(
+        Promise.resolve(({
+          id: 'mockCustomerId',
+          aggregationDetails: { mode: AggregationDetailsMode.REDIRECT },
+        } as unknown) as Customer),
+      );
 
-    const spyGetJWT = jest
-      .spyOn(aggregatorService, 'getJWToken')
-      .mockReturnValue(Promise.resolve({ jwt_token: 'fake_jwt_token', payload: { domain: 'http://fake.domain.url' } }));
+      const spyPatchCustomer = jest
+        .spyOn(algoanCustomerService, 'updateCustomer')
+        .mockReturnValue(Promise.resolve(({} as unknown) as Customer));
 
-    const spyPatchCustomer = jest
-      .spyOn(algoanCustomerService, 'updateCustomer')
-      .mockReturnValue(Promise.resolve(({} as unknown) as Customer));
+      try {
+        await hooksService.dispatchAndHandleWebhook(event, mockSubscription, mockServiceAccount);
+      } catch (err) {
+        expect(err.message).toBe('Customer mockCustomerId has no callback URL');
+      }
 
-    const event: EventDTO = ({
-      ...mockEvent,
-      subscription: {
-        ...mockEvent,
-        eventName: EventName.AGGREGATOR_LINK_REQUIRED,
-      },
-      payload: { customerId: 'mockCustomerId' },
-    } as unknown) as EventDTO;
+      expect(spyHttpService).toBeCalled();
+      expect(spyGetCustomer).toBeCalledWith('mockCustomerId');
+      expect(spyPatchCustomer).not.toBeCalled();
+    });
 
-    const fakeServiceAccount: ServiceAccount = {
-      ...mockServiceAccount,
-      config: {
-        baseUrl: 'https://fake-base-url.url',
-        clientId: 'fakeClientId',
-      },
-    } as ServiceAccount;
+    it('and patch the customer in api mode', async () => {
+      const mockSubscription: Subscription = ({
+        event: (_id: string) => ({
+          update: async ({ status }) => {
+            expect(status).toEqual('PROCESSED');
+          },
+        }),
+      } as unknown) as Subscription;
 
-    await hooksService.dispatchAndHandleWebhook(event, mockSubscription, fakeServiceAccount);
+      const spyGetCustomer = jest.spyOn(algoanCustomerService, 'getCustomerById').mockReturnValue(
+        Promise.resolve(({
+          id: 'mockCustomerId',
+          aggregationDetails: { mode: AggregationDetailsMode.API },
+        } as unknown) as Customer),
+      );
 
-    expect(spyHttpService).toBeCalled();
-    expect(spyGetCustomer).toBeCalledWith('mockCustomerId');
-    expect(spyGetJWT).toBeCalledWith({ baseUrl: 'https://fake-base-url.url', clientId: 'fakeClientId' });
-    expect(spyPatchCustomer).toBeCalledWith('mockCustomerId', {
-      aggregationDetails: {
-        aggregatorName: 'BUDGET_INSIGHT',
-        apiUrl: 'https://fake-base-url.url',
-        clientId: 'fakeClientId',
-        token: 'fake_jwt_token',
-      },
+      const spyGetJWT = jest
+        .spyOn(aggregatorService, 'getJWToken')
+        .mockReturnValue(
+          Promise.resolve({ jwt_token: 'fake_jwt_token', payload: { domain: 'http://fake.domain.url' } }),
+        );
+
+      const spyPatchCustomer = jest
+        .spyOn(algoanCustomerService, 'updateCustomer')
+        .mockReturnValue(Promise.resolve(({} as unknown) as Customer));
+
+      const fakeServiceAccount: ServiceAccount = {
+        ...mockServiceAccount,
+        config: {
+          baseUrl: 'https://fake-base-url.url',
+          clientId: 'fakeClientId',
+        },
+      } as ServiceAccount;
+
+      await hooksService.dispatchAndHandleWebhook(event, mockSubscription, fakeServiceAccount);
+
+      expect(spyHttpService).toBeCalled();
+      expect(spyGetCustomer).toBeCalledWith('mockCustomerId');
+      expect(spyGetJWT).toBeCalledWith({ baseUrl: 'https://fake-base-url.url', clientId: 'fakeClientId' });
+      expect(spyPatchCustomer).toBeCalledWith('mockCustomerId', {
+        aggregationDetails: {
+          aggregatorName: 'BUDGET_INSIGHT',
+          apiUrl: 'https://fake-base-url.url',
+          clientId: 'fakeClientId',
+          token: 'fake_jwt_token',
+        },
+      });
     });
   });
 });

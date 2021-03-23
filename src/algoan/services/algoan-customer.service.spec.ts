@@ -42,7 +42,7 @@ describe('AlgoanCustomerService', () => {
     it('should get a customer by id', async () => {
       const spy = jest.spyOn(algoanHttpService, 'get').mockReturnValue(Promise.resolve(customerMock));
 
-      const customer: Customer = await algoanCustomerService.getCustomerById(customerMock.id);
+      const customer: Customer | undefined = await algoanCustomerService.getCustomerById(customerMock.id);
 
       expect(spy).toHaveBeenCalledWith(`/v2/customers/${customerMock.id}`);
       expect(customer).toBe(customerMock);
