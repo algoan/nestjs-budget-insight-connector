@@ -304,7 +304,7 @@ describe('HooksService', () => {
     expect(spyPatchCustomer).toBeCalledWith('mockCustomerId', {
       aggregationDetails: {
         aggregatorName: 'BUDGET_INSIGHT',
-        apiUrl: 'http://fake.domain.url',
+        apiUrl: 'https://fake-base-url.url',
         clientId: 'fakeClientId',
         token: 'fake_jwt_token',
       },

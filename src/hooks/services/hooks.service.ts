@@ -131,7 +131,6 @@ export class HooksService {
         /** Get the JWT token */
         const token = await this.aggregator.getJWToken(serviceAccountConfig);
         aggregationDetails.token = token.jwt_token;
-        aggregationDetails.apiUrl = token.payload.domain ?? aggregationDetails.apiUrl;
         break;
 
       default:
