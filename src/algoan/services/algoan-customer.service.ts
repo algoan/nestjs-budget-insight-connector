@@ -15,7 +15,7 @@ export class AlgoanCustomerService {
   /**
    * Get a customer with the given id
    */
-  public async getCustomerById(id: string): Promise<Customer> {
+  public async getCustomerById(id: string): Promise<Customer | undefined> {
     const path: string = `/${this.apiVersion}/customers/${id}`;
 
     return this.algoanHttpService.get<Customer>(path);

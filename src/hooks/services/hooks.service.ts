@@ -104,7 +104,11 @@ export class HooksService {
     this.algoanHttpService.authenticate(serviceAccount.clientId, serviceAccount.clientSecret);
 
     /** Get the customer to retrieve the callbackUrl and connection mode */
-    const customer: Customer = await this.algoanCustomerService.getCustomerById(payload.customerId);
+    const customer: Customer | undefined = await this.algoanCustomerService.getCustomerById(payload.customerId);
+
+    if (customer === undefined) {
+      throw new Error(`Could not retrieve customer for id "${payload.customerId}"`);
+    }
 
     /** Init the aggregationDetails' response  */
     const serviceAccountConfig: ClientConfig = serviceAccount.config as ClientConfig;
@@ -114,7 +118,7 @@ export class HooksService {
       clientId: serviceAccountConfig?.clientId ?? this.config.budgetInsight.clientId,
     };
 
-    switch (customer.aggregationDetails.mode) {
+    switch (customer.aggregationDetails?.mode) {
       case AggregationDetailsMode.REDIRECT:
         /** Generate the redirect url */
         const callbackUrl: string | undefined = customer.aggregationDetails.callbackUrl;
@@ -134,7 +138,7 @@ export class HooksService {
         break;
 
       default:
-        throw new Error(`Invalid bank connection mode ${customer.aggregationDetails.mode}`);
+        throw new Error(`Invalid bank connection mode ${customer.aggregationDetails?.mode}`);
     }
 
     /** Update the customer, sending to Algoan the aggregationDetails */
