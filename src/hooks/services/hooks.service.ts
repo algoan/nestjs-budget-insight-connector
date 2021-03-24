@@ -1,6 +1,7 @@
 import { ServiceAccount, Subscription, EventName, EventStatus, SubscriptionEvent } from '@algoan/rest';
 import { Inject, Injectable, Logger, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import * as delay from 'delay';
+import { isEmpty } from 'lodash';
 import * as moment from 'moment';
 import { Config } from 'node-config-ts';
 
@@ -209,9 +210,9 @@ export class HooksService {
     /**
      * 2. Fetch user active connections
      */
-    let synchronizationCompleted = false;
+    let synchronizationCompleted: boolean = false;
     const timeout = moment().add(this.config.budgetInsight.synchronizationTimeout, 'seconds');
-    let connections: Connection[] | undefined;
+    let connections: Connection[];
 
     // Wait for 5s between each call
     const delayNext = async (): Promise<boolean> => {
@@ -222,10 +223,10 @@ export class HooksService {
 
     do {
       connections = await this.aggregator.getConnections(permanentToken, serviceAccount.config as ClientConfig);
-      synchronizationCompleted = connections.every(
+      synchronizationCompleted = connections?.every(
         // eslint-disable-next-line no-null/no-null
         (connection: Connection) => connection.state === null && connection.last_update !== null,
-      );
+      ) as boolean;
     } while (!synchronizationCompleted && moment().isBefore(timeout) && (await delayNext()));
 
     if (!synchronizationCompleted) {
@@ -236,6 +237,12 @@ export class HooksService {
         timeout: this.config.budgetInsight.synchronizationTimeout,
       });
       throw err;
+    }
+
+    if (isEmpty(connections)) {
+      this.logger.warn('Aggregation process stopped: no active connection found');
+
+      return;
     }
 
     /**

@@ -23,11 +23,11 @@ import {
  */
 export const mapBudgetInsightAccount = (
   accounts: BudgetInsightAccount[],
-  connections: Connection[],
-  connectionsInfo: { [key: string]: BudgetInsightOwner },
+  connections?: Connection[],
+  connectionsInfo?: { [key: string]: BudgetInsightOwner },
 ): AnalysisAccount[] =>
   accounts.map((acc: BudgetInsightAccount) => {
-    const connection: Connection | undefined = connections.find((con) => con.id === acc.id_connection);
+    const connection: Connection | undefined = connections?.find((con) => con.id === acc.id_connection);
     const ownerInfo: BudgetInsightOwner | undefined = get(connectionsInfo, `${connection?.id}`);
 
     return fromBIToAlgoanAccounts(acc, connection?.connector, ownerInfo);
