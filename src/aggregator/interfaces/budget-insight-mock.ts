@@ -16,7 +16,7 @@ export const mockAccount: BudgetInsightAccount = {
   // eslint-disable-next-line id-blacklist
   number: 'mockNumber',
   original_name: 'mockOrginalName',
-  coming: 'mockComing',
+  coming: 0,
   currency: { id: 'id1' },
   balance: 100,
   name: 'mockName',
@@ -43,6 +43,7 @@ export const mockTransaction: BudgetInsightTransaction = {
   type: TransactionType.BANK,
   original_wording: 'mockOriginalWording',
   original_currency: { id: 'USD' },
+  coming: false,
 };
 
 export const mockCategory: BudgetInsightCategory = {

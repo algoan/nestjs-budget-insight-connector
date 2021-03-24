@@ -24,7 +24,7 @@ export interface Account {
   country?: string; // format ISO 3166-1 alpha-2
   coming?: number;
   details?: AccountDetails;
-  aggregator?: AccountAggregator;
+  aggregator: AccountAggregator;
   transactions?: AccountTransactions[];
 }
 
@@ -36,7 +36,7 @@ export interface AccountOwner {
 }
 
 /**
- * Accoun tBank
+ * Account Bank
  */
 export interface AccountBank {
   id?: string;
@@ -50,7 +50,7 @@ export interface AccountBank {
  */
 export interface AccountDetails {
   savings?: AccountDetailsSavings;
-  loans?: AccountDetailsLoans;
+  loan?: AccountDetailsLoans;
 }
 
 /**
