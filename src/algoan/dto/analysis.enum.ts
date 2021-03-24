@@ -14,7 +14,7 @@ export enum AnalysisStatus {
  * Account Type enum
  */
 export enum AccountType {
-  CHECKINGS = 'CHECKING',
+  CHECKING = 'CHECKING',
   SAVINGS = 'SAVINGS',
   LOAN = 'LOAN',
   CREDIT_CARD = 'CREDIT_CARD',

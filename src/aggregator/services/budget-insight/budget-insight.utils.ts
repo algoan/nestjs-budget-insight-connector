@@ -139,12 +139,12 @@ interface AccountTypeMapping {
 }
 
 const ACCOUNT_TYPE_MAPPING: AccountTypeMapping = {
-  [BiAccountType.CHECKING]: AccountType.CHECKINGS,
+  [BiAccountType.CHECKING]: AccountType.CHECKING,
   [BiAccountType.SAVINGS]: AccountType.SAVINGS,
   [BiAccountType.DEPOSIT]: AccountType.SAVINGS,
   [BiAccountType.LOAN]: AccountType.LOAN,
   [BiAccountType.MARKET]: AccountType.SAVINGS,
-  [BiAccountType.JOINT]: AccountType.CHECKINGS,
+  [BiAccountType.JOINT]: AccountType.CHECKING,
   [BiAccountType.CARD]: AccountType.CREDIT_CARD,
   [BiAccountType.LIFE_INSURANCE]: AccountType.SAVINGS,
   [BiAccountType.PEE]: AccountType.SAVINGS,

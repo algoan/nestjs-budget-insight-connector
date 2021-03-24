@@ -36,7 +36,7 @@ export interface AccountOwner {
 }
 
 /**
- * Account tBank
+ * Account Bank
  */
 export interface AccountBank {
   id?: string;
