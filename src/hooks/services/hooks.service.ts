@@ -212,18 +212,21 @@ export class HooksService {
     let synchronizationCompleted = false;
     const timeout = moment().add(this.config.budgetInsight.synchronizationTimeout, 'seconds');
     let connections: Connection[] | undefined;
-    while (!synchronizationCompleted && moment().isBefore(timeout)) {
+
+    // Wait for 5s between each call
+    const delayNext = async (): Promise<boolean> => {
+      await delay(this.config.budgetInsight.waitingTime);
+
+      return true;
+    };
+
+    do {
       connections = await this.aggregator.getConnections(permanentToken, serviceAccount.config as ClientConfig);
-      synchronizationCompleted = true;
-      for (const connection of connections) {
+      synchronizationCompleted = connections.every(
         // eslint-disable-next-line no-null/no-null
-        if (connection.state !== null || connection.last_update === null) {
-          synchronizationCompleted = false;
-          // Wait 5 seconds between each call
-          await delay(this.config.budgetInsight.waitingTime);
-        }
-      }
-    }
+        (connection: Connection) => connection.state === null && connection.last_update !== null,
+      );
+    } while (!synchronizationCompleted && moment().isBefore(timeout) && (await delayNext()));
 
     if (!synchronizationCompleted) {
       const err = new Error('Synchronization failed');
@@ -246,12 +249,6 @@ export class HooksService {
       message: `Budget Insight accounts retrieved for customer "${customer.id}"`,
       accounts,
     });
-
-    if (connections === undefined) {
-      this.logger.warn('Aggregation process stopped: no active connection found');
-
-      return;
-    }
 
     /**
      * 3.b. Get personal information from every connection
