@@ -13,10 +13,8 @@
   },
   "targetUrl": "http://localhost:8080/hooks",
   "eventList": [
-    "service_account_created",
-    "bankreader_link_required",
-    "bankreader_configuration_required",
-    "bankreader_required"
+    "aggregator_link_required",
+    "bank_details_required"
   ],
   "restHooksSecret": "sdvcsqdcsdcsd",
   "port": 8080
