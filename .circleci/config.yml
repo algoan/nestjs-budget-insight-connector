@@ -14,7 +14,7 @@ workflows:
             - test
           filters:
             branches:
-               only: v2
+               only: next
 
 
 
