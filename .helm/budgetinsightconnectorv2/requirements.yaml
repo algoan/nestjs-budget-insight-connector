@@ -1,6 +1,0 @@
-dependencies:
-  - name: base-microservice
-    repository: "@chartmuseum"
-    version: ~0.5.0
-    tags:
-      - template

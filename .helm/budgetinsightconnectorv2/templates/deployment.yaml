@@ -1,5 +1,0 @@
-{{ template "base.deployment" . }}
----
-{{ template "base.SecretProviderClass" . }}
----
-{{ template "base.ServiceAccount" . }}
