@@ -1,6 +1,6 @@
-import { HttpService, Injectable, LoggerService, Logger } from '@nestjs/common';
+import { HttpService, Injectable, Logger } from '@nestjs/common';
 import * as moment from 'moment-timezone';
-import { AxiosResponse } from 'axios';
+import { AxiosResponse, AxiosRequestConfig, AxiosError } from 'axios';
 import { config } from 'node-config-ts';
 import { isNil } from 'lodash';
 import {
@@ -36,7 +36,20 @@ export class BudgetInsightClient {
    */
   private readonly logger: Logger = new Logger(BudgetInsightClient.name);
 
-  constructor(private readonly httpService: HttpService) {}
+  constructor(private readonly httpService: HttpService) {
+    this.httpService.axiosRef.interceptors.request.use(
+      (_config: AxiosRequestConfig): AxiosRequestConfig => {
+        this.logger.log(_config, 'Request to Budget Insights');
+
+        return _config;
+      },
+    );
+    this.httpService.axiosRef.interceptors.response.use(undefined, async (error: AxiosError) => {
+      this.logger.error({ message: error.message, data: error.response?.data }, error.stack, error.message);
+
+      return Promise.reject(error);
+    });
+  }
 
   /**
    * Register the tmpToken
