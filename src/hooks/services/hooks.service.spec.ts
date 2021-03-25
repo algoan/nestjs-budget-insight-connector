@@ -474,7 +474,7 @@ describe('HooksService', () => {
       expect(userInfoSpy).toBeCalledWith('fakeToken', '4', saConfig);
       expect(userInfoSpy).toBeCalledTimes(1);
       expect(transactionSpy).toBeCalledWith('fakeToken', 1, saConfig);
-      expect(categorySpy).toBeCalledWith('fakeToken', mockTransaction.id_category);
+      expect(categorySpy).toBeCalledWith('fakeToken', mockTransaction.id_category, saConfig);
       expect(analysisSpy).toBeCalledWith('mockCustomerId', 'mockAnalysisId', {
         accounts: [
           {
@@ -569,7 +569,7 @@ describe('HooksService', () => {
       expect(userInfoSpy).toBeCalledWith('mockPermToken', '4', saConfig);
       expect(userInfoSpy).toBeCalledTimes(1);
       expect(transactionSpy).toBeCalledWith('mockPermToken', 1, saConfig);
-      expect(categorySpy).toBeCalledWith('mockPermToken', mockTransaction.id_category);
+      expect(categorySpy).toBeCalledWith('mockPermToken', mockTransaction.id_category, saConfig);
       expect(analysisSpy).toBeCalledWith('mockCustomerId', 'mockAnalysisId', {
         accounts: [
           {

@@ -14,6 +14,7 @@ import {
   Connection,
   Bank,
 } from '../../interfaces/budget-insight.interface';
+import { ClientConfig } from '../budget-insight/budget-insight.client';
 
 /**
  * mapBudgetInsightAccount transforms a budgetInsight array of connections into
@@ -91,6 +92,7 @@ export const mapBudgetInsightTransactions = async (
   account: AnalysisAccount,
   accessToken: string,
   aggregator: AggregatorService,
+  clientConfig?: ClientConfig,
 ): Promise<AccountTransactions[]> =>
   Promise.all(
     transactions.map(
@@ -105,7 +107,7 @@ export const mapBudgetInsightTransactions = async (
         isComing: transaction.coming,
         aggregator: {
           id: transaction.id.toString(),
-          category: await getCategory(aggregator, accessToken, transaction.id_category),
+          category: await getCategory(aggregator, accessToken, transaction.id_category, clientConfig),
           type: mapTransactionType(transaction.type),
         },
       }),
@@ -116,9 +118,10 @@ const getCategory = async (
   aggregator: AggregatorService,
   accessToken: string,
   transactionId: number | null,
+  clientConfig?: ClientConfig,
 ): Promise<string> => {
   try {
-    return (await aggregator.getCategory(accessToken, transactionId)).name;
+    return (await aggregator.getCategory(accessToken, transactionId, clientConfig)).name;
   } catch (e) {
     return 'UNKNOWN';
   }

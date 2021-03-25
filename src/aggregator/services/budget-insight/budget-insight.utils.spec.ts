@@ -346,7 +346,7 @@ describe('BudgetInsightUtils', () => {
     );
 
     expect(mappedTransaction).toEqual(expectedTransaction);
-    expect(spy).toBeCalledWith('mockAccessToken', budgetInsightTransactions[0].id_category);
+    expect(spy).toBeCalledWith('mockAccessToken', budgetInsightTransactions[0].id_category, undefined);
   });
 
   it('should map the budget insight transactions to analysis (CREDIT_CARD account)', async () => {
@@ -399,7 +399,7 @@ describe('BudgetInsightUtils', () => {
     );
 
     expect(mappedTransaction).toEqual(expectedTransaction);
-    expect(spy).toBeCalledWith('mockAccessToken', budgetInsightTransactions[0].id_category);
+    expect(spy).toBeCalledWith('mockAccessToken', budgetInsightTransactions[0].id_category, undefined);
   });
 
   it('should map the budget insight transactions to analysis (currency=null)', async () => {
@@ -452,7 +452,7 @@ describe('BudgetInsightUtils', () => {
     );
 
     expect(mappedTransaction).toEqual(expectedTransaction);
-    expect(spy).toBeCalledWith('mockAccessToken', budgetInsightTransactions[0].id_category);
+    expect(spy).toBeCalledWith('mockAccessToken', budgetInsightTransactions[0].id_category, undefined);
   });
 
   it('should map the budget insight transactions to analysis (getCategory=Error)', async () => {
@@ -507,6 +507,6 @@ describe('BudgetInsightUtils', () => {
     );
 
     expect(mappedTransaction).toEqual(expectedTransaction);
-    expect(spy).toBeCalledWith('mockAccessToken', budgetInsightTransactions[0].id_category);
+    expect(spy).toBeCalledWith('mockAccessToken', budgetInsightTransactions[0].id_category, undefined);
   });
 });

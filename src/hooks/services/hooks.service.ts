@@ -292,7 +292,13 @@ export class HooksService {
         message: `Transactions retrieved from BI for analysis "${payload.analysisId}" and account "${account.aggregator.id}"`,
         transactions,
       });
-      account.transactions = await mapBudgetInsightTransactions(transactions, account, permanentToken, this.aggregator);
+      account.transactions = await mapBudgetInsightTransactions(
+        transactions,
+        account,
+        permanentToken,
+        this.aggregator,
+        serviceAccount.config as ClientConfig,
+      );
     }
 
     /**
