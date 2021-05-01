@@ -33,7 +33,7 @@
     "class-validator": "^0.12.2",
     "delay": "^4.4.1",
     "hbs": "^4.1.2",
-    "js-yaml": "^3.14.1",
+    "js-yaml": "^4.1.0",
     "lodash": "^4.17.21",
     "moment": "^2.29.1",
     "moment-timezone": "^0.5.32",
