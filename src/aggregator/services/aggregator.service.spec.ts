@@ -33,6 +33,33 @@ describe('AggregatorService', () => {
     expect(spy).toBeCalledWith(token, undefined);
   });
 
+  it('should create an anonymous user and return its id', async () => {
+    const spy = jest.spyOn(client, 'createUser').mockReturnValue(
+      Promise.resolve({
+        id_user: 1,
+        auth_token: 'mickToken',
+        type: 'permanent',
+        expires_in: 3000,
+      }),
+    );
+
+    expect(await service.createUser()).toBe(1);
+    expect(spy).toBeCalledWith(undefined);
+  });
+
+  it('should get userId from its token', async () => {
+    const spy = jest.spyOn(client, 'getUser').mockReturnValue(
+      Promise.resolve({
+        id: 2,
+        signin: new Date(),
+        platform: 'mockPlatform',
+      }),
+    );
+
+    expect(await service.getUserId('mockToken')).toBe(2);
+    expect(spy).toBeCalledWith('mockToken', undefined);
+  });
+
   it('should get the jwt token', async () => {
     const spy = jest.spyOn(client, 'getUserJWT').mockReturnValue(
       Promise.resolve({
@@ -45,6 +72,20 @@ describe('AggregatorService', () => {
     await service.getJWToken();
 
     expect(spy).toBeCalled();
+  });
+
+  it('should get the jwt token from a user', async () => {
+    const spy = jest.spyOn(client, 'getUserJWT').mockReturnValue(
+      Promise.resolve({
+        jwt_token: 'mockJwt',
+        payload: {
+          domain: 'mockDomain',
+        },
+      }),
+    );
+    await service.getJWToken(undefined, 'mockUserId');
+
+    expect(spy).toBeCalledWith(undefined, 'mockUserId');
   });
 
   it('should create the webviewUrl base on the callbackUrl', () => {

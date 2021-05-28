@@ -4,6 +4,8 @@ import { AxiosResponse, AxiosRequestConfig, AxiosError } from 'axios';
 import { config } from 'node-config-ts';
 import { isNil } from 'lodash';
 import {
+  AnonymousUser,
+  User,
   Connection,
   ConnectionWrapper,
   JWTokenResponse,
@@ -83,10 +85,28 @@ export class BudgetInsightClient {
   }
 
   /**
+   * Create an anonymous user
+   */
+  public async createUser(clientConfig?: ClientConfig): Promise<AnonymousUser> {
+    const biConfig: ClientConfig = this.getClientConfig(clientConfig);
+    const url: string = `${biConfig.baseUrl}auth/init`;
+    this.logger.debug(`Create an anonymous user on ${url}`);
+
+    const resp: AxiosResponse<AnonymousUser> = await this.httpService
+      .post(url, {
+        client_id: biConfig.clientId,
+        client_secret: biConfig.clientSecret,
+      })
+      .toPromise();
+
+    return resp.data;
+  }
+
+  /**
    * Get a user JWT
    * @returns The user JWT token
    */
-  public async getUserJWT(clientConfig?: ClientConfig): Promise<JWTokenResponse> {
+  public async getUserJWT(clientConfig?: ClientConfig, userId?: string): Promise<JWTokenResponse> {
     const biConfig: ClientConfig = this.getClientConfig(clientConfig);
     const url: string = `${biConfig.baseUrl}auth/jwt`;
     this.logger.debug(`Get a user JWT on ${url}`);
@@ -95,8 +115,22 @@ export class BudgetInsightClient {
       .post(url, {
         client_id: biConfig.clientId,
         client_secret: biConfig.clientSecret,
+        id_user: userId,
       })
       .toPromise();
+
+    return resp.data;
+  }
+
+  /**
+   * Get a user
+   * @param permanentToken The user JWT token
+   */
+  public async getUser(permanentToken: string, clientConfig?: ClientConfig): Promise<User> {
+    const baseUrl: string = this.getClientConfig(clientConfig).baseUrl;
+    const url: string = `${baseUrl}/users/me`;
+    this.logger.debug(`Get a user on ${url}`);
+    const resp: AxiosResponse<User> = await this.httpService.get(url, this.setHeaders(permanentToken)).toPromise();
 
     return resp.data;
   }
