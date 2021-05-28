@@ -207,6 +207,38 @@ export class HooksService {
       return;
     }
 
+    const algoanAccounts: Account[] | undefined = await this.fetchAccountsAndTransactions(
+      permanentToken,
+      payload,
+      serviceAccount.config as ClientConfig,
+    );
+    if (algoanAccounts === undefined) {
+      return;
+    }
+
+    /**
+     * Patch the analysis with the accounts and transactions
+     */
+    await this.algoanAnalysisService.updateAnalysis(payload.customerId, payload.analysisId, {
+      accounts: algoanAccounts,
+    });
+    this.logger.debug({
+      message: `Analysis "${payload.analysisId}" patched`,
+    });
+  }
+
+  /**
+   * Fetch accounts, connections info and transactions from BI (and format them to algoan format)
+   * @param permanentToken the token to connect to BI
+   * @param customerId the id of the customer
+   * @param analysisId the id of the analysis to update
+   * @param serviceAccountConfig Config of the concerned Algoan service account attached to the subscription
+   */
+  private async fetchAccountsAndTransactions(
+    permanentToken: string,
+    payload: BanksDetailsRequiredDTO,
+    serviceAccountConfig?: ClientConfig,
+  ): Promise<Account[] | undefined> {
     /**
      * 2. Fetch user active connections
      */
@@ -222,7 +254,7 @@ export class HooksService {
     };
 
     do {
-      connections = await this.aggregator.getConnections(permanentToken, serviceAccount.config as ClientConfig);
+      connections = await this.aggregator.getConnections(permanentToken, serviceAccountConfig);
       synchronizationCompleted = connections?.every(
         // eslint-disable-next-line no-null/no-null
         (connection: Connection) => connection.state === null && connection.last_update !== null,
@@ -233,7 +265,7 @@ export class HooksService {
       const err = new Error('Synchronization failed');
       this.logger.warn({
         message: 'Synchronization failed after a timeout',
-        customerId: customer.id,
+        customerId: payload.customerId,
         timeout: this.config.budgetInsight.synchronizationTimeout,
       });
       throw err;
@@ -242,18 +274,15 @@ export class HooksService {
     if (isEmpty(connections)) {
       this.logger.warn('Aggregation process stopped: no active connection found');
 
-      return;
+      return undefined;
     }
 
     /**
      * 3. Retrieves BI banks accounts and send them to Algoan
      */
-    const accounts: BudgetInsightAccount[] = await this.aggregator.getAccounts(
-      permanentToken,
-      serviceAccount.config as ClientConfig,
-    );
+    const accounts: BudgetInsightAccount[] = await this.aggregator.getAccounts(permanentToken, serviceAccountConfig);
     this.logger.debug({
-      message: `Budget Insight accounts retrieved for customer "${customer.id}"`,
+      message: `Budget Insight accounts retrieved for customer "${payload.customerId}"`,
       accounts,
     });
 
@@ -266,7 +295,7 @@ export class HooksService {
         connectionsInfo[connection.id] = await this.aggregator.getInfo(
           permanentToken,
           `${connection.id}`,
-          serviceAccount.config as ClientConfig,
+          serviceAccountConfig,
         );
       } catch (err) {
         this.logger.warn({
@@ -286,7 +315,7 @@ export class HooksService {
       const transactions: BudgetInsightTransaction[] = await this.aggregator.getTransactions(
         permanentToken,
         Number(account.aggregator.id),
-        serviceAccount.config as ClientConfig,
+        serviceAccountConfig,
       );
       this.logger.debug({
         message: `Transactions retrieved from BI for analysis "${payload.analysisId}" and account "${account.aggregator.id}"`,
@@ -297,19 +326,11 @@ export class HooksService {
         account,
         permanentToken,
         this.aggregator,
-        serviceAccount.config as ClientConfig,
+        serviceAccountConfig,
       );
     }
 
-    /**
-     * Patch the analysis with the accounts and transactions
-     */
-    await this.algoanAnalysisService.updateAnalysis(payload.customerId, payload.analysisId, {
-      accounts: algoanAccounts,
-    });
-    this.logger.debug({
-      message: `Analysis "${payload.analysisId}" patched`,
-    });
+    return algoanAccounts;
   }
 
   /**
