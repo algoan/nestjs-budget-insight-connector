@@ -26,6 +26,7 @@ import { AlgoanHttpService } from '../../algoan/services/algoan-http.service';
 import { AlgoanService } from '../../algoan/services/algoan.service';
 import { CONFIG } from '../../config/config.module';
 import { AggregatorLinkRequiredDTO, BanksDetailsRequiredDTO, EventDTO } from '../dto';
+import { joinUserId } from '../helpers/join-user-id.helpers';
 
 /**
  * Hook service
@@ -194,17 +195,48 @@ export class HooksService {
      * 1. Retrieves an access token from Budget Insight to access to the user accounts
      */
     let permanentToken: string | undefined = customer.aggregationDetails?.token;
-    if (permanentToken === undefined && payload.temporaryCode !== undefined) {
-      permanentToken = await this.aggregator.registerClient(
-        payload.temporaryCode,
-        serviceAccount.config as ClientConfig,
-      );
+    let newUserId: number | undefined;
+    switch (customer.aggregationDetails?.mode) {
+      case AggregationDetailsMode.REDIRECT:
+        if (payload.temporaryCode !== undefined && permanentToken === undefined) {
+          permanentToken = await this.aggregator.registerClient(
+            payload.temporaryCode,
+            serviceAccount.config as ClientConfig,
+          );
+        }
+        if (permanentToken !== undefined) {
+          newUserId = await this.aggregator.getUserId(permanentToken, serviceAccount.config as ClientConfig);
+        }
+        break;
+
+      case AggregationDetailsMode.API:
+        if (customer.aggregationDetails?.userId === undefined) {
+          newUserId = await this.aggregator.createUser(serviceAccount.config as ClientConfig);
+        }
+        break;
+
+      default:
+        this.logger.warn(`Invalid bank connection mode ${customer.aggregationDetails?.mode}`);
+        break;
     }
 
-    if (permanentToken === undefined) {
-      this.logger.warn('Aggregation process stopped: no permanent token generated');
+    // Save the new user id in the customer
+    if (newUserId !== undefined) {
+      const aggregationDetails: AggregationDetails = joinUserId(newUserId, customer.aggregationDetails);
+      await this.algoanCustomerService.updateCustomer(customer.id, { aggregationDetails });
+    }
 
-      return;
+    // Get a JWT Token from the user id if still none defined
+    if (permanentToken === undefined) {
+      const userId: string | undefined =
+        newUserId !== undefined ? `${newUserId}` : customer.aggregationDetails?.userId?.split(',')[0];
+      if (userId !== undefined) {
+        permanentToken = (await this.aggregator.getJWToken(serviceAccount.config as ClientConfig, userId)).jwt_token;
+      } else {
+        this.logger.warn('Aggregation process stopped: no permanent token generated');
+
+        return;
+      }
     }
 
     const algoanAccounts: Account[] | undefined = await this.fetchAccountsAndTransactions(

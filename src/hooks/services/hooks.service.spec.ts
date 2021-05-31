@@ -377,7 +377,7 @@ describe('HooksService', () => {
       expect(spyGetCustomer).toBeCalledWith('mockCustomerId');
     });
 
-    it('without temporaryCode nor token in the customer details', async () => {
+    it('without temporaryCode nor token, nor userId in the customer details', async () => {
       const mockSubscription: Subscription = ({
         event: (_id: string) => ({
           update: async ({ status }) => {
@@ -430,7 +430,9 @@ describe('HooksService', () => {
           aggregationDetails: { mode: AggregationDetailsMode.API, token: 'fakeToken' },
         } as unknown) as Customer),
       );
+      const updateCustomerSpy = jest.spyOn(algoanCustomerService, 'updateCustomer').mockResolvedValue({} as Customer);
 
+      const createUserSpy = jest.spyOn(aggregatorService, 'createUser').mockResolvedValue(10);
       const connectionSpy = jest
         .spyOn(aggregatorService, 'getConnections')
         .mockReturnValueOnce(Promise.resolve([connection]))
@@ -469,12 +471,111 @@ describe('HooksService', () => {
 
       expect(spyHttpService).toBeCalled();
       expect(spyGetCustomer).toBeCalledWith('mockCustomerId');
+      expect(updateCustomerSpy).toBeCalledWith('mockCustomerId', { aggregationDetails: { userId: '10' } });
+      expect(createUserSpy).toBeCalledWith(saConfig);
       expect(connectionSpy).toBeCalledWith('fakeToken', saConfig);
       expect(accountSpy).toBeCalledWith('fakeToken', saConfig);
       expect(userInfoSpy).toBeCalledWith('fakeToken', '4', saConfig);
       expect(userInfoSpy).toBeCalledTimes(1);
       expect(transactionSpy).toBeCalledWith('fakeToken', 1, saConfig);
       expect(categorySpy).toBeCalledWith('fakeToken', mockTransaction.id_category, saConfig);
+      expect(analysisSpy).toBeCalledWith('mockCustomerId', 'mockAnalysisId', {
+        accounts: [
+          {
+            aggregator: { id: '1' },
+            balance: 100,
+            balanceDate: '2011-10-05T14:48:00.000Z',
+            bank: { id: undefined, name: undefined },
+            bic: 'mockBic',
+            coming: 0,
+            currency: 'id1',
+            details: { loan: undefined, savings: undefined },
+            iban: 'mockIban',
+            name: 'mockName',
+            owners: undefined,
+            transactions: [
+              {
+                aggregator: { category: 'mockCategoryName', id: 'mockId', type: 'BANK_FEE' },
+                amount: 50,
+                currency: 'USD',
+                dates: { bookedAt: null, debitedAt: null },
+                description: 'mockOriginalWording',
+                isComing: false,
+              },
+            ],
+            type: 'CHECKING',
+            usage: 'PERSONAL',
+          },
+        ],
+      });
+    });
+
+    it('without token in the customer but a userId in the customer', async () => {
+      const mockSubscription: Subscription = ({
+        event: (_id: string) => ({
+          update: async ({ status }) => {
+            expect(status).toEqual('PROCESSED');
+          },
+        }),
+      } as unknown) as Subscription;
+
+      const spyGetCustomer = jest.spyOn(algoanCustomerService, 'getCustomerById').mockReturnValue(
+        Promise.resolve(({
+          id: 'mockCustomerId',
+          aggregationDetails: { mode: AggregationDetailsMode.API, userId: 'mockUserId' },
+        } as unknown) as Customer),
+      );
+
+      const jwtTokenSpy = jest
+        .spyOn(aggregatorService, 'getJWToken')
+        .mockResolvedValue({ jwt_token: 'mockPermToken', payload: { domain: 'mockDomain' } });
+
+      const connectionSpy = jest
+        .spyOn(aggregatorService, 'getConnections')
+        .mockReturnValueOnce(Promise.resolve([connection]))
+        .mockReturnValueOnce(Promise.resolve([{ ...connection, last_update: 'mockLastUpdate' }]));
+      const accountSpy = jest.spyOn(aggregatorService, 'getAccounts').mockResolvedValue([mockAccount]);
+      const userInfoSpy = jest.spyOn(aggregatorService, 'getInfo').mockResolvedValue({ owner: { name: 'JOHN DOE' } });
+      const transactionSpy = jest.spyOn(aggregatorService, 'getTransactions').mockResolvedValue([mockTransaction]);
+      const categorySpy = jest.spyOn(aggregatorService, 'getCategory').mockResolvedValue(mockCategory);
+      const analysisSpy = jest
+        .spyOn(algoanAnalysisService, 'updateAnalysis')
+        .mockReturnValue(Promise.resolve(({} as unknown) as Analysis));
+
+      const event: EventDTO = ({
+        ...mockEvent,
+        subscription: {
+          ...mockEvent,
+          eventName: EventName.BANK_DETAILS_REQUIRED,
+        },
+        payload: { customerId: 'mockCustomerId', analysisId: 'mockAnalysisId' },
+      } as unknown) as EventDTO;
+
+      const fakeServiceAccount: ServiceAccount = {
+        ...mockServiceAccount,
+        config: {
+          baseUrl: 'https://fake-base-url.url',
+          clientId: 'fakeClientId',
+        },
+      } as ServiceAccount;
+
+      await hooksService.dispatchAndHandleWebhook(event, mockSubscription, fakeServiceAccount);
+
+      const saConfig = {
+        baseUrl: 'https://fake-base-url.url',
+        clientId: 'fakeClientId',
+      };
+
+      expect(spyHttpService).toBeCalled();
+      expect(spyGetCustomer).toBeCalledWith('mockCustomerId');
+      expect(jwtTokenSpy).toBeCalledWith(saConfig, 'mockUserId');
+      expect(connectionSpy).toBeCalledWith('mockPermToken', saConfig);
+      expect(connectionSpy).toBeCalledTimes(2);
+      expect(accountSpy).toBeCalledWith('mockPermToken', saConfig);
+      expect(userInfoSpy).toBeCalledWith('mockPermToken', '4', saConfig);
+      expect(userInfoSpy).toBeCalledTimes(1);
+      expect(transactionSpy).toBeCalledWith('mockPermToken', 1, saConfig);
+      expect(categorySpy).toBeCalledWith('mockPermToken', mockTransaction.id_category, saConfig);
       expect(analysisSpy).toBeCalledWith('mockCustomerId', 'mockAnalysisId', {
         accounts: [
           {
@@ -518,11 +619,13 @@ describe('HooksService', () => {
       const spyGetCustomer = jest.spyOn(algoanCustomerService, 'getCustomerById').mockReturnValue(
         Promise.resolve(({
           id: 'mockCustomerId',
-          aggregationDetails: { mode: AggregationDetailsMode.API },
+          aggregationDetails: { mode: AggregationDetailsMode.REDIRECT },
         } as unknown) as Customer),
       );
+      const updateCustomerSpy = jest.spyOn(algoanCustomerService, 'updateCustomer').mockResolvedValue({} as Customer);
 
       const registerSpy = jest.spyOn(aggregatorService, 'registerClient').mockResolvedValue('mockPermToken');
+      const userIdSpy = jest.spyOn(aggregatorService, 'getUserId').mockResolvedValue(12);
 
       const connectionSpy = jest
         .spyOn(aggregatorService, 'getConnections')
@@ -562,7 +665,9 @@ describe('HooksService', () => {
 
       expect(spyHttpService).toBeCalled();
       expect(spyGetCustomer).toBeCalledWith('mockCustomerId');
+      expect(updateCustomerSpy).toBeCalledWith('mockCustomerId', { aggregationDetails: { userId: '12' } });
       expect(registerSpy).toBeCalledWith(mockEvent.payload.temporaryCode, saConfig);
+      expect(userIdSpy).toBeCalledWith('mockPermToken', saConfig);
       expect(connectionSpy).toBeCalledWith('mockPermToken', saConfig);
       expect(connectionSpy).toBeCalledTimes(2);
       expect(accountSpy).toBeCalledWith('mockPermToken', saConfig);
