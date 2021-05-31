@@ -291,6 +291,8 @@ describe('HooksService', () => {
           Promise.resolve({ jwt_token: 'fake_jwt_token', payload: { domain: 'http://fake.domain.url' } }),
         );
 
+      const createUserSpy = jest.spyOn(aggregatorService, 'createUser').mockResolvedValue(10);
+
       const spyPatchCustomer = jest
         .spyOn(algoanCustomerService, 'updateCustomer')
         .mockReturnValue(Promise.resolve(({} as unknown) as Customer));
@@ -307,6 +309,7 @@ describe('HooksService', () => {
 
       expect(spyHttpService).toBeCalled();
       expect(spyGetCustomer).toBeCalledWith('mockCustomerId');
+      expect(createUserSpy).toBeCalledWith(fakeServiceAccount.config);
       expect(spyGetJWT).toBeCalledWith({ baseUrl: 'https://fake-base-url.url', clientId: 'fakeClientId' });
       expect(spyPatchCustomer).toBeCalledWith('mockCustomerId', {
         aggregationDetails: {
@@ -314,6 +317,7 @@ describe('HooksService', () => {
           apiUrl: 'https://fake-base-url.url',
           clientId: 'fakeClientId',
           token: 'fake_jwt_token',
+          userId: '10',
         },
       });
     });
@@ -430,9 +434,7 @@ describe('HooksService', () => {
           aggregationDetails: { mode: AggregationDetailsMode.API, token: 'fakeToken' },
         } as unknown) as Customer),
       );
-      const updateCustomerSpy = jest.spyOn(algoanCustomerService, 'updateCustomer').mockResolvedValue({} as Customer);
 
-      const createUserSpy = jest.spyOn(aggregatorService, 'createUser').mockResolvedValue(10);
       const connectionSpy = jest
         .spyOn(aggregatorService, 'getConnections')
         .mockReturnValueOnce(Promise.resolve([connection]))
@@ -471,8 +473,6 @@ describe('HooksService', () => {
 
       expect(spyHttpService).toBeCalled();
       expect(spyGetCustomer).toBeCalledWith('mockCustomerId');
-      expect(updateCustomerSpy).toBeCalledWith('mockCustomerId', { aggregationDetails: { userId: '10' } });
-      expect(createUserSpy).toBeCalledWith(saConfig);
       expect(connectionSpy).toBeCalledWith('fakeToken', saConfig);
       expect(accountSpy).toBeCalledWith('fakeToken', saConfig);
       expect(userInfoSpy).toBeCalledWith('fakeToken', '4', saConfig);

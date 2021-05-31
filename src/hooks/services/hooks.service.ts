@@ -156,6 +156,10 @@ export class HooksService {
         /** Get the JWT token */
         const token = await this.aggregator.getJWToken(serviceAccountConfig);
         aggregationDetails.token = token.jwt_token;
+
+        /** Create a user */
+        const newUserId: number = await this.aggregator.createUser(serviceAccount.config as ClientConfig);
+        aggregationDetails.userId = joinUserId(newUserId, customer.aggregationDetails).userId;
         break;
 
       default:
@@ -211,7 +215,7 @@ export class HooksService {
 
       case AggregationDetailsMode.API:
         if (customer.aggregationDetails?.userId === undefined) {
-          newUserId = await this.aggregator.createUser(serviceAccount.config as ClientConfig);
+          this.logger.warn('User Id should be defined in API bank connection mode');
         }
         break;
 
