@@ -246,3 +246,24 @@ export interface BudgetInsightOwner {
     postal_address?: { full_address?: string | null };
   };
 }
+
+/**
+ * Response of the route Create an anonymous user
+ * https://docs.budget-insight.com/reference/authentication#create-an-anonymous-user
+ */
+export interface AnonymousUser {
+  auth_token: string;
+  type: string;
+  id_user: number;
+  expires_in: number | null;
+}
+
+/**
+ * Response of the route Get a user
+ * https://docs.budget-insight.com/reference/users#get-a-user
+ */
+export interface User {
+  id: number;
+  signin: Date | string;
+  platform: string;
+}

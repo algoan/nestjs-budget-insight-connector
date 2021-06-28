@@ -6,6 +6,8 @@ import { AlgoanModule } from '../../../algoan/algoan.module';
 import { AppModule } from '../../../app.module';
 import { BudgetInsightClient } from './budget-insight.client';
 import {
+  AnonymousUser,
+  User,
   AuthTokenResponse,
   JWTokenResponse,
   TransactionWrapper,
@@ -62,6 +64,25 @@ describe('BudgetInsightClient', () => {
     );
   });
 
+  it('create and returns a new anonymous user', async () => {
+    const user: AnonymousUser = {
+      auth_token: 'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9',
+      type: 'permanent',
+      id_user: 4,
+      expires_in: 3600,
+    };
+    result.data = user;
+    const spy = jest.spyOn(httpService, 'post').mockImplementationOnce(() => of(result));
+
+    const jwtResponse = await service.createUser();
+    expect(jwtResponse).toEqual(user);
+
+    expect(spy).toHaveBeenCalledWith('http://localhost:4000/auth/init', {
+      client_id: 'budgetInsightClientId',
+      client_secret: 'budgetInsightClientSecret',
+    });
+  });
+
   it('returns the JWT token', async () => {
     const jwtReturn: JWTokenResponse = {
       jwt_token: 'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9',
@@ -78,6 +99,46 @@ describe('BudgetInsightClient', () => {
     expect(spy).toHaveBeenCalledWith('http://localhost:4000/auth/jwt', {
       client_id: 'budgetInsightClientId',
       client_secret: 'budgetInsightClientSecret',
+    });
+  });
+
+  it('returns the JWT token from a user', async () => {
+    const jwtReturn: JWTokenResponse = {
+      jwt_token: 'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9',
+      payload: {
+        domain: 'algoan-testa-sandbox.biapi.pro',
+      },
+    };
+    result.data = jwtReturn;
+    const spy = jest.spyOn(httpService, 'post').mockImplementationOnce(() => of(result));
+
+    const jwtResponse = await service.getUserJWT(undefined, 'mockUserId');
+    expect(jwtResponse).toEqual(jwtReturn);
+
+    expect(spy).toHaveBeenCalledWith('http://localhost:4000/auth/jwt', {
+      client_id: 'budgetInsightClientId',
+      client_secret: 'budgetInsightClientSecret',
+      id_user: 'mockUserId',
+    });
+  });
+
+  it('returns the user connection information', async () => {
+    const userResponse: User = {
+      id: 3,
+      platform: 'mockPlatform',
+      signin: new Date(),
+    };
+    result.data = userResponse;
+    const token = 'token';
+    const spy = jest.spyOn(httpService, 'get').mockImplementationOnce(() => of(result));
+
+    const user = await service.getUser(token);
+    expect(user).toEqual(userResponse);
+    expect(spy).toHaveBeenCalledWith('http://localhost:4000//users/me', {
+      headers: {
+        ...headers.headers,
+        Authorization: `Bearer ${token}`,
+      },
     });
   });
 

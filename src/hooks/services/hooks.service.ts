@@ -26,6 +26,7 @@ import { AlgoanHttpService } from '../../algoan/services/algoan-http.service';
 import { AlgoanService } from '../../algoan/services/algoan.service';
 import { CONFIG } from '../../config/config.module';
 import { AggregatorLinkRequiredDTO, BanksDetailsRequiredDTO, EventDTO } from '../dto';
+import { joinUserId } from '../helpers/join-user-id.helpers';
 
 /**
  * Hook service
@@ -155,6 +156,10 @@ export class HooksService {
         /** Get the JWT token */
         const token = await this.aggregator.getJWToken(serviceAccountConfig);
         aggregationDetails.token = token.jwt_token;
+
+        /** Create a user */
+        const newUserId: number = await this.aggregator.createUser(serviceAccount.config as ClientConfig);
+        aggregationDetails.userId = joinUserId(newUserId, customer.aggregationDetails).userId;
         break;
 
       default:
@@ -194,19 +199,82 @@ export class HooksService {
      * 1. Retrieves an access token from Budget Insight to access to the user accounts
      */
     let permanentToken: string | undefined = customer.aggregationDetails?.token;
-    if (permanentToken === undefined && payload.temporaryCode !== undefined) {
-      permanentToken = await this.aggregator.registerClient(
-        payload.temporaryCode,
-        serviceAccount.config as ClientConfig,
-      );
+    let newUserId: number | undefined;
+    switch (customer.aggregationDetails?.mode) {
+      case AggregationDetailsMode.REDIRECT:
+        if (payload.temporaryCode !== undefined && permanentToken === undefined) {
+          permanentToken = await this.aggregator.registerClient(
+            payload.temporaryCode,
+            serviceAccount.config as ClientConfig,
+          );
+        }
+        if (permanentToken !== undefined) {
+          newUserId = await this.aggregator.getUserId(permanentToken, serviceAccount.config as ClientConfig);
+        }
+        break;
+
+      case AggregationDetailsMode.API:
+        if (customer.aggregationDetails?.userId === undefined) {
+          this.logger.warn('User Id should be defined in API bank connection mode');
+        }
+        break;
+
+      default:
+        this.logger.warn(`Invalid bank connection mode ${customer.aggregationDetails?.mode}`);
+        break;
     }
 
-    if (permanentToken === undefined) {
-      this.logger.warn('Aggregation process stopped: no permanent token generated');
+    // Save the new user id in the customer
+    if (newUserId !== undefined) {
+      const aggregationDetails: AggregationDetails = joinUserId(newUserId, customer.aggregationDetails);
+      await this.algoanCustomerService.updateCustomer(customer.id, { aggregationDetails });
+    }
 
+    // Get a JWT Token from the user id if still none defined
+    if (permanentToken === undefined) {
+      const userId: string | undefined =
+        newUserId !== undefined ? `${newUserId}` : customer.aggregationDetails?.userId?.split(',')[0];
+      if (userId !== undefined) {
+        permanentToken = (await this.aggregator.getJWToken(serviceAccount.config as ClientConfig, userId)).jwt_token;
+      } else {
+        this.logger.warn('Aggregation process stopped: no permanent token generated');
+
+        return;
+      }
+    }
+
+    const algoanAccounts: Account[] | undefined = await this.fetchAccountsAndTransactions(
+      permanentToken,
+      payload,
+      serviceAccount.config as ClientConfig,
+    );
+    if (algoanAccounts === undefined) {
       return;
     }
 
+    /**
+     * Patch the analysis with the accounts and transactions
+     */
+    await this.algoanAnalysisService.updateAnalysis(payload.customerId, payload.analysisId, {
+      accounts: algoanAccounts,
+    });
+    this.logger.debug({
+      message: `Analysis "${payload.analysisId}" patched`,
+    });
+  }
+
+  /**
+   * Fetch accounts, connections info and transactions from BI (and format them to algoan format)
+   * @param permanentToken the token to connect to BI
+   * @param customerId the id of the customer
+   * @param analysisId the id of the analysis to update
+   * @param serviceAccountConfig Config of the concerned Algoan service account attached to the subscription
+   */
+  private async fetchAccountsAndTransactions(
+    permanentToken: string,
+    payload: BanksDetailsRequiredDTO,
+    serviceAccountConfig?: ClientConfig,
+  ): Promise<Account[] | undefined> {
     /**
      * 2. Fetch user active connections
      */
@@ -222,7 +290,7 @@ export class HooksService {
     };
 
     do {
-      connections = await this.aggregator.getConnections(permanentToken, serviceAccount.config as ClientConfig);
+      connections = await this.aggregator.getConnections(permanentToken, serviceAccountConfig);
       synchronizationCompleted = connections?.every(
         // eslint-disable-next-line no-null/no-null
         (connection: Connection) => connection.state === null && connection.last_update !== null,
@@ -233,7 +301,7 @@ export class HooksService {
       const err = new Error('Synchronization failed');
       this.logger.warn({
         message: 'Synchronization failed after a timeout',
-        customerId: customer.id,
+        customerId: payload.customerId,
         timeout: this.config.budgetInsight.synchronizationTimeout,
       });
       throw err;
@@ -242,18 +310,15 @@ export class HooksService {
     if (isEmpty(connections)) {
       this.logger.warn('Aggregation process stopped: no active connection found');
 
-      return;
+      return undefined;
     }
 
     /**
      * 3. Retrieves BI banks accounts and send them to Algoan
      */
-    const accounts: BudgetInsightAccount[] = await this.aggregator.getAccounts(
-      permanentToken,
-      serviceAccount.config as ClientConfig,
-    );
+    const accounts: BudgetInsightAccount[] = await this.aggregator.getAccounts(permanentToken, serviceAccountConfig);
     this.logger.debug({
-      message: `Budget Insight accounts retrieved for customer "${customer.id}"`,
+      message: `Budget Insight accounts retrieved for customer "${payload.customerId}"`,
       accounts,
     });
 
@@ -266,7 +331,7 @@ export class HooksService {
         connectionsInfo[connection.id] = await this.aggregator.getInfo(
           permanentToken,
           `${connection.id}`,
-          serviceAccount.config as ClientConfig,
+          serviceAccountConfig,
         );
       } catch (err) {
         this.logger.warn({
@@ -286,7 +351,7 @@ export class HooksService {
       const transactions: BudgetInsightTransaction[] = await this.aggregator.getTransactions(
         permanentToken,
         Number(account.aggregator.id),
-        serviceAccount.config as ClientConfig,
+        serviceAccountConfig,
       );
       this.logger.debug({
         message: `Transactions retrieved from BI for analysis "${payload.analysisId}" and account "${account.aggregator.id}"`,
@@ -297,19 +362,11 @@ export class HooksService {
         account,
         permanentToken,
         this.aggregator,
-        serviceAccount.config as ClientConfig,
+        serviceAccountConfig,
       );
     }
 
-    /**
-     * Patch the analysis with the accounts and transactions
-     */
-    await this.algoanAnalysisService.updateAnalysis(payload.customerId, payload.analysisId, {
-      accounts: algoanAccounts,
-    });
-    this.logger.debug({
-      message: `Analysis "${payload.analysisId}" patched`,
-    });
+    return algoanAccounts;
   }
 
   /**

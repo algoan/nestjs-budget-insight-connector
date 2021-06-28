@@ -25,10 +25,24 @@ export class AggregatorService {
   }
 
   /**
+   * Create a user and return its id
+   */
+  public async createUser(clientConfig?: ClientConfig): Promise<number> {
+    return (await this.budgetInsightClient.createUser(clientConfig)).id_user;
+  }
+
+  /**
+   * Get a user id from its token
+   */
+  public async getUserId(token: string, clientConfig?: ClientConfig): Promise<number> {
+    return (await this.budgetInsightClient.getUser(token, clientConfig)).id;
+  }
+
+  /**
    * Get user JSON Web Token
    */
-  public async getJWToken(clientConfig?: ClientConfig): Promise<JWTokenResponse> {
-    return this.budgetInsightClient.getUserJWT(clientConfig);
+  public async getJWToken(clientConfig?: ClientConfig, userId?: string): Promise<JWTokenResponse> {
+    return this.budgetInsightClient.getUserJWT(clientConfig, userId);
   }
 
   /**
