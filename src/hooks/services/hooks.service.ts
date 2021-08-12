@@ -27,6 +27,7 @@ import { AlgoanService } from '../../algoan/services/algoan.service';
 import { CONFIG } from '../../config/config.module';
 import { AggregatorLinkRequiredDTO, BanksDetailsRequiredDTO, EventDTO } from '../dto';
 import { joinUserId } from '../helpers/join-user-id.helpers';
+import { AnalysisStatus, ErrorCodes } from '../../algoan/dto/analysis.enum';
 
 /**
  * Hook service
@@ -185,82 +186,100 @@ export class HooksService {
     serviceAccount: ServiceAccount,
     payload: BanksDetailsRequiredDTO,
   ): Promise<void> {
-    /** Authenticate to algoan */
-    this.algoanHttpService.authenticate(serviceAccount.clientId, serviceAccount.clientSecret);
+    try {
+      /** Authenticate to algoan */
+      this.algoanHttpService.authenticate(serviceAccount.clientId, serviceAccount.clientSecret);
 
-    /** Get the customer to retrieve the callbackUrl and connection mode */
-    const customer: Customer | undefined = await this.algoanCustomerService.getCustomerById(payload.customerId);
+      /** Get the customer to retrieve the callbackUrl and connection mode */
+      const customer: Customer | undefined = await this.algoanCustomerService.getCustomerById(payload.customerId);
 
-    if (customer === undefined) {
-      throw new Error(`Could not retrieve customer for id "${payload.customerId}"`);
-    }
+      if (customer === undefined) {
+        throw new Error(`Could not retrieve customer for id "${payload.customerId}"`);
+      }
 
-    /**
-     * 1. Retrieves an access token from Budget Insight to access to the user accounts
-     */
-    let permanentToken: string | undefined = customer.aggregationDetails?.token;
-    let newUserId: number | undefined;
-    switch (customer.aggregationDetails?.mode) {
-      case AggregationDetailsMode.REDIRECT:
-        if (payload.temporaryCode !== undefined && permanentToken === undefined) {
-          permanentToken = await this.aggregator.registerClient(
-            payload.temporaryCode,
-            serviceAccount.config as ClientConfig,
-          );
+      /**
+       * 1. Retrieves an access token from Budget Insight to access to the user accounts
+       */
+      let permanentToken: string | undefined = customer.aggregationDetails?.token;
+      let newUserId: number | undefined;
+      switch (customer.aggregationDetails?.mode) {
+        case AggregationDetailsMode.REDIRECT:
+          if (payload.temporaryCode !== undefined && permanentToken === undefined) {
+            permanentToken = await this.aggregator.registerClient(
+              payload.temporaryCode,
+              serviceAccount.config as ClientConfig,
+            );
+          }
+          if (permanentToken !== undefined) {
+            newUserId = await this.aggregator.getUserId(permanentToken, serviceAccount.config as ClientConfig);
+          }
+          break;
+
+        case AggregationDetailsMode.API:
+          if (customer.aggregationDetails?.userId === undefined) {
+            this.logger.warn('User Id should be defined in API bank connection mode');
+          }
+          break;
+
+        default:
+          this.logger.warn(`Invalid bank connection mode ${customer.aggregationDetails?.mode}`);
+          break;
+      }
+
+      // Save the new user id in the customer
+      if (newUserId !== undefined) {
+        const aggregationDetails: AggregationDetails = joinUserId(newUserId, customer.aggregationDetails);
+        await this.algoanCustomerService.updateCustomer(customer.id, { aggregationDetails });
+      }
+
+      // Get a JWT Token from the user id if still none defined
+      if (permanentToken === undefined) {
+        const userId: string | undefined =
+          newUserId !== undefined ? `${newUserId}` : customer.aggregationDetails?.userId?.split(',')[0];
+        if (userId !== undefined) {
+          permanentToken = (await this.aggregator.getJWToken(serviceAccount.config as ClientConfig, userId)).jwt_token;
+        } else {
+          this.logger.warn('Aggregation process stopped: no permanent token generated');
+
+          return;
         }
-        if (permanentToken !== undefined) {
-          newUserId = await this.aggregator.getUserId(permanentToken, serviceAccount.config as ClientConfig);
-        }
-        break;
+      }
 
-      case AggregationDetailsMode.API:
-        if (customer.aggregationDetails?.userId === undefined) {
-          this.logger.warn('User Id should be defined in API bank connection mode');
-        }
-        break;
-
-      default:
-        this.logger.warn(`Invalid bank connection mode ${customer.aggregationDetails?.mode}`);
-        break;
-    }
-
-    // Save the new user id in the customer
-    if (newUserId !== undefined) {
-      const aggregationDetails: AggregationDetails = joinUserId(newUserId, customer.aggregationDetails);
-      await this.algoanCustomerService.updateCustomer(customer.id, { aggregationDetails });
-    }
-
-    // Get a JWT Token from the user id if still none defined
-    if (permanentToken === undefined) {
-      const userId: string | undefined =
-        newUserId !== undefined ? `${newUserId}` : customer.aggregationDetails?.userId?.split(',')[0];
-      if (userId !== undefined) {
-        permanentToken = (await this.aggregator.getJWToken(serviceAccount.config as ClientConfig, userId)).jwt_token;
-      } else {
-        this.logger.warn('Aggregation process stopped: no permanent token generated');
-
+      const algoanAccounts: Account[] | undefined = await this.fetchAccountsAndTransactions(
+        permanentToken,
+        payload,
+        serviceAccount.config as ClientConfig,
+      );
+      if (algoanAccounts === undefined) {
         return;
       }
-    }
 
-    const algoanAccounts: Account[] | undefined = await this.fetchAccountsAndTransactions(
-      permanentToken,
-      payload,
-      serviceAccount.config as ClientConfig,
-    );
-    if (algoanAccounts === undefined) {
-      return;
-    }
+      /**
+       * Patch the analysis with the accounts and transactions
+       */
+      await this.algoanAnalysisService.updateAnalysis(payload.customerId, payload.analysisId, {
+        accounts: algoanAccounts,
+      });
+      this.logger.debug({
+        message: `Analysis "${payload.analysisId}" patched`,
+      });
+    } catch (err) {
+      this.logger.debug({
+        message: `An error occured when fetching data from the aggregator for analysis id ${payload.analysisId} and customer id ${payload.customerId}`,
+        error: err,
+      });
 
-    /**
-     * Patch the analysis with the accounts and transactions
-     */
-    await this.algoanAnalysisService.updateAnalysis(payload.customerId, payload.analysisId, {
-      accounts: algoanAccounts,
-    });
-    this.logger.debug({
-      message: `Analysis "${payload.analysisId}" patched`,
-    });
+      // Update the analysis error
+      await this.algoanAnalysisService.updateAnalysis(payload.customerId, payload.analysisId, {
+        status: AnalysisStatus.ERROR,
+        error: {
+          code: ErrorCodes.INTERNAL_ERROR,
+          message: `An error occured when fetching data from the aggregator`,
+        },
+      });
+
+      throw err;
+    }
   }
 
   /**
