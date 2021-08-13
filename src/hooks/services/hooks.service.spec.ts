@@ -19,6 +19,7 @@ import { AlgoanAnalysisService } from '../../algoan/services/algoan-analysis.ser
 import { AlgoanHttpService } from '../../algoan/services/algoan-http.service';
 import { ConfigModule } from '../../config/config.module';
 import { HooksService } from './hooks.service';
+import { AnalysisStatus, ErrorCodes } from '../../algoan/dto/analysis.enum';
 
 describe('HooksService', () => {
   let hooksService: HooksService;
@@ -354,6 +355,10 @@ describe('HooksService', () => {
         .spyOn(algoanCustomerService, 'getCustomerById')
         .mockReturnValue(Promise.resolve((undefined as unknown) as Customer));
 
+      const analysisSpy = jest
+        .spyOn(algoanAnalysisService, 'updateAnalysis')
+        .mockReturnValue(Promise.resolve(({} as unknown) as Analysis));
+
       const event: EventDTO = ({
         ...mockEvent,
         subscription: {
@@ -379,6 +384,13 @@ describe('HooksService', () => {
 
       expect(spyHttpService).toBeCalled();
       expect(spyGetCustomer).toBeCalledWith('mockCustomerId');
+      expect(analysisSpy).toBeCalledWith('mockCustomerId', 'mockAnalysisId', {
+        status: AnalysisStatus.ERROR,
+        error: {
+          code: ErrorCodes.INTERNAL_ERROR,
+          message: `An error occured when fetching data from the aggregator`,
+        },
+      });
     });
 
     it('without temporaryCode nor token, nor userId in the customer details', async () => {
