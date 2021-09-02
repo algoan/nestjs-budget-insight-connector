@@ -1,15 +1,14 @@
-import { ServiceAccount, Subscription, EventName, EventStatus, SubscriptionEvent } from '@algoan/rest';
+import { EventName, EventStatus, ServiceAccount, Subscription, SubscriptionEvent } from '@algoan/rest';
 import { Inject, Injectable, Logger, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import * as delay from 'delay';
 import { isEmpty } from 'lodash';
 import * as moment from 'moment';
 import { Config } from 'node-config-ts';
-
 import {
   BudgetInsightAccount,
+  BudgetInsightOwner,
   BudgetInsightTransaction,
   Connection,
-  BudgetInsightOwner,
 } from '../../aggregator/interfaces/budget-insight.interface';
 import { AggregatorService } from '../../aggregator/services/aggregator.service';
 import { ClientConfig } from '../../aggregator/services/budget-insight/budget-insight.client';
@@ -17,17 +16,17 @@ import {
   mapBudgetInsightAccount,
   mapBudgetInsightTransactions,
 } from '../../aggregator/services/budget-insight/budget-insight.utils';
+import { AnalysisStatus, ErrorCodes } from '../../algoan/dto/analysis.enum';
 import { Account } from '../../algoan/dto/analysis.inputs';
-import { Customer, AggregationDetails } from '../../algoan/dto/customer.objects';
 import { AggregationDetailsAggregatorName, AggregationDetailsMode } from '../../algoan/dto/customer.enums';
-import { AlgoanCustomerService } from '../../algoan/services/algoan-customer.service';
+import { AggregationDetails, Customer } from '../../algoan/dto/customer.objects';
 import { AlgoanAnalysisService } from '../../algoan/services/algoan-analysis.service';
+import { AlgoanCustomerService } from '../../algoan/services/algoan-customer.service';
 import { AlgoanHttpService } from '../../algoan/services/algoan-http.service';
 import { AlgoanService } from '../../algoan/services/algoan.service';
 import { CONFIG } from '../../config/config.module';
 import { AggregatorLinkRequiredDTO, BanksDetailsRequiredDTO, EventDTO } from '../dto';
 import { joinUserId } from '../helpers/join-user-id.helpers';
-import { AnalysisStatus, ErrorCodes } from '../../algoan/dto/analysis.enum';
 
 /**
  * Hook service
@@ -361,7 +360,13 @@ export class HooksService {
       }
     }
 
-    const algoanAccounts: Account[] = mapBudgetInsightAccount(accounts, connections, connectionsInfo);
+    const algoanAccounts: Account[] = mapBudgetInsightAccount(
+      accounts,
+      this.aggregator,
+      connections,
+      connectionsInfo,
+      serviceAccountConfig,
+    );
 
     /**
      * For each account, get and format transactions

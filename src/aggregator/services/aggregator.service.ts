@@ -1,11 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import {
-  Connection,
-  JWTokenResponse,
-  BudgetInsightTransaction,
   BudgetInsightAccount,
   BudgetInsightCategory,
   BudgetInsightOwner,
+  BudgetInsightTransaction,
+  Connection,
+  JWTokenResponse,
 } from '../interfaces/budget-insight.interface';
 import { BudgetInsightClient, ClientConfig } from './budget-insight/budget-insight.client';
 
@@ -103,5 +103,16 @@ export class AggregatorService {
     clientConfig?: ClientConfig,
   ): Promise<BudgetInsightCategory> {
     return this.budgetInsightClient.fetchCategory(token, categoryId, clientConfig);
+  }
+
+  /**
+   * Get the url of the logo of the bank
+   */
+  public getBankLogoUrl(connection?: Connection, clientConfig?: ClientConfig): string | undefined {
+    return connection?.connector?.id === undefined
+      ? undefined
+      : `${this.budgetInsightClient.getClientConfig(clientConfig).baseUrl}logos/${
+          connection.connector.id
+        }-thumbnail@2px.png`;
   }
 }
