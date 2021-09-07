@@ -1,19 +1,19 @@
-import * as moment from 'moment-timezone';
 import { BanksUserTransactionType as TransactionType } from '@algoan/rest';
 import { get, isNil } from 'lodash';
-import { AggregatorService } from '../aggregator.service';
+import * as moment from 'moment-timezone';
 import { AccountLoanType, AccountType, AccountUsage } from '../../../algoan/dto/analysis.enum';
 import { Account as AnalysisAccount, AccountTransactions } from '../../../algoan/dto/analysis.inputs';
 import {
-  BudgetInsightTransaction,
   AccountType as BiAccountType,
+  Bank,
   BankAccountUsage as BiUsageType,
-  TransactionType as BiTransactionType,
   BudgetInsightAccount,
   BudgetInsightOwner,
+  BudgetInsightTransaction,
   Connection,
-  Bank,
+  TransactionType as BiTransactionType,
 } from '../../interfaces/budget-insight.interface';
+import { AggregatorService } from '../aggregator.service';
 import { ClientConfig } from '../budget-insight/budget-insight.client';
 
 /**
@@ -24,14 +24,17 @@ import { ClientConfig } from '../budget-insight/budget-insight.client';
  */
 export const mapBudgetInsightAccount = (
   accounts: BudgetInsightAccount[],
+  aggregator: AggregatorService,
   connections?: Connection[],
   connectionsInfo?: { [key: string]: BudgetInsightOwner },
+  clientConfig?: ClientConfig,
 ): AnalysisAccount[] =>
   accounts.map((acc: BudgetInsightAccount) => {
     const connection: Connection | undefined = connections?.find((con) => con.id === acc.id_connection);
     const ownerInfo: BudgetInsightOwner | undefined = get(connectionsInfo, `${connection?.id}`);
+    const logoUrl: string | undefined = aggregator.getBankLogoUrl(connection, clientConfig);
 
-    return fromBIToAlgoanAccounts(acc, connection?.connector, ownerInfo);
+    return fromBIToAlgoanAccounts(acc, connection?.connector, logoUrl, ownerInfo);
   });
 
 /**
@@ -41,6 +44,7 @@ export const mapBudgetInsightAccount = (
 const fromBIToAlgoanAccounts = (
   account: BudgetInsightAccount,
   bank?: Bank,
+  logoUrl?: string,
   ownerInfo?: BudgetInsightOwner,
 ): AnalysisAccount => ({
   balance: account.balance,
@@ -56,6 +60,7 @@ const fromBIToAlgoanAccounts = (
   bank: {
     id: bank?.id?.toString() ?? bank?.uuid,
     name: bank?.name,
+    logoUrl,
   },
   // eslint-disable-next-line no-null/no-null
   coming: account.coming === null ? undefined : account.coming,

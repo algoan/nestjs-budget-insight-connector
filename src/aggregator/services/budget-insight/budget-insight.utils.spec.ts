@@ -1,24 +1,33 @@
-import { Test, TestingModule } from '@nestjs/testing';
 import { BanksUserTransactionType as TransactionType } from '@algoan/rest';
-import {
-  BudgetInsightAccount,
-  BudgetInsightTransaction,
-  TransactionType as BiTransactionType,
-  AccountType as BIAccountType,
-  BankAccountUsage as BIUsageType,
-  Connection,
-  Bank,
-  BudgetInsightOwner,
-  BudgetInsightCategory,
-} from '../../interfaces/budget-insight.interface';
+import { Test, TestingModule } from '@nestjs/testing';
 import { AccountLoanType, AccountType, AccountUsage } from '../../../algoan/dto/analysis.enum';
 import { Account as AnalysisAccount, AccountTransactions } from '../../../algoan/dto/analysis.inputs';
 import { AggregatorModule } from '../../aggregator.module';
+import { mockCategory } from '../../interfaces/budget-insight-mock';
+import {
+  AccountType as BIAccountType,
+  Bank,
+  BankAccountUsage as BIUsageType,
+  BudgetInsightAccount,
+  BudgetInsightCategory,
+  BudgetInsightOwner,
+  BudgetInsightTransaction,
+  Connection,
+  TransactionType as BiTransactionType,
+} from '../../interfaces/budget-insight.interface';
 import { AggregatorService } from '../aggregator.service';
 import { mapBudgetInsightAccount, mapBudgetInsightTransactions } from './budget-insight.utils';
-import { mockCategory } from '../../interfaces/budget-insight-mock';
 
 describe('BudgetInsightUtils', () => {
+  let aggregatorService: AggregatorService;
+
+  beforeAll(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      imports: [AggregatorModule],
+    }).compile();
+    aggregatorService = module.get<AggregatorService>(AggregatorService);
+  });
+
   it('should map the budget insight connections to analysis', () => {
     const budgetInsightConnections: Connection[] = [
       {
@@ -107,6 +116,7 @@ describe('BudgetInsightUtils', () => {
         bank: {
           id: '2',
           name: 'bank-name',
+          logoUrl: 'http://localhost:4000/logos/2-thumbnail@2px.png',
         },
         coming: 0,
         currency: 'USD',
@@ -140,6 +150,7 @@ describe('BudgetInsightUtils', () => {
         bank: {
           id: '2',
           name: 'bank-name',
+          logoUrl: 'http://localhost:4000/logos/2-thumbnail@2px.png',
         },
         coming: 120,
         currency: 'USD',
@@ -159,9 +170,9 @@ describe('BudgetInsightUtils', () => {
       },
     ];
 
-    expect(mapBudgetInsightAccount(budgetInsightAccounts, budgetInsightConnections, ownerInfo)).toEqual(
-      expectedAccounts,
-    );
+    expect(
+      mapBudgetInsightAccount(budgetInsightAccounts, aggregatorService, budgetInsightConnections, ownerInfo),
+    ).toEqual(expectedAccounts);
   });
 
   it('should map the budget insight connections to analysis (no owner, no connector)', () => {
@@ -291,16 +302,12 @@ describe('BudgetInsightUtils', () => {
       },
     ];
 
-    expect(mapBudgetInsightAccount(budgetInsightAccounts, budgetInsightConnections, ownerInfo)).toEqual(
-      expectedAccounts,
-    );
+    expect(
+      mapBudgetInsightAccount(budgetInsightAccounts, aggregatorService, budgetInsightConnections, ownerInfo),
+    ).toEqual(expectedAccounts);
   });
 
   it('should map the budget insight transactions to analysis', async () => {
-    const module: TestingModule = await Test.createTestingModule({
-      imports: [AggregatorModule],
-    }).compile();
-    const aggregatorService = module.get<AggregatorService>(AggregatorService);
     const budgetInsightTransactions: BudgetInsightTransaction[] = [
       {
         type: BiTransactionType.WITHDRAWAL,
@@ -350,10 +357,6 @@ describe('BudgetInsightUtils', () => {
   });
 
   it('should map the budget insight transactions to analysis (CREDIT_CARD account)', async () => {
-    const module: TestingModule = await Test.createTestingModule({
-      imports: [AggregatorModule],
-    }).compile();
-    const aggregatorService = module.get<AggregatorService>(AggregatorService);
     const budgetInsightTransactions: BudgetInsightTransaction[] = [
       {
         type: BiTransactionType.WITHDRAWAL,
@@ -403,10 +406,6 @@ describe('BudgetInsightUtils', () => {
   });
 
   it('should map the budget insight transactions to analysis (currency=null)', async () => {
-    const module: TestingModule = await Test.createTestingModule({
-      imports: [AggregatorModule],
-    }).compile();
-    const aggregatorService = module.get<AggregatorService>(AggregatorService);
     const budgetInsightTransactions: BudgetInsightTransaction[] = [
       {
         type: BiTransactionType.WITHDRAWAL,
@@ -456,10 +455,6 @@ describe('BudgetInsightUtils', () => {
   });
 
   it('should map the budget insight transactions to analysis (getCategory=Error)', async () => {
-    const module: TestingModule = await Test.createTestingModule({
-      imports: [AggregatorModule],
-    }).compile();
-    const aggregatorService = module.get<AggregatorService>(AggregatorService);
     const budgetInsightTransactions: BudgetInsightTransaction[] = [
       {
         type: ('UNKNOWN' as unknown) as BiTransactionType,
