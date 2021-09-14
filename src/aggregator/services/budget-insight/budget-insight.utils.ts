@@ -74,6 +74,8 @@ const fromBIToAlgoanAccounts = (
       : undefined,
   savingsDetails: account.type,
   owner: !isNil(ownerInfo) && !isNil(ownerInfo?.owner?.name) ? { name: ownerInfo.owner.name } : undefined,
+  // eslint-disable-next-line no-null/no-null, id-blacklist
+  number: account.number === null ? undefined : account.number,
 });
 
 /**
