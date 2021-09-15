@@ -105,7 +105,7 @@ export const mapBudgetInsightTransactions = async (
       async (transaction: BudgetInsightTransaction): Promise<AccountTransactions> => ({
         dates: {
           // The dates are set to 12 UTC because BI does not send real time of the transaction.
-          // In a next version, time can be removed from the algoan's transaction
+          // In a next version of the algoan API, time can be removed from the algoan's transaction
           debitedAt: transaction.date ? moment.tz(transaction.date, 'UTC').hour(defaultHour).toISOString() : undefined,
           bookedAt: transaction.rdate ? moment.tz(transaction.rdate, 'UTC').hour(defaultHour).toISOString() : undefined,
         },
