@@ -335,8 +335,8 @@ describe('BudgetInsightUtils', () => {
           type: TransactionType.ATM,
         },
         dates: {
-          bookedAt: '2010-01-15T15:55:00.000Z',
-          debitedAt: '2010-01-15T15:55:00.000Z',
+          bookedAt: '2010-01-15T12:55:00.000Z',
+          debitedAt: '2010-01-15T12:55:00.000Z',
         },
         description: 'original_wording',
         isComing: false,
@@ -384,8 +384,8 @@ describe('BudgetInsightUtils', () => {
           type: TransactionType.ATM,
         },
         dates: {
-          bookedAt: '2010-02-15T15:55:00.000Z',
-          debitedAt: '2010-01-15T15:55:00.000Z',
+          bookedAt: '2010-02-15T12:55:00.000Z',
+          debitedAt: '2010-01-15T12:55:00.000Z',
         },
         description: 'original_wording',
         currency: 'USD',
@@ -433,8 +433,8 @@ describe('BudgetInsightUtils', () => {
           category: 'mockCategoryName',
         },
         dates: {
-          bookedAt: '2010-02-15T15:55:00.000Z',
-          debitedAt: '2010-01-15T15:55:00.000Z',
+          bookedAt: '2010-02-15T12:55:00.000Z',
+          debitedAt: '2010-01-15T12:55:00.000Z',
         },
         description: 'original_wording',
         isComing: false,

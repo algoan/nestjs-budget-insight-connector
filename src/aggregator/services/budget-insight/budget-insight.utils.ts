@@ -15,6 +15,7 @@ import {
 } from '../../interfaces/budget-insight.interface';
 import { AggregatorService } from '../aggregator.service';
 import { ClientConfig } from '../budget-insight/budget-insight.client';
+const defaultHour: number = 12;
 
 /**
  * mapBudgetInsightAccount transforms a budgetInsight array of connections into
@@ -103,8 +104,10 @@ export const mapBudgetInsightTransactions = async (
     transactions.map(
       async (transaction: BudgetInsightTransaction): Promise<AccountTransactions> => ({
         dates: {
-          debitedAt: transaction.date ? moment.tz(transaction.date, 'UTC').toISOString() : undefined,
-          bookedAt: transaction.rdate ? moment.tz(transaction.rdate, 'UTC').toISOString() : undefined,
+          // The dates are set to 12 UTC because BI does not send real time of the transaction.
+          // In a next version, time can be removed from the algoan's transaction
+          debitedAt: transaction.date ? moment.tz(transaction.date, 'UTC').hour(defaultHour).toISOString() : undefined,
+          bookedAt: transaction.rdate ? moment.tz(transaction.rdate, 'UTC').hour(defaultHour).toISOString() : undefined,
         },
         description: transaction.original_wording,
         amount: transaction.value,
