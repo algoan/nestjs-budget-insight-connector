@@ -103,8 +103,8 @@ export const mapBudgetInsightTransactions = async (
     transactions.map(
       async (transaction: BudgetInsightTransaction): Promise<AccountTransactions> => ({
         dates: {
-          debitedAt: transaction.date ? moment.tz(transaction.date, 'Europe/Paris').toISOString() : undefined,
-          bookedAt: transaction.rdate ? moment.tz(transaction.rdate, 'Europe/Paris').toISOString() : undefined,
+          debitedAt: transaction.date ? moment.tz(transaction.date, 'UTC').toISOString() : undefined,
+          bookedAt: transaction.rdate ? moment.tz(transaction.rdate, 'UTC').toISOString() : undefined,
         },
         description: transaction.original_wording,
         amount: transaction.value,
