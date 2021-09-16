@@ -116,7 +116,7 @@ describe('BudgetInsightUtils', () => {
         bank: {
           id: '2',
           name: 'bank-name',
-          logoUrl: 'http://localhost:4000/logos/2-thumbnail@2px.png',
+          logoUrl: 'http://localhost:4000/logos/example-uuid-thumbnail@2px.png',
         },
         coming: 0,
         currency: 'USD',
@@ -150,7 +150,7 @@ describe('BudgetInsightUtils', () => {
         bank: {
           id: '2',
           name: 'bank-name',
-          logoUrl: 'http://localhost:4000/logos/2-thumbnail@2px.png',
+          logoUrl: 'http://localhost:4000/logos/example-uuid-thumbnail@2px.png',
         },
         coming: 120,
         currency: 'USD',
