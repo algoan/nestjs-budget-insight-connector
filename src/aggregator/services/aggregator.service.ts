@@ -112,7 +112,7 @@ export class AggregatorService {
     return connection?.connector?.id === undefined
       ? undefined
       : `${this.budgetInsightClient.getClientConfig(clientConfig).baseUrl}logos/${
-          connection.connector.id
+          connection.connector.uuid
         }-thumbnail@2px.png`;
   }
 }
