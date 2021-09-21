@@ -66,6 +66,7 @@ describe('AggregatorService', () => {
         jwt_token: 'mockJwt',
         payload: {
           domain: 'mockDomain',
+          id_user: 'userId',
         },
       }),
     );
@@ -80,6 +81,7 @@ describe('AggregatorService', () => {
         jwt_token: 'mockJwt',
         payload: {
           domain: 'mockDomain',
+          id_user: 'userId',
         },
       }),
     );

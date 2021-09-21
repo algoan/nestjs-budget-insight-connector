@@ -191,6 +191,7 @@ export interface JWTokenResponse {
   jwt_token: string;
   payload: {
     domain: string;
+    id_user: string;
   };
 }
 

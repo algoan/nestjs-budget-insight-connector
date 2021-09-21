@@ -154,12 +154,9 @@ export class HooksService {
 
       case AggregationDetailsMode.API:
         /** Get the JWT token */
-        const token = await this.aggregator.getJWToken(serviceAccountConfig);
+        const token = await this.aggregator.getJWToken(serviceAccountConfig, customer.aggregationDetails.userId);
         aggregationDetails.token = token.jwt_token;
-
-        /** Create a user */
-        const newUserId: number = await this.aggregator.createUser(serviceAccount.config as ClientConfig);
-        aggregationDetails.userId = joinUserId(newUserId, customer.aggregationDetails).userId;
+        aggregationDetails.userId = token.payload.id_user;
         break;
 
       default:

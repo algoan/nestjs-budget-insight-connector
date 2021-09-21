@@ -88,6 +88,7 @@ describe('BudgetInsightClient', () => {
       jwt_token: 'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9',
       payload: {
         domain: 'algoan-testa-sandbox.biapi.pro',
+        id_user: 'userId',
       },
     };
     result.data = jwtReturn;
@@ -107,6 +108,7 @@ describe('BudgetInsightClient', () => {
       jwt_token: 'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9',
       payload: {
         domain: 'algoan-testa-sandbox.biapi.pro',
+        id_user: 'userId',
       },
     };
     result.data = jwtReturn;
