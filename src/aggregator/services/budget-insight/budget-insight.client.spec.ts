@@ -97,11 +97,15 @@ describe('BudgetInsightClient', () => {
     const jwtResponse = await service.getUserJWT();
     expect(jwtResponse).toEqual(jwtReturn);
 
-    expect(spy).toHaveBeenCalledWith('http://localhost:4000/auth/jwt', {
-      client_id: 'budgetInsightClientId',
-      client_secret: 'budgetInsightClientSecret',
-      id_user: null,
-    });
+    expect(spy).toHaveBeenCalledWith(
+      'http://localhost:4000/auth/jwt',
+      {
+        client_id: 'budgetInsightClientId',
+        client_secret: 'budgetInsightClientSecret',
+        id_user: null,
+      },
+      { headers: { Accept: 'application/json', 'Content-Type': 'application/json' } },
+    );
   });
 
   it('returns the JWT token from a user', async () => {
@@ -118,11 +122,15 @@ describe('BudgetInsightClient', () => {
     const jwtResponse = await service.getUserJWT(undefined, 'mockUserId');
     expect(jwtResponse).toEqual(jwtReturn);
 
-    expect(spy).toHaveBeenCalledWith('http://localhost:4000/auth/jwt', {
-      client_id: 'budgetInsightClientId',
-      client_secret: 'budgetInsightClientSecret',
-      id_user: 'mockUserId',
-    });
+    expect(spy).toHaveBeenCalledWith(
+      'http://localhost:4000/auth/jwt',
+      {
+        client_id: 'budgetInsightClientId',
+        client_secret: 'budgetInsightClientSecret',
+        id_user: 'mockUserId',
+      },
+      { headers: { Accept: 'application/json', 'Content-Type': 'application/json' } },
+    );
   });
 
   it('returns the user connection information', async () => {
