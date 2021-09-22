@@ -124,6 +124,7 @@ describe('BudgetInsightUtils', () => {
         type: AccountType.LOAN,
         usage: UsageType.PERSONAL,
         owner: { name: 'M. JOHN DOE' },
+        number: 'mockNumber',
       },
       {
         balance: 100,
@@ -141,6 +142,7 @@ describe('BudgetInsightUtils', () => {
         type: AccountType.CREDIT_CARD,
         usage: UsageType.PERSONAL,
         owner: { name: 'M. JOHN DOE' },
+        number: 'mockNumber',
       },
     ];
 
