@@ -115,7 +115,8 @@ export class BudgetInsightClient {
       .post(url, {
         client_id: biConfig.clientId,
         client_secret: biConfig.clientSecret,
-        id_user: userId,
+        // eslint-disable-next-line no-null/no-null
+        id_user: userId ?? null,
       })
       .toPromise();
 

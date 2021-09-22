@@ -100,6 +100,7 @@ describe('BudgetInsightClient', () => {
     expect(spy).toHaveBeenCalledWith('http://localhost:4000/auth/jwt', {
       client_id: 'budgetInsightClientId',
       client_secret: 'budgetInsightClientSecret',
+      id_user: null,
     });
   });
 
