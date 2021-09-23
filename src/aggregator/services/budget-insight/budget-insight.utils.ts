@@ -125,11 +125,14 @@ export const mapBudgetInsightTransactions = async (
 const getCategory = async (
   aggregator: AggregatorService,
   accessToken: string,
-  transactionId: number | null,
+  categoryId: number | null,
   clientConfig?: ClientConfig,
 ): Promise<string> => {
+  if (categoryId === undefinedCategory) {
+    return 'UNKNOWN';
+  }
   try {
-    return (await aggregator.getCategory(accessToken, transactionId, clientConfig)).name;
+    return (await aggregator.getCategory(accessToken, categoryId, clientConfig)).name;
   } catch (e) {
     return 'UNKNOWN';
   }
@@ -222,3 +225,8 @@ const USAGE_TYPE_MAPPING: UsageTypeMapping = {
  * @param transactionType BudgetInsight type
  */
 const mapUsageType = (usageType: BiUsageType): AccountUsage => USAGE_TYPE_MAPPING[usageType] ?? AccountUsage.UNKNOWN;
+
+/**
+ * Undefined category id
+ */
+const undefinedCategory: number = 9998;
