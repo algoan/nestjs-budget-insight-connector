@@ -137,6 +137,7 @@ describe('BudgetInsightUtils', () => {
           savings: undefined,
         },
         name: 'account-name',
+        number: 'mockNumber',
         type: AccountType.LOAN,
         usage: AccountUsage.PERSONAL,
         owners: [{ name: 'M. JOHN DOE' }],
@@ -157,6 +158,7 @@ describe('BudgetInsightUtils', () => {
         bic: 'bic',
         iban: 'iban',
         name: 'account-name',
+        number: 'mockNumber',
         aggregator: {
           id: '9',
         },
@@ -270,6 +272,7 @@ describe('BudgetInsightUtils', () => {
           savings: undefined,
         },
         name: 'account-name',
+        number: 'mockNumber',
         type: AccountType.UNKNOWN,
         usage: AccountUsage.UNKNOWN,
         owners: undefined,
@@ -289,6 +292,7 @@ describe('BudgetInsightUtils', () => {
         bic: 'bic',
         iban: 'iban',
         name: 'account-name',
+        number: 'mockNumber',
         aggregator: {
           id: '9',
         },

@@ -502,6 +502,7 @@ describe('HooksService', () => {
             details: { loan: undefined, savings: undefined },
             iban: 'mockIban',
             name: 'mockName',
+            number: 'mockNumber',
             owners: undefined,
             transactions: [
               {
@@ -599,6 +600,7 @@ describe('HooksService', () => {
             details: { loan: undefined, savings: undefined },
             iban: 'mockIban',
             name: 'mockName',
+            number: 'mockNumber',
             owners: undefined,
             transactions: [
               {
@@ -698,6 +700,7 @@ describe('HooksService', () => {
             details: { loan: undefined, savings: undefined },
             iban: 'mockIban',
             name: 'mockName',
+            number: 'mockNumber',
             owners: undefined,
             transactions: [
               {

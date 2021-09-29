@@ -29,6 +29,8 @@ export interface Account {
   details?: AccountDetails;
   aggregator: AccountAggregator;
   transactions?: AccountTransactions[];
+  // eslint-disable-next-line id-blacklist
+  number?: string;
 }
 
 /**

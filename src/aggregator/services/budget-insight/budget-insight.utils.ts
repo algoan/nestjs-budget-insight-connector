@@ -86,6 +86,8 @@ const fromBIToAlgoanAccounts = (
   aggregator: {
     id: account.id.toString(),
   },
+  // eslint-disable-next-line no-null/no-null, id-blacklist
+  number: account.number === null ? undefined : account.number,
 });
 
 /**
