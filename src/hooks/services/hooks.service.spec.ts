@@ -128,7 +128,7 @@ describe('HooksService', () => {
       payload: { customerId: 'mockCustomerId' },
     } as unknown) as EventDTO;
 
-    await hooksService.dispatchAndHandleWebhook(event, mockSubscription, mockServiceAccount);
+    await hooksService.dispatchAndHandleWebhook(event, mockSubscription, mockServiceAccount, new Date());
   });
 
   describe('should handle the aggregator_link_required', () => {
@@ -166,7 +166,7 @@ describe('HooksService', () => {
         .mockReturnValue(Promise.resolve(({} as unknown) as Customer));
 
       try {
-        await hooksService.dispatchAndHandleWebhook(event, mockSubscription, mockServiceAccount);
+        await hooksService.dispatchAndHandleWebhook(event, mockSubscription, mockServiceAccount, new Date());
       } catch (err) {
         expect(err.message).toEqual('Invalid bank connection mode undefined');
       }
@@ -194,7 +194,7 @@ describe('HooksService', () => {
         .mockReturnValue(Promise.resolve(({} as unknown) as Customer));
 
       try {
-        await hooksService.dispatchAndHandleWebhook(event, mockSubscription, mockServiceAccount);
+        await hooksService.dispatchAndHandleWebhook(event, mockSubscription, mockServiceAccount, new Date());
       } catch (err) {
         expect(err.message).toBe('Could not retrieve customer for id "mockCustomerId"');
       }
@@ -224,7 +224,7 @@ describe('HooksService', () => {
         .spyOn(algoanCustomerService, 'updateCustomer')
         .mockReturnValue(Promise.resolve(({} as unknown) as Customer));
 
-      await hooksService.dispatchAndHandleWebhook(event, mockSubscription, mockServiceAccount);
+      await hooksService.dispatchAndHandleWebhook(event, mockSubscription, mockServiceAccount, new Date());
 
       expect(spyHttpService).toBeCalled();
       expect(spyGetCustomer).toBeCalledWith('mockCustomerId');
@@ -260,7 +260,7 @@ describe('HooksService', () => {
         .mockReturnValue(Promise.resolve(({} as unknown) as Customer));
 
       try {
-        await hooksService.dispatchAndHandleWebhook(event, mockSubscription, mockServiceAccount);
+        await hooksService.dispatchAndHandleWebhook(event, mockSubscription, mockServiceAccount, new Date());
       } catch (err) {
         expect(err.message).toBe('Customer mockCustomerId has no callback URL');
       }
@@ -305,7 +305,7 @@ describe('HooksService', () => {
         },
       } as ServiceAccount;
 
-      await hooksService.dispatchAndHandleWebhook(event, mockSubscription, fakeServiceAccount);
+      await hooksService.dispatchAndHandleWebhook(event, mockSubscription, fakeServiceAccount, new Date());
 
       expect(spyHttpService).toBeCalled();
       expect(spyGetCustomer).toBeCalledWith('mockCustomerId');
@@ -375,7 +375,7 @@ describe('HooksService', () => {
       } as ServiceAccount;
 
       try {
-        await hooksService.dispatchAndHandleWebhook(event, mockSubscription, fakeServiceAccount);
+        await hooksService.dispatchAndHandleWebhook(event, mockSubscription, fakeServiceAccount, new Date());
       } catch (err) {
         expect(err.message).toEqual('Could not retrieve customer for id "mockCustomerId"');
       }
@@ -423,7 +423,7 @@ describe('HooksService', () => {
         },
       } as ServiceAccount;
 
-      await hooksService.dispatchAndHandleWebhook(event, mockSubscription, fakeServiceAccount);
+      await hooksService.dispatchAndHandleWebhook(event, mockSubscription, fakeServiceAccount, new Date());
 
       expect(spyHttpService).toBeCalled();
       expect(spyGetCustomer).toBeCalledWith('mockCustomerId');
@@ -474,7 +474,7 @@ describe('HooksService', () => {
         },
       } as ServiceAccount;
 
-      await hooksService.dispatchAndHandleWebhook(event, mockSubscription, fakeServiceAccount);
+      await hooksService.dispatchAndHandleWebhook(event, mockSubscription, fakeServiceAccount, new Date());
 
       const saConfig = {
         baseUrl: 'https://fake-base-url.url',
@@ -570,7 +570,7 @@ describe('HooksService', () => {
         },
       } as ServiceAccount;
 
-      await hooksService.dispatchAndHandleWebhook(event, mockSubscription, fakeServiceAccount);
+      await hooksService.dispatchAndHandleWebhook(event, mockSubscription, fakeServiceAccount, new Date());
 
       const saConfig = {
         baseUrl: 'https://fake-base-url.url',
@@ -668,7 +668,7 @@ describe('HooksService', () => {
         },
       } as ServiceAccount;
 
-      await hooksService.dispatchAndHandleWebhook(event, mockSubscription, fakeServiceAccount);
+      await hooksService.dispatchAndHandleWebhook(event, mockSubscription, fakeServiceAccount, new Date());
 
       const saConfig = {
         baseUrl: 'https://fake-base-url.url',

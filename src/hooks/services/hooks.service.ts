@@ -53,6 +53,7 @@ export class HooksService {
    * @param signature Signature headers, to check if the call is from Algoan
    */
   public async handleWebhook(event: EventDTO, signature: string): Promise<void> {
+    const aggregationStartDate: Date = new Date();
     const serviceAccount = await this.getServiceAccount(event);
 
     const subscription: Subscription | undefined = serviceAccount.subscriptions.find(
@@ -68,7 +69,7 @@ export class HooksService {
     }
 
     // Handle the event asynchronously
-    void this.dispatchAndHandleWebhook(event, subscription, serviceAccount);
+    void this.dispatchAndHandleWebhook(event, subscription, serviceAccount, aggregationStartDate);
 
     return;
   }
@@ -82,6 +83,7 @@ export class HooksService {
     event: EventDTO,
     subscription: Subscription,
     serviceAccount: ServiceAccount,
+    aggregationStartDate: Date,
   ): Promise<void> {
     // ACKnowledged event
     const se: SubscriptionEvent = subscription.event(event.id);
@@ -93,7 +95,11 @@ export class HooksService {
           break;
 
         case EventName.BANK_DETAILS_REQUIRED:
-          await this.handleBanksDetailsRequiredEvent(serviceAccount, event.payload as BanksDetailsRequiredDTO);
+          await this.handleBanksDetailsRequiredEvent(
+            serviceAccount,
+            event.payload as BanksDetailsRequiredDTO,
+            aggregationStartDate,
+          );
           break;
 
         // The default case should never be reached, as the eventName is already checked in the DTO
@@ -173,7 +179,7 @@ export class HooksService {
   }
 
   /**
-   * Handle the "banks_details_required" event
+   * Handle the "bank_details_required" event
    * Looks for a callback URL and generates a new redirect URL
    * @param serviceAccount Concerned Algoan service account attached to the subscription
    * @param payload Payload sent, containing the customer id
@@ -181,6 +187,7 @@ export class HooksService {
   public async handleBanksDetailsRequiredEvent(
     serviceAccount: ServiceAccount,
     payload: BanksDetailsRequiredDTO,
+    aggregationStartDate: Date,
   ): Promise<void> {
     try {
       /** Authenticate to algoan */
@@ -249,6 +256,14 @@ export class HooksService {
       if (algoanAccounts === undefined) {
         return;
       }
+
+      const aggregationDuration: number = new Date().getTime() - aggregationStartDate.getTime();
+
+      this.logger.log({
+        message: `Account aggregation completed in ${aggregationDuration} milliseconds for Customer ${payload.customerId} and Analysis ${payload.analysisId}.`,
+        aggregator: 'BUDGET_INSIGHT',
+        duration: aggregationDuration,
+      });
 
       /**
        * Patch the analysis with the accounts and transactions
