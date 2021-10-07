@@ -109,10 +109,10 @@ export class AggregatorService {
    * Get the url of the logo of the bank
    */
   public getBankLogoUrl(connection?: Connection, clientConfig?: ClientConfig): string | undefined {
-    return connection?.connector?.id === undefined
+    return connection?.connector?.uuid === undefined
       ? undefined
       : `${this.budgetInsightClient.getClientConfig(clientConfig).baseUrl}logos/${
           connection.connector.uuid
-        }-thumbnail@2px.png`;
+        }-thumbnail@2x.png`;
   }
 }
