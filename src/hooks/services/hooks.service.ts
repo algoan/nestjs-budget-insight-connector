@@ -353,6 +353,29 @@ export class HooksService {
     });
 
     /**
+     * Remove accounts with duplicated number
+     */
+    const accountsWithoutNumber: BudgetInsightAccount[] = accounts.filter(
+      (account: BudgetInsightAccount) => account.number === null,
+    );
+
+    const accountsWithNumber: BudgetInsightAccount[] = accounts.filter(
+      (account: BudgetInsightAccount) => account.number !== null,
+    );
+
+    const accountNumberMap: Record<string, unknown> = {};
+
+    for (const account of accountsWithNumber) {
+      if (accountNumberMap[account.number as string] === undefined) {
+        accountNumberMap[account.number as string] = account;
+      }
+    }
+
+    const uniqueAccounts: BudgetInsightAccount[] = accountsWithoutNumber.concat(
+      Object.values(accountNumberMap) as BudgetInsightAccount[],
+    );
+
+    /**
      * 3.b. Get personal information from every connection
      */
     const connectionsInfo: { [key: string]: BudgetInsightOwner } = {};
@@ -373,7 +396,7 @@ export class HooksService {
     }
 
     const algoanAccounts: Account[] = mapBudgetInsightAccount(
-      accounts,
+      uniqueAccounts,
       this.aggregator,
       connections,
       connectionsInfo,

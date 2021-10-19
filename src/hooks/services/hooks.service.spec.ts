@@ -545,7 +545,7 @@ describe('HooksService', () => {
         .spyOn(aggregatorService, 'getConnections')
         .mockReturnValueOnce(Promise.resolve([connection]))
         .mockReturnValueOnce(Promise.resolve([{ ...connection, last_update: 'mockLastUpdate' }]));
-      const accountSpy = jest.spyOn(aggregatorService, 'getAccounts').mockResolvedValue([mockAccount]);
+      const accountSpy = jest.spyOn(aggregatorService, 'getAccounts').mockResolvedValue([mockAccount, mockAccount]);
       const userInfoSpy = jest.spyOn(aggregatorService, 'getInfo').mockResolvedValue({ owner: { name: 'JOHN DOE' } });
       const transactionSpy = jest.spyOn(aggregatorService, 'getTransactions').mockResolvedValue([mockTransaction]);
       const categorySpy = jest.spyOn(aggregatorService, 'getCategory').mockResolvedValue(mockCategory);
