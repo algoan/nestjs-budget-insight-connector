@@ -54,7 +54,6 @@ const fromBIToAlgoanAccounts = (
   type: mapAccountType(account.type),
   usage: mapUsageType(account.usage),
   owners: !isNil(ownerInfo) && !isNil(ownerInfo?.owner?.name) ? [{ name: ownerInfo.owner.name }] : undefined,
-  // eslint-disable-next-line no-null/no-null
   iban: account.iban === null ? undefined : account.iban,
   bic: account.bic,
   name: account.name,
@@ -63,12 +62,10 @@ const fromBIToAlgoanAccounts = (
     name: bank?.name,
     logoUrl,
   },
-  // eslint-disable-next-line no-null/no-null
   coming: account.coming === null ? undefined : account.coming,
   details: {
     savings: mapAccountType(account.type) === AccountType.SAVINGS ? {} : undefined,
     loan:
-      // eslint-disable-next-line no-null/no-null
       account.loan !== null && account.loan !== undefined
         ? {
             amount: account.loan.total_amount,
