@@ -318,7 +318,7 @@ export class HooksService {
 
       return true;
     };
-
+    const checkConnectionsStartDate: Date = new Date();
     do {
       connections = await this.aggregator.getConnections(permanentToken, serviceAccountConfig);
       synchronizationCompleted = connections?.every(
@@ -326,6 +326,14 @@ export class HooksService {
         (connection: Connection) => connection.state === null && connection.last_update !== null,
       ) as boolean;
     } while (!synchronizationCompleted && moment().isBefore(timeout) && (await delayNext()));
+
+    const checkDuration: number = new Date().getTime() - checkConnectionsStartDate.getTime();
+    this.logger.log({
+      message: `All Budget Insights connections are completed in ${checkDuration} milliseconds for Customer ${payload.customerId} and Analysis ${payload.analysisId}.`,
+      aggregator: 'BUDGET_INSIGHT',
+      duration: checkDuration,
+      connectionsNb: connections.length,
+    });
 
     if (!synchronizationCompleted) {
       const err = new Error('Synchronization failed');
