@@ -10,10 +10,10 @@ A simple connector using [NestJS](https://github.com/nestjs/nest) framework to c
 
 - [About Algoan and Budget Insight](#about-algoan-and-budget-insight)
 - [Goal and Philosophy](#goal-and-philosophy)
+- [Generic behavior](#generic-behavior)
 - [Listened Subscriptions](#listened-subscriptions)
-  - [Bankreader Link Required](#bankreader-link-required)
-  - [Bankreader configuration required](#bankreader-configuration-required)
-  - [Bankreader required](#bankreader-required)
+  - [Aggregator Link Required](#aggregator-link-required)
+  - [Bank details required](#bank-details-required)
 - [Application Structure](#application-structure)
 - [Usage](#usage)
   - [Requirements](#requirements)
@@ -35,45 +35,48 @@ A simple connector using [NestJS](https://github.com/nestjs/nest) framework to c
 
 ## Goal and Philosophy
 
-A [connector](https://developers.algoan.com/public/docs/algoan_documentation/chatbot_and_services/connectors.html) is a web software able to connect a provider to Algoan's API. It subscribes to [REST Hooks](https://developers.algoan.com/public/docs/algoan_documentation/resthooks_and_events/resthooks.html) which lets Algoan notifying the connector when an specific [event](https://developers.algoan.com/public/docs/algoan_documentation/resthooks_and_events/resthooks.html#resthook-events) happens.
+A Connector is a web software able to connect a provider to Algoan's API. It subscribes to [REST Hooks](https://resthooks.org/) which lets Algoan notifying the connector when an specific event happens.
 
-More information on the [official documentation](https://developers.algoan.com).
+![generic_interactions](assets/generic_interactions.png)
 
 The **`nestjs-budget-insight-connector`** focuses on a user bank accounts and transactions. The main goal of this connector is to be able to retrieve a user bank data when Algoan wishes to.
 
+## Generic behavior
+
+![generic_seq_diagram](assets/generic_seq_diagram.png)
+
+Each time a connector starts, it:
+
+- Fetches all project's service accounts thanks to a generic service account
+- Get and create required subscriptions
+
+Once the application starts, each time it receives an event:
+
+- it acknowledges the event by sending a 204 HTTP response code.
+- if the process succeeds or fails, it updates the subscription event status.
+
+You'll find more explanations on the [public documentation](https://docs.algoan.com/#section/Integration/Using-a-connector).
+
 ## Listened Subscriptions
 
-This section describes the process required for each subscriptions for a [Bank reader](https://developers.algoan.com/public/docs/algoan_documentation/resthooks_and_events/event_list.html#bank-reader) connector.
+This section describes the process required for each subscriptions for the Budget Insight connector
 
-### Bankreader Link Required
+### Aggregator Link Required
 
-When the Budget Insight user interface is not hosted by Algoan, the user needs to be redirected to an external page. The diagram below describes interactions:
+When the user is about to connect their bank accounts with Budget Insight, Algoan triggers the connector with an `aggregator_link_required` event. Currently, two modes are available:
 
-![bankreader_link_required](assets/bankreader_link_required.png)
+- `REDIRECT`: the user is redirected to the BI User Interface
+- `API`: Algoan uses BI's API and use a custom User Interface
 
-Refers to the [`bankreader_link_required`](https://developers.algoan.com/public/docs/algoan_documentation/resthooks_and_events/event_list.html#bankreader_link_required) event.
+⚠️ **By default, the redirect mode is activated. If you are interested in the `API` mode, please contact our Customer Success team at support@algoan.com.**
 
-### Bankreader configuration required
+![aggregator_link_required](assets/aggregator_link_required.png)
 
-If the user interface is hosted by Algoan, the connector needs to set the plug-in for the frontend application:
+### Bank details required
 
-![bankreader_config_required](assets/bankreader_configuration_required.png)
+When the user has finished the aggregation process, the connector has to retrieve user's banks accounts and transactions.
 
-Refers to the [`bankreader_configuration_required`](https://developers.algoan.com/public/docs/algoan_documentation/resthooks_and_events/event_list.html#bankreader_configuration_required) event.
-
-### Bankreader required
-
-When the user has finished the aggregation process, the connector has to retrieve user's banks accounts and transactions. The behavior is slightly different is you use the [`bankreader_link_required`](#bankreader-link-required) or the [`bankreader_configuration_required`](#bankreader-configuration-required) event.
-
-Refers to the [`bankreader_required`](https://developers.algoan.com/public/docs/algoan_documentation/resthooks_and_events/event_list.html#bankreader_required) event.
-
-#### Redirection to BI user interface
-
-![bankreader_required](assets/bankreader_required_1.png)
-
-#### Using Algoan's BI plug-in
-
-![bankreader_required_2](assets/bankreader_required_2.png)
+![bank_details_required](assets/bank_details_required.png)
 
 ## Application Structure
 
