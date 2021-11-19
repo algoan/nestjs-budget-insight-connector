@@ -68,6 +68,8 @@ When the user is about to connect their bank accounts with Budget Insight, Algoa
 - `REDIRECT`: the user is redirected to the BI User Interface
 - `API`: Algoan uses BI's API and use a custom User Interface
 
+⚠️ **By default, the redirect mode is activated. If you are interested in the `API` mode, please contact our Customer Success team at support@algoan.com.**
+
 ![aggregator_link_required](assets/aggregator_link_required.png)
 
 ### Bank details required
