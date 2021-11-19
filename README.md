@@ -10,10 +10,10 @@ A simple connector using [NestJS](https://github.com/nestjs/nest) framework to c
 
 - [About Algoan and Budget Insight](#about-algoan-and-budget-insight)
 - [Goal and Philosophy](#goal-and-philosophy)
+- [Generic behavior](#generic-behavior)
 - [Listened Subscriptions](#listened-subscriptions)
-  - [Bankreader Link Required](#bankreader-link-required)
-  - [Bankreader configuration required](#bankreader-configuration-required)
-  - [Bankreader required](#bankreader-required)
+  - [Aggregator Link Required](#aggregator-link-required)
+  - [Bank details required](#bank-details-required)
 - [Application Structure](#application-structure)
 - [Usage](#usage)
   - [Requirements](#requirements)
