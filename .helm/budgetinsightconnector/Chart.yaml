@@ -1,7 +1,7 @@
 apiVersion: v1
 description: A Helm chart for Kubernetes allows you to deploy Algoan's NestJS Budget Insight connector
 name: budgetinsightconnector
-version: 1.0.2
+version: 2.0.0
 home: https://www.algoan.com
 maintainers:
   - name: ALGOAN SAS

@@ -1,44 +1,32 @@
-import {
-  BanksUserAccount,
-  ServiceAccount,
-  Subscription,
-  EventName,
-  BanksUser,
-  BanksUserStatus,
-  PostBanksUserTransactionDTO,
-  PostBanksUserAccountDTO,
-  MultiResourceCreationResponse,
-  BanksUserTransaction,
-  AccountType,
-  EventStatus,
-  SubscriptionEvent,
-} from '@algoan/rest';
-import { UnauthorizedException, Injectable, NotFoundException, Logger } from '@nestjs/common';
-import { config } from 'node-config-ts';
-
-import * as moment from 'moment';
+import { EventName, EventStatus, ServiceAccount, Subscription, SubscriptionEvent } from '@algoan/rest';
+import { Inject, Injectable, Logger, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import * as delay from 'delay';
-import { AlgoanService } from '../../algoan/algoan.service';
-import { EventDTO } from '../dto/event.dto';
-
+import { isEmpty } from 'lodash';
+import * as moment from 'moment';
+import { Config } from 'node-config-ts';
 import {
-  JWTokenResponse,
   BudgetInsightAccount,
+  BudgetInsightOwner,
   BudgetInsightTransaction,
   Connection,
-  BudgetInsightOwner,
 } from '../../aggregator/interfaces/budget-insight.interface';
 import { AggregatorService } from '../../aggregator/services/aggregator.service';
+import { ClientConfig } from '../../aggregator/services/budget-insight/budget-insight.client';
 import {
   mapBudgetInsightAccount,
   mapBudgetInsightTransactions,
 } from '../../aggregator/services/budget-insight/budget-insight.utils';
-import { BankreaderLinkRequiredDTO } from '../dto/bandreader-link-required.dto';
-import { BankreaderConfigurationRequiredDTO } from '../dto/bankreader-configuration-required.dto';
-import { BankreaderRequiredDTO } from '../dto/bankreader-required.dto';
-import { ClientConfig } from '../../aggregator/services/budget-insight/budget-insight.client';
-
-const WAITING_TIME: number = config.budgetInsight.waitingTime;
+import { AnalysisStatus, ErrorCodes } from '../../algoan/dto/analysis.enum';
+import { Account } from '../../algoan/dto/analysis.inputs';
+import { AggregationDetailsAggregatorName, AggregationDetailsMode } from '../../algoan/dto/customer.enums';
+import { AggregationDetails, Customer } from '../../algoan/dto/customer.objects';
+import { AlgoanAnalysisService } from '../../algoan/services/algoan-analysis.service';
+import { AlgoanCustomerService } from '../../algoan/services/algoan-customer.service';
+import { AlgoanHttpService } from '../../algoan/services/algoan-http.service';
+import { AlgoanService } from '../../algoan/services/algoan.service';
+import { CONFIG } from '../../config/config.module';
+import { AggregatorLinkRequiredDTO, BanksDetailsRequiredDTO, EventDTO } from '../dto';
+import { joinUserId } from '../helpers/join-user-id.helpers';
 
 /**
  * Hook service
@@ -50,7 +38,14 @@ export class HooksService {
    */
   private readonly logger: Logger = new Logger(HooksService.name);
 
-  constructor(private readonly algoanService: AlgoanService, private readonly aggregator: AggregatorService) {}
+  constructor(
+    @Inject(CONFIG) private readonly config: Config,
+    private readonly algoanService: AlgoanService,
+    private readonly algoanHttpService: AlgoanHttpService,
+    private readonly algoanCustomerService: AlgoanCustomerService,
+    private readonly algoanAnalysisService: AlgoanAnalysisService,
+    private readonly aggregator: AggregatorService,
+  ) {}
 
   /**
    * Handle Algoan webhooks
@@ -58,6 +53,7 @@ export class HooksService {
    * @param signature Signature headers, to check if the call is from Algoan
    */
   public async handleWebhook(event: EventDTO, signature: string): Promise<void> {
+    const aggregationStartDate: Date = new Date();
     const serviceAccount = await this.getServiceAccount(event);
 
     const subscription: Subscription | undefined = serviceAccount.subscriptions.find(
@@ -73,7 +69,7 @@ export class HooksService {
     }
 
     // Handle the event asynchronously
-    void this.dispatchAndHandleWebhook(event, subscription, serviceAccount);
+    void this.dispatchAndHandleWebhook(event, subscription, serviceAccount, aggregationStartDate);
 
     return;
   }
@@ -83,29 +79,27 @@ export class HooksService {
    *
    * Allow to asynchronously handle (with `void`) the webhook and firstly respond 204 to the server
    */
-  private async dispatchAndHandleWebhook(
+  public async dispatchAndHandleWebhook(
     event: EventDTO,
     subscription: Subscription,
     serviceAccount: ServiceAccount,
+    aggregationStartDate: Date,
   ): Promise<void> {
     // ACKnowledged event
     const se: SubscriptionEvent = subscription.event(event.id);
 
     try {
       switch (event.subscription.eventName) {
-        case EventName.BANKREADER_LINK_REQUIRED:
-          await this.handleBankreaderLinkRequiredEvent(serviceAccount, event.payload as BankreaderLinkRequiredDTO);
+        case EventName.AGGREGATOR_LINK_REQUIRED:
+          await this.handleAggregatorLinkRequiredEvent(serviceAccount, event.payload as AggregatorLinkRequiredDTO);
           break;
 
-        case EventName.BANKREADER_CONFIGURATION_REQUIRED:
-          await this.handleBankreaderConfigurationRequiredEvent(
+        case EventName.BANK_DETAILS_REQUIRED:
+          await this.handleBanksDetailsRequiredEvent(
             serviceAccount,
-            event.payload as BankreaderConfigurationRequiredDTO,
+            event.payload as BanksDetailsRequiredDTO,
+            aggregationStartDate,
           );
-          break;
-
-        case EventName.BANKREADER_REQUIRED:
-          await this.handleBankReaderRequiredEvent(serviceAccount, event.payload as BankreaderRequiredDTO);
           break;
 
         // The default case should never be reached, as the eventName is already checked in the DTO
@@ -124,124 +118,263 @@ export class HooksService {
   }
 
   /**
-   * Handle the "bankreader_link_required" event
+   * Handle the "aggregator_link_required" event
    * Looks for a callback URL and generates a new redirect URL
    * @param serviceAccount Concerned Algoan service account attached to the subscription
-   * @param payload Payload sent, containing the Banks User id
+   * @param payload Payload sent, containing the customer id
    */
-  public async handleBankreaderLinkRequiredEvent(
+  public async handleAggregatorLinkRequiredEvent(
     serviceAccount: ServiceAccount,
-    payload: BankreaderLinkRequiredDTO,
+    payload: AggregatorLinkRequiredDTO,
   ): Promise<void> {
-    /**
-     * 1. GET the banks user to retrieve the callback URL
-     */
-    const banksUser: BanksUser = await serviceAccount.getBanksUserById(payload.banksUserId);
-    this.logger.debug(`Found BanksUser with id ${banksUser.id} and callback ${banksUser.callbackUrl}`);
+    /** Authenticate to algoan */
+    this.algoanHttpService.authenticate(serviceAccount.clientId, serviceAccount.clientSecret);
 
-    if (banksUser.callbackUrl === undefined) {
-      throw new NotFoundException(`BanksUser ${banksUser.id} has no callback URL`);
+    /** Get the customer to retrieve the callbackUrl and connection mode */
+    const customer: Customer | undefined = await this.algoanCustomerService.getCustomerById(payload.customerId);
+
+    if (customer === undefined) {
+      throw new Error(`Could not retrieve customer for id "${payload.customerId}"`);
     }
 
-    /**
-     * 2. Generates a redirect URL
-     */
-    const redirectUrl: string = this.aggregator.generateRedirectUrl(banksUser, serviceAccount.config as ClientConfig);
+    /** Init the aggregationDetails' response  */
+    const serviceAccountConfig: ClientConfig = serviceAccount.config as ClientConfig;
+    const aggregationDetails: AggregationDetails = {
+      aggregatorName: AggregationDetailsAggregatorName.BUDGET_INSIGHT,
+      apiUrl: serviceAccountConfig?.baseUrl ?? this.config.budgetInsight.url,
+      clientId: serviceAccountConfig?.clientId ?? this.config.budgetInsight.clientId,
+    };
 
-    /**
-     * 3. Update the Banks-User, sending to Algoan the generated URL
-     */
-    await banksUser.update({
-      redirectUrl,
-    });
+    switch (customer.aggregationDetails?.mode) {
+      case AggregationDetailsMode.REDIRECT:
+        /** Generate the redirect url */
+        const callbackUrl: string | undefined = customer.aggregationDetails.callbackUrl;
+        this.logger.debug(`Found customer with id ${customer.id} and callbackUrl ${callbackUrl}`);
 
-    this.logger.debug(`Added redirect url ${banksUser.redirectUrl} to banksUser ${banksUser.id}`);
+        if (callbackUrl === undefined) {
+          throw new NotFoundException(`Customer ${customer.id} has no callback URL`);
+        }
+
+        aggregationDetails.redirectUrl = this.aggregator.generateRedirectUrl(callbackUrl, serviceAccountConfig);
+        break;
+
+      case AggregationDetailsMode.API:
+        /** Get the JWT token */
+        const token = await this.aggregator.getJWToken(serviceAccountConfig, customer.aggregationDetails.userId);
+        aggregationDetails.token = token.jwt_token;
+        aggregationDetails.userId = `${token.payload.id_user}`;
+        break;
+
+      default:
+        throw new Error(`Invalid bank connection mode ${customer.aggregationDetails?.mode}`);
+    }
+
+    /** Update the customer, sending to Algoan the aggregationDetails */
+    await this.algoanCustomerService.updateCustomer(customer.id, { aggregationDetails });
+    this.logger.debug(
+      `Added aggregation details to customer ${customer.id} for mode ${customer.aggregationDetails.mode}`,
+    );
 
     return;
   }
 
   /**
-   * Handle the "bankreader_required" subscription
-   * It triggers the banks accounts and transactions synchronization
+   * Handle the "bank_details_required" event
+   * Looks for a callback URL and generates a new redirect URL
    * @param serviceAccount Concerned Algoan service account attached to the subscription
-   * @param payload Payload sent, containing the Banks User id
+   * @param payload Payload sent, containing the customer id
    */
-  public async handleBankReaderRequiredEvent(
+  public async handleBanksDetailsRequiredEvent(
     serviceAccount: ServiceAccount,
-    payload: BankreaderRequiredDTO,
+    payload: BanksDetailsRequiredDTO,
+    aggregationStartDate: Date,
   ): Promise<void> {
-    const banksUser: BanksUser = await serviceAccount.getBanksUserById(payload.banksUserId);
+    try {
+      /** Authenticate to algoan */
+      this.algoanHttpService.authenticate(serviceAccount.clientId, serviceAccount.clientSecret);
 
-    /**
-     * 0. Notify Algoan that the synchronization is starting
-     */
-    await banksUser.update({
-      status: BanksUserStatus.SYNCHRONIZING,
-    });
+      /** Get the customer to retrieve the callbackUrl and connection mode */
+      const customer: Customer | undefined = await this.algoanCustomerService.getCustomerById(payload.customerId);
 
-    /**
-     * 1. Retrieves an access token from Budget Insight to access to the user accounts
-     */
-    let permanentToken: string | undefined = banksUser.plugIn?.budgetInsightBank?.token;
+      if (customer === undefined) {
+        throw new Error(`Could not retrieve customer for id "${payload.customerId}"`);
+      }
 
-    if (permanentToken === undefined && payload.temporaryCode !== undefined) {
-      permanentToken = await this.aggregator.registerClient(
-        payload.temporaryCode,
+      /**
+       * 1. Retrieves an access token from Budget Insight to access to the user accounts
+       */
+      let permanentToken: string | undefined = customer.aggregationDetails?.token;
+      let newUserId: number | undefined;
+      switch (customer.aggregationDetails?.mode) {
+        case AggregationDetailsMode.REDIRECT:
+          if (payload.temporaryCode !== undefined && permanentToken === undefined) {
+            permanentToken = await this.aggregator.registerClient(
+              payload.temporaryCode,
+              serviceAccount.config as ClientConfig,
+            );
+          }
+          if (permanentToken !== undefined) {
+            newUserId = await this.aggregator.getUserId(permanentToken, serviceAccount.config as ClientConfig);
+          }
+          break;
+
+        case AggregationDetailsMode.API:
+          if (customer.aggregationDetails?.userId === undefined) {
+            this.logger.warn('User Id should be defined in API bank connection mode');
+          }
+          break;
+
+        default:
+          this.logger.warn(`Invalid bank connection mode ${customer.aggregationDetails?.mode}`);
+          break;
+      }
+
+      // Save the new user id in the customer
+      if (newUserId !== undefined) {
+        const aggregationDetails: AggregationDetails = joinUserId(newUserId, customer.aggregationDetails);
+        await this.algoanCustomerService.updateCustomer(customer.id, { aggregationDetails });
+      }
+
+      // Get a JWT Token from the user id if still none defined
+      if (permanentToken === undefined) {
+        const userId: string | undefined =
+          newUserId !== undefined ? `${newUserId}` : customer.aggregationDetails?.userId?.split(',')[0];
+        if (userId !== undefined) {
+          permanentToken = (await this.aggregator.getJWToken(serviceAccount.config as ClientConfig, userId)).jwt_token;
+        } else {
+          this.logger.warn('Aggregation process stopped: no permanent token generated');
+
+          return;
+        }
+      }
+
+      const algoanAccounts: Account[] | undefined = await this.fetchAccountsAndTransactions(
+        permanentToken,
+        payload,
         serviceAccount.config as ClientConfig,
       );
+      if (algoanAccounts === undefined) {
+        return;
+      }
+
+      const aggregationDuration: number = new Date().getTime() - aggregationStartDate.getTime();
+
+      this.logger.log({
+        message: `Account aggregation completed in ${aggregationDuration} milliseconds for Customer ${payload.customerId} and Analysis ${payload.analysisId}.`,
+        aggregator: 'BUDGET_INSIGHT',
+        duration: aggregationDuration,
+      });
+
+      /**
+       * Patch the analysis with the accounts and transactions
+       */
+      await this.algoanAnalysisService.updateAnalysis(payload.customerId, payload.analysisId, {
+        accounts: algoanAccounts,
+      });
+      this.logger.debug({
+        message: `Analysis "${payload.analysisId}" patched`,
+      });
+    } catch (err) {
+      this.logger.debug({
+        message: `An error occured when fetching data from the aggregator for analysis id ${payload.analysisId} and customer id ${payload.customerId}`,
+        error: err,
+      });
+
+      // Update the analysis error
+      await this.algoanAnalysisService.updateAnalysis(payload.customerId, payload.analysisId, {
+        status: AnalysisStatus.ERROR,
+        error: {
+          code: ErrorCodes.INTERNAL_ERROR,
+          message: `An error occured when fetching data from the aggregator`,
+        },
+      });
+
+      throw err;
     }
+  }
 
-    if (permanentToken === undefined) {
-      this.logger.warn('Aggregation process stopped: no permanent token generated');
-
-      return;
-    }
-
+  /**
+   * Fetch accounts, connections info and transactions from BI (and format them to algoan format)
+   * @param permanentToken the token to connect to BI
+   * @param customerId the id of the customer
+   * @param analysisId the id of the analysis to update
+   * @param serviceAccountConfig Config of the concerned Algoan service account attached to the subscription
+   */
+  private async fetchAccountsAndTransactions(
+    permanentToken: string,
+    payload: BanksDetailsRequiredDTO,
+    serviceAccountConfig?: ClientConfig,
+  ): Promise<Account[] | undefined> {
     /**
      * 2. Fetch user active connections
      */
-    let synchronizationCompleted = false;
-    const timeout = moment().add(config.budgetInsight.synchronizationTimeout, 'seconds');
-    let connections: Connection[] | undefined;
-    while (!synchronizationCompleted && moment().isBefore(timeout)) {
-      connections = await this.aggregator.getConnections(permanentToken, serviceAccount.config as ClientConfig);
-      synchronizationCompleted = true;
-      for (const connection of connections) {
+    let synchronizationCompleted: boolean = false;
+    const timeout = moment().add(this.config.budgetInsight.synchronizationTimeout, 'seconds');
+    let connections: Connection[];
+
+    // Wait for 5s between each call
+    const delayNext = async (): Promise<boolean> => {
+      await delay(this.config.budgetInsight.waitingTime);
+
+      return true;
+    };
+    const checkConnectionsStartDate: Date = new Date();
+    do {
+      connections = await this.aggregator.getConnections(permanentToken, serviceAccountConfig);
+      synchronizationCompleted = connections?.every(
         // eslint-disable-next-line no-null/no-null
-        if (connection.state !== null || connection.last_update === null) {
-          synchronizationCompleted = false;
-          // Wait 5 seconds between each call
-          await delay(WAITING_TIME);
-        }
-      }
-    }
+        (connection: Connection) => connection.state === null && connection.last_update !== null,
+      ) as boolean;
+    } while (!synchronizationCompleted && moment().isBefore(timeout) && (await delayNext()));
+
+    const checkDuration: number = new Date().getTime() - checkConnectionsStartDate.getTime();
+    this.logger.log({
+      message: `All Budget Insights connections are completed in ${checkDuration} milliseconds for Customer ${payload.customerId} and Analysis ${payload.analysisId}.`,
+      aggregator: 'BUDGET_INSIGHT',
+      duration: checkDuration,
+      connectionsNb: connections.length,
+    });
 
     if (!synchronizationCompleted) {
       const err = new Error('Synchronization failed');
       this.logger.warn({
         message: 'Synchronization failed after a timeout',
-        banksUserId: banksUser.id,
-        timeout: config.budgetInsight.synchronizationTimeout,
+        customerId: payload.customerId,
+        timeout: this.config.budgetInsight.synchronizationTimeout,
       });
       throw err;
+    }
+
+    if (isEmpty(connections)) {
+      this.logger.warn('Aggregation process stopped: no active connection found');
+
+      return undefined;
     }
 
     /**
      * 3. Retrieves BI banks accounts and send them to Algoan
      */
-    const accounts: BudgetInsightAccount[] = await this.aggregator.getAccounts(
-      permanentToken,
-      serviceAccount.config as ClientConfig,
-    );
+    const accounts: BudgetInsightAccount[] = await this.aggregator.getAccounts(permanentToken, serviceAccountConfig);
     this.logger.debug({
-      message: `Budget Insight accounts retrieved for Banks User "${banksUser.id}"`,
+      message: `Budget Insight accounts retrieved for customer "${payload.customerId}"`,
       accounts,
     });
 
-    if (connections === undefined) {
-      this.logger.warn('Aggregation process stopped: no active connection found');
+    /**
+     * Remove accounts with duplicated number
+     */
+    const accountNumberMap: Record<string, boolean | undefined> = {};
+    const uniqueAccounts: BudgetInsightAccount[] = [];
 
-      return;
+    for (const account of accounts) {
+      // Add accounts without number
+      if (account.number === null) {
+        uniqueAccounts.push(account);
+        // Add accounts with number, only if it's the first time we see it
+      } else if (accountNumberMap[account.number as string] === undefined) {
+        accountNumberMap[account.number as string] = true;
+        uniqueAccounts.push(account);
+      }
     }
 
     /**
@@ -253,7 +386,7 @@ export class HooksService {
         connectionsInfo[connection.id] = await this.aggregator.getInfo(
           permanentToken,
           `${connection.id}`,
-          serviceAccount.config as ClientConfig,
+          serviceAccountConfig,
         );
       } catch (err) {
         this.logger.warn({
@@ -264,89 +397,37 @@ export class HooksService {
       }
     }
 
-    const algoanAccounts: PostBanksUserAccountDTO[] = mapBudgetInsightAccount(
-      accounts,
+    const algoanAccounts: Account[] = mapBudgetInsightAccount(
+      uniqueAccounts,
+      this.aggregator,
       connections,
       connectionsInfo,
-    ).filter(
-      // Disable this rule because the type can be undefined even if it should never happen
-      // eslint-disable-next-line @typescript-eslint/tslint/config
-      (account: PostBanksUserAccountDTO & { type?: AccountType }) => account.type !== undefined,
+      serviceAccountConfig,
     );
-    const createdAccounts: BanksUserAccount[] = await banksUser.createAccounts(algoanAccounts);
-    this.logger.debug({
-      message: `Algoan accounts created for Banks User "${banksUser.id}"`,
-      accounts: createdAccounts,
-    });
 
     /**
-     * 4. Notify Algoan that the accounts have been synchronized
+     * For each account, get and format transactions
      */
-    await banksUser.update({
-      status: BanksUserStatus.ACCOUNTS_SYNCHRONIZED,
-    });
-
-    /**
-     * 5. For each synchronized accounts, get transactions
-     */
-    for (const account of createdAccounts) {
+    for (const account of algoanAccounts) {
       const transactions: BudgetInsightTransaction[] = await this.aggregator.getTransactions(
         permanentToken,
-        Number(account.reference),
-        serviceAccount.config as ClientConfig,
+        Number(account.aggregator.id),
+        serviceAccountConfig,
       );
       this.logger.debug({
-        message: `Transactions retrieved from BI for banks user "${banksUser.id}" and account "${account.id}"`,
+        message: `Transactions retrieved from BI for analysis "${payload.analysisId}" and account "${account.aggregator.id}"`,
         transactions,
       });
-      const algoanTransactions: PostBanksUserTransactionDTO[] = await mapBudgetInsightTransactions(
+      account.transactions = await mapBudgetInsightTransactions(
         transactions,
-        account.type,
+        account,
         permanentToken,
         this.aggregator,
+        serviceAccountConfig,
       );
-      const multiStatusResult: MultiResourceCreationResponse<BanksUserTransaction> = await banksUser.createTransactions(
-        account.id,
-        algoanTransactions,
-      );
-      this.logger.debug({
-        message: `Transactions created for Algoan for banks user "${banksUser.id}" and account "${account.id}"`,
-        multiStatusResult,
-      });
     }
 
-    /**
-     * 6. Notify Algoan that the process is finished
-     */
-    await banksUser.update({
-      status: BanksUserStatus.FINISHED,
-    });
-
-    return;
-  }
-
-  /**
-   * Get BI Sandbox token
-   * @param serviceAccount Algoan service account to retrieve sandbox credentials
-   * @param payload Payload
-   */
-  public async handleBankreaderConfigurationRequiredEvent(
-    serviceAccount: ServiceAccount,
-    payload: BankreaderConfigurationRequiredDTO,
-  ): Promise<void> {
-    const banksUser = await serviceAccount.getBanksUserById(payload.banksUserId);
-    const serviceAccountConfig: ClientConfig = serviceAccount.config as ClientConfig;
-    const jsonWT: JWTokenResponse = await this.aggregator.getJWToken(serviceAccountConfig);
-
-    const plugIn = {
-      budgetInsightBank: {
-        baseUrl: serviceAccountConfig?.baseUrl ?? config.budgetInsight.url,
-        token: jsonWT.jwt_token,
-        clientId: serviceAccountConfig?.clientId ?? config.budgetInsight.clientId,
-      },
-    };
-
-    await banksUser.update({ plugIn });
+    return algoanAccounts;
   }
 
   /**

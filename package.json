@@ -11,7 +11,7 @@
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "semantic-release": "semantic-release",
     "start": "nest start",
-    "start:dev": "nest start --watch",
+    "start:dev": "concurrently --kill-others \"npm run start:fake-server\" \"nest start --watch\"",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
     "lint": "eslint \"{src,apps,libs}/**/*.ts\" --fix",
@@ -19,24 +19,25 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json"
+    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "start:fake-server": "node json-server/server.js",
+    "prepare": "husky install"
   },
   "dependencies": {
-    "@algoan/nestjs-http-exception-filter": "^1.0.8",
-    "@algoan/nestjs-logging-interceptor": "^2.1.7",
-    "@algoan/rest": "^2.4.0",
+    "@algoan/nestjs-http-exception-filter": "^1.0.10",
+    "@algoan/nestjs-logging-interceptor": "^2.1.8",
+    "@algoan/rest": "^2.3.1",
     "@nestjs/common": "^7.6.13",
     "@nestjs/core": "^7.6.13",
-    "@nestjs/platform-express": "^7.6.15",
-    "axios": "^0.21.0",
+    "@nestjs/platform-express": "^7.6.13",
+    "axios": "^0.21.4",
     "class-transformer": "^0.3.1",
     "class-validator": "^0.12.2",
     "delay": "^4.4.1",
-    "hbs": "^4.1.2",
     "js-yaml": "^3.14.1",
     "lodash": "^4.17.21",
     "moment": "^2.29.1",
-    "moment-timezone": "^0.5.32",
+    "moment-timezone": "0.5.32",
     "nest-winston": "^1.4.0",
     "node-config-ts": "^3.1.0",
     "reflect-metadata": "^0.1.13",
@@ -56,12 +57,14 @@
     "@types/jest": "^26.0.20",
     "@types/lodash": "^4.14.168",
     "@types/node": "^14.14.31",
-    "@types/supertest": "^2.0.11",
-    "commitlint": "^12.1.1",
+    "@types/supertest": "^2.0.10",
+    "commitlint": "^12.0.1",
+    "concurrently": "^6.0.2",
     "cz-conventional-changelog": "^3.3.0",
     "eslint-plugin-nestjs": "^1.2.3",
-    "husky": "^5.1.2",
+    "husky": "^6.0.0",
     "jest": "^26.6.3",
+    "json-server": "^0.16.3",
     "lint-staged": "^10.5.4",
     "nock": "^13.0.9",
     "prettier": "^2.2.1",
@@ -101,11 +104,5 @@
     "{src,test}/**/*.ts": [
       "prettier --list-different \"{src,test}/**/*.ts\""
     ]
-  },
-  "husky": {
-    "hooks": {
-      "pre-commit": "lint-staged",
-      "commit-msg": "commitlint -E HUSKY_GIT_PARAMS"
-    }
   }
 }

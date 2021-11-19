@@ -51,7 +51,7 @@ export interface BudgetInsightAccount {
   // eslint-disable-next-line id-blacklist
   number: string | null;
   original_name: string;
-  coming: string | null;
+  coming: number | null;
   currency: Currency;
   balance: number;
   error?: Error;
@@ -70,6 +70,8 @@ export interface BudgetInsightAccount {
  * Budget Insight Loan
  */
 export interface Loan {
+  duration: number;
+  insurance_label: string;
   total_amount: number;
   id_account: string;
   maturity_date: string;
@@ -81,8 +83,11 @@ export interface Loan {
 
 /**
  * Budget Insight Bank
+ * https://docs.budget-insight.com/reference/connectors#response-connector-object
  */
 export interface Bank {
+  id?: number;
+  uuid: string;
   name: string;
 }
 
@@ -149,6 +154,7 @@ export interface BudgetInsightTransaction {
   type: TransactionType;
   id_category: number | null;
   original_currency: Currency | null;
+  coming: boolean;
 }
 
 /**
@@ -185,6 +191,7 @@ export interface JWTokenResponse {
   jwt_token: string;
   payload: {
     domain: string;
+    id_user: string;
   };
 }
 
@@ -239,4 +246,25 @@ export interface BudgetInsightOwner {
     email?: string | null;
     postal_address?: { full_address?: string | null };
   };
+}
+
+/**
+ * Response of the route Create an anonymous user
+ * https://docs.budget-insight.com/reference/authentication#create-an-anonymous-user
+ */
+export interface AnonymousUser {
+  auth_token: string;
+  type: string;
+  id_user: number;
+  expires_in: number | null;
+}
+
+/**
+ * Response of the route Get a user
+ * https://docs.budget-insight.com/reference/users#get-a-user
+ */
+export interface User {
+  id: number;
+  signin: Date | string;
+  platform: string;
 }

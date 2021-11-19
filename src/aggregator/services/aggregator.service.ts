@@ -1,12 +1,11 @@
 import { Injectable } from '@nestjs/common';
-import { IBanksUser } from '@algoan/rest';
 import {
-  Connection,
-  JWTokenResponse,
-  BudgetInsightTransaction,
   BudgetInsightAccount,
   BudgetInsightCategory,
   BudgetInsightOwner,
+  BudgetInsightTransaction,
+  Connection,
+  JWTokenResponse,
 } from '../interfaces/budget-insight.interface';
 import { BudgetInsightClient, ClientConfig } from './budget-insight/budget-insight.client';
 
@@ -26,21 +25,34 @@ export class AggregatorService {
   }
 
   /**
+   * Create a user and return its id
+   */
+  public async createUser(clientConfig?: ClientConfig): Promise<number> {
+    return (await this.budgetInsightClient.createUser(clientConfig)).id_user;
+  }
+
+  /**
+   * Get a user id from its token
+   */
+  public async getUserId(token: string, clientConfig?: ClientConfig): Promise<number> {
+    return (await this.budgetInsightClient.getUser(token, clientConfig)).id;
+  }
+
+  /**
    * Get user JSON Web Token
    */
-  public async getJWToken(clientConfig?: ClientConfig): Promise<JWTokenResponse> {
-    return this.budgetInsightClient.getUserJWT(clientConfig);
+  public async getJWToken(clientConfig?: ClientConfig, userId?: string): Promise<JWTokenResponse> {
+    return this.budgetInsightClient.getUserJWT(clientConfig, userId);
   }
 
   /**
    * Create the BI Webview url base on the client and it's callbackUrl
    *
-   * @param banksUser The bank user for which we generate the redirectUrl
    */
-  public generateRedirectUrl(banksUser: IBanksUser, clientConfig?: ClientConfig): string {
+  public generateRedirectUrl(callbackUrl: string, clientConfig?: ClientConfig): string {
     const config: ClientConfig = this.budgetInsightClient.getClientConfig(clientConfig);
 
-    return `${config.baseUrl}auth/webview/fr/connect?client_id=${config.clientId}&redirect_uri=${banksUser.callbackUrl}&response_type=code&state=&types=banks`;
+    return `${config.baseUrl}auth/webview/fr/connect?client_id=${config.clientId}&redirect_uri=${callbackUrl}&response_type=code&state=&types=banks`;
   }
 
   /**
@@ -91,5 +103,16 @@ export class AggregatorService {
     clientConfig?: ClientConfig,
   ): Promise<BudgetInsightCategory> {
     return this.budgetInsightClient.fetchCategory(token, categoryId, clientConfig);
+  }
+
+  /**
+   * Get the url of the logo of the bank
+   */
+  public getBankLogoUrl(connection?: Connection, clientConfig?: ClientConfig): string | undefined {
+    return connection?.connector?.uuid === undefined
+      ? undefined
+      : `${this.budgetInsightClient.getClientConfig(clientConfig).baseUrl}logos/${
+          connection.connector.uuid
+        }-thumbnail@2x.png`;
   }
 }

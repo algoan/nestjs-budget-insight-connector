@@ -1,6 +1,6 @@
 {
   "algoan": {
-    "baseUrl": "http://localhost:3000",
+    "baseUrl": "http://localhost:4000",
     "clientId": "a",
     "clientSecret": "b"
   },
@@ -9,14 +9,12 @@
     "clientId": "budgetInsightClientId",
     "clientSecret": "budgetInsightClientSecret",
     "synchronizationTimeout": 1200,
-    "waitingTime": 5000
+    "waitingTime": 1000
   },
   "targetUrl": "http://localhost:8080/hooks",
   "eventList": [
-    "service_account_created",
-    "bankreader_link_required",
-    "bankreader_configuration_required",
-    "bankreader_required"
+    "aggregator_link_required",
+    "bank_details_required"
   ],
   "restHooksSecret": "sdvcsqdcsdcsd",
   "port": 8080

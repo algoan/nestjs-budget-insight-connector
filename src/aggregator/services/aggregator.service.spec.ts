@@ -1,6 +1,5 @@
 import { HttpModule } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { IBanksUser, BanksUserStatus } from '@algoan/rest';
 import { AlgoanModule } from '../../algoan/algoan.module';
 import { AppModule } from '../../app.module';
 import { Connection } from '../interfaces/budget-insight.interface';
@@ -11,23 +10,6 @@ import { BudgetInsightClient } from './budget-insight/budget-insight.client';
 describe('AggregatorService', () => {
   let service: AggregatorService;
   let client: BudgetInsightClient;
-  const mockBanksUser: IBanksUser = {
-    id: 'id',
-    callbackUrl: 'callbackUrl',
-    status: BanksUserStatus.NEW,
-    redirectUrl: 'mockRedirectUrl',
-    redirectUrlCreatedAt: 1234567,
-    redirectUrlTTL: 500,
-    plugIn: {
-      budgetInsightBank: {
-        baseUrl: 'mockBaseUrl',
-        token: 'mockToken',
-        clientId: 'mockClientId',
-      },
-    },
-    scores: [],
-    analysis: { alerts: [], regularCashFlows: [], reliability: 'HIGH' },
-  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -51,12 +33,40 @@ describe('AggregatorService', () => {
     expect(spy).toBeCalledWith(token, undefined);
   });
 
+  it('should create an anonymous user and return its id', async () => {
+    const spy = jest.spyOn(client, 'createUser').mockReturnValue(
+      Promise.resolve({
+        id_user: 1,
+        auth_token: 'mickToken',
+        type: 'permanent',
+        expires_in: 3000,
+      }),
+    );
+
+    expect(await service.createUser()).toBe(1);
+    expect(spy).toBeCalledWith(undefined);
+  });
+
+  it('should get userId from its token', async () => {
+    const spy = jest.spyOn(client, 'getUser').mockReturnValue(
+      Promise.resolve({
+        id: 2,
+        signin: new Date(),
+        platform: 'mockPlatform',
+      }),
+    );
+
+    expect(await service.getUserId('mockToken')).toBe(2);
+    expect(spy).toBeCalledWith('mockToken', undefined);
+  });
+
   it('should get the jwt token', async () => {
     const spy = jest.spyOn(client, 'getUserJWT').mockReturnValue(
       Promise.resolve({
         jwt_token: 'mockJwt',
         payload: {
           domain: 'mockDomain',
+          id_user: 'userId',
         },
       }),
     );
@@ -65,8 +75,23 @@ describe('AggregatorService', () => {
     expect(spy).toBeCalled();
   });
 
+  it('should get the jwt token from a user', async () => {
+    const spy = jest.spyOn(client, 'getUserJWT').mockReturnValue(
+      Promise.resolve({
+        jwt_token: 'mockJwt',
+        payload: {
+          domain: 'mockDomain',
+          id_user: 'userId',
+        },
+      }),
+    );
+    await service.getJWToken(undefined, 'mockUserId');
+
+    expect(spy).toBeCalledWith(undefined, 'mockUserId');
+  });
+
   it('should create the webviewUrl base on the callbackUrl', () => {
-    const url: string = service.generateRedirectUrl(mockBanksUser);
+    const url: string = service.generateRedirectUrl('callbackUrl');
     expect(url).toBe(
       'http://localhost:4000/auth/webview/fr/connect?client_id=budgetInsightClientId&redirect_uri=callbackUrl&response_type=code&state=&types=banks',
     );

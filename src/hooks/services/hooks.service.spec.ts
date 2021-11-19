@@ -1,39 +1,33 @@
 /* eslint-disable max-lines */
 import { Test, TestingModule } from '@nestjs/testing';
-import {
-  Algoan,
-  ServiceAccount,
-  EventName,
-  Subscription,
-  RequestBuilder,
-  BanksUser,
-  BanksUserStatus,
-  BanksUserAccount,
-  AccountType,
-  UsageType,
-  MultiResourceCreationResponse,
-  BanksUserTransaction,
-  BanksUserTransactionType,
-} from '@algoan/rest';
-import { Connection } from '../../aggregator/interfaces/budget-insight.interface';
-import { EventDTO } from '../dto/event.dto';
+import { ContextIdFactory } from '@nestjs/core';
+import { Algoan, ServiceAccount, EventName, Subscription, RequestBuilder } from '@algoan/rest';
+
+import { EventDTO } from '../dto';
+import { AggregationDetailsMode } from '../../algoan/dto/customer.enums';
+import { Customer } from '../../algoan/dto/customer.objects';
+import { Analysis } from '../../algoan/dto/analysis.objects';
 import { AggregatorModule } from '../../aggregator/aggregator.module';
+import { mockAccount, mockTransaction, mockCategory } from '../../aggregator/interfaces/budget-insight-mock';
+import { Connection } from '../../aggregator/interfaces/budget-insight.interface';
 import { AggregatorService } from '../../aggregator/services/aggregator.service';
 import { AlgoanModule } from '../../algoan/algoan.module';
 import { AppModule } from '../../app.module';
-import { AlgoanService } from '../../algoan/algoan.service';
-import { BankreaderLinkRequiredDTO } from '../dto/bandreader-link-required.dto';
-import { mockAccount, mockTransaction, mockCategory } from '../../aggregator/interfaces/budget-insight-mock';
-import {
-  mapBudgetInsightAccount,
-  mapBudgetInsightTransactions,
-} from '../../aggregator/services/budget-insight/budget-insight.utils';
+import { AlgoanService } from '../../algoan/services/algoan.service';
+import { AlgoanCustomerService } from '../../algoan/services/algoan-customer.service';
+import { AlgoanAnalysisService } from '../../algoan/services/algoan-analysis.service';
+import { AlgoanHttpService } from '../../algoan/services/algoan-http.service';
+import { ConfigModule } from '../../config/config.module';
 import { HooksService } from './hooks.service';
+import { AnalysisStatus, ErrorCodes } from '../../algoan/dto/analysis.enum';
 
 describe('HooksService', () => {
   let hooksService: HooksService;
   let aggregatorService: AggregatorService;
   let algoanService: AlgoanService;
+  let algoanHttpService: AlgoanHttpService;
+  let algoanCustomerService: AlgoanCustomerService;
+  let algoanAnalysisService: AlgoanAnalysisService;
   const mockEvent = {
     subscription: {
       id: 'mockEventSubId',
@@ -76,31 +70,24 @@ describe('HooksService', () => {
   });
   mockServiceAccountWithConfig.subscriptions = subscriptions;
 
-  const mockBanksUser = new BanksUser(
-    {
-      id: 'mockBanksUserId',
-      status: BanksUserStatus.ACCOUNTS_SYNCHRONIZED,
-      redirectUrl: 'mockRedirectUrl',
-      redirectUrlCreatedAt: 123456789,
-      redirectUrlTTL: 100,
-      callbackUrl: 'mockCallbackUrl',
-      scores: [],
-      analysis: { alerts: [], regularCashFlows: [], reliability: 'HIGH' },
-    },
-    new RequestBuilder('mockBaseURL', { clientId: 'mockClientId' }),
-  );
-
   beforeEach(async () => {
+    // To mock scoped DI
+    const contextId = ContextIdFactory.create();
+    jest.spyOn(ContextIdFactory, 'getByRequest').mockImplementation(() => contextId);
+
     const module: TestingModule = await Test.createTestingModule({
-      imports: [AppModule, AggregatorModule, AlgoanModule],
+      imports: [AppModule, AggregatorModule, AlgoanModule, ConfigModule],
       providers: [HooksService],
     }).compile();
 
     jest.spyOn(Algoan.prototype, 'initRestHooks').mockResolvedValue();
 
-    hooksService = module.get<HooksService>(HooksService);
-    aggregatorService = module.get<AggregatorService>(AggregatorService);
-    algoanService = module.get<AlgoanService>(AlgoanService);
+    hooksService = await module.resolve<HooksService>(HooksService, contextId);
+    aggregatorService = await module.resolve<AggregatorService>(AggregatorService, contextId);
+    algoanService = await module.resolve<AlgoanService>(AlgoanService, contextId);
+    algoanHttpService = await module.resolve<AlgoanHttpService>(AlgoanHttpService, contextId);
+    algoanCustomerService = await module.resolve<AlgoanCustomerService>(AlgoanCustomerService, contextId);
+    algoanAnalysisService = await module.resolve<AlgoanAnalysisService>(AlgoanAnalysisService, contextId);
     await algoanService.onModuleInit();
   });
 
@@ -117,170 +104,745 @@ describe('HooksService', () => {
     const spy = jest
       .spyOn(algoanService.algoanClient, 'getServiceAccountBySubscriptionId')
       .mockReturnValue(mockServiceAccount);
-    const serviceAccountReturned = await hooksService.getServiceAccount(mockEvent as EventDTO);
+    const serviceAccountReturned = await hooksService.getServiceAccount((mockEvent as unknown) as EventDTO);
 
     expect(spy).toBeCalledWith('mockEventSubId');
     expect(serviceAccountReturned).toEqual(mockServiceAccount);
   });
 
-  describe('handleWebhook calls the correct event handling function', () => {
-    beforeEach(() => {
-      jest.spyOn(algoanService.algoanClient, 'getServiceAccountBySubscriptionId').mockReturnValue(mockServiceAccount);
-    });
-    it('handles bankreader link required', async () => {
-      mockEvent.subscription.eventName = EventName.BANKREADER_LINK_REQUIRED;
-      const spy = jest.spyOn(hooksService, 'handleBankreaderLinkRequiredEvent').mockResolvedValue();
-      await hooksService.handleWebhook(mockEvent as EventDTO, 'mockSignature');
-
-      expect(spy).toBeCalledWith(mockServiceAccount, mockEvent.payload);
-    });
-
-    it('handles configuration required', async () => {
-      mockEvent.subscription.eventName = EventName.BANKREADER_CONFIGURATION_REQUIRED;
-      const spy = jest.spyOn(hooksService, 'handleBankreaderConfigurationRequiredEvent').mockResolvedValue();
-      await hooksService.handleWebhook(mockEvent as EventDTO, 'mockSignature');
-
-      expect(spy).toBeCalledWith(mockServiceAccount, mockEvent.payload);
-    });
-
-    it('handles bankreader required', async () => {
-      mockEvent.subscription.eventName = EventName.BANKREADER_REQUIRED;
-      const spy = jest.spyOn(hooksService, 'handleBankReaderRequiredEvent').mockResolvedValue();
-      await hooksService.handleWebhook(mockEvent as EventDTO, 'mockSignature');
-
-      expect(spy).toBeCalledWith(mockServiceAccount, mockEvent.payload);
-    });
-  });
-
-  it('generates a redirect url on bankreader link required', async () => {
-    const serviceAccountSpy = jest
-      .spyOn(mockServiceAccount, 'getBanksUserById')
-      .mockReturnValue(Promise.resolve(mockBanksUser));
-    const agreggatorSpy = jest.spyOn(aggregatorService, 'generateRedirectUrl').mockReturnValue('mockRedirectUrl');
-    const banksUserSpy = jest.spyOn(mockBanksUser, 'update').mockResolvedValue();
-    await hooksService.handleBankreaderLinkRequiredEvent(
-      mockServiceAccount,
-      mockEvent.payload as BankreaderLinkRequiredDTO,
-    );
-
-    expect(serviceAccountSpy).toBeCalledWith(mockEvent.payload.banksUserId);
-    expect(agreggatorSpy).toBeCalledWith(mockBanksUser, undefined);
-    expect(banksUserSpy).toBeCalledWith({ redirectUrl: 'mockRedirectUrl' });
-  });
-
-  it('updates the bank user on configuration required', async () => {
-    const serviceAccountSpy = jest
-      .spyOn(mockServiceAccountWithConfig, 'getBanksUserById')
-      .mockReturnValue(Promise.resolve(mockBanksUser));
-    const agreggatorSpy = jest.spyOn(aggregatorService, 'getJWToken').mockReturnValue(
-      Promise.resolve({
-        jwt_token: 'mockJwtToken',
-        payload: {
-          domain: 'mockDomain',
+  it('should patch the event status with failed when an unknown event is received', async () => {
+    const mockSubscription: Subscription = ({
+      event: (_id: string) => ({
+        update: async ({ status }) => {
+          expect(status).toEqual('FAILED');
         },
       }),
-    );
-    const banksUserSpy = jest.spyOn(mockBanksUser, 'update').mockResolvedValue();
-    await hooksService.handleBankreaderConfigurationRequiredEvent(mockServiceAccountWithConfig, mockEvent.payload);
+    } as unknown) as Subscription;
 
-    expect(serviceAccountSpy).toBeCalledWith(mockEvent.payload.banksUserId);
-    expect(agreggatorSpy).toBeCalled();
-    expect(banksUserSpy).toBeCalledWith({
-      plugIn: {
-        budgetInsightBank: {
-          baseUrl: 'http://localhost:4000/',
-          token: 'mockJwtToken',
-          clientId: 'mockClientIdFromConfig',
-        },
+    const event: EventDTO = ({
+      ...mockEvent,
+      subscription: {
+        ...mockEvent,
+        eventName: 'UNKNOWN',
       },
+      payload: { customerId: 'mockCustomerId' },
+    } as unknown) as EventDTO;
+
+    await hooksService.dispatchAndHandleWebhook(event, mockSubscription, mockServiceAccount, new Date());
+  });
+
+  describe('should handle the aggregator_link_required', () => {
+    let spyHttpService: jest.SpyInstance;
+
+    const event: EventDTO = ({
+      ...mockEvent,
+      subscription: {
+        ...mockEvent,
+        eventName: EventName.AGGREGATOR_LINK_REQUIRED,
+      },
+      payload: { customerId: 'mockCustomerId' },
+    } as unknown) as EventDTO;
+
+    beforeEach(() => {
+      spyHttpService = jest.spyOn(algoanHttpService, 'authenticate');
+    });
+    it('and do nothing in an unknown mode', async () => {
+      const mockSubscription: Subscription = ({
+        event: (_id: string) => ({
+          update: async ({ status }) => {
+            expect(status).toEqual('ERROR');
+          },
+        }),
+      } as unknown) as Subscription;
+
+      const spyGetCustomer = jest.spyOn(algoanCustomerService, 'getCustomerById').mockReturnValue(
+        Promise.resolve(({
+          id: 'mockCustomerId',
+        } as unknown) as Customer),
+      );
+
+      const spyPatchCustomer = jest
+        .spyOn(algoanCustomerService, 'updateCustomer')
+        .mockReturnValue(Promise.resolve(({} as unknown) as Customer));
+
+      try {
+        await hooksService.dispatchAndHandleWebhook(event, mockSubscription, mockServiceAccount, new Date());
+      } catch (err) {
+        expect(err.message).toEqual('Invalid bank connection mode undefined');
+      }
+
+      expect(spyHttpService).toBeCalled();
+      expect(spyGetCustomer).toBeCalledWith('mockCustomerId');
+      expect(spyPatchCustomer).not.toBeCalled();
+    });
+
+    it('and throw when no customer is found', async () => {
+      const mockSubscription: Subscription = ({
+        event: (_id: string) => ({
+          update: async ({ status }) => {
+            expect(status).toEqual('ERROR');
+          },
+        }),
+      } as unknown) as Subscription;
+
+      const spyGetCustomer = jest
+        .spyOn(algoanCustomerService, 'getCustomerById')
+        .mockReturnValue(Promise.resolve((undefined as unknown) as Customer));
+
+      const spyPatchCustomer = jest
+        .spyOn(algoanCustomerService, 'updateCustomer')
+        .mockReturnValue(Promise.resolve(({} as unknown) as Customer));
+
+      try {
+        await hooksService.dispatchAndHandleWebhook(event, mockSubscription, mockServiceAccount, new Date());
+      } catch (err) {
+        expect(err.message).toBe('Could not retrieve customer for id "mockCustomerId"');
+      }
+
+      expect(spyHttpService).toBeCalled();
+      expect(spyGetCustomer).toBeCalledWith('mockCustomerId');
+      expect(spyPatchCustomer).not.toBeCalled();
+    });
+
+    it('and patch the redirect url in redirect mode', async () => {
+      const mockSubscription: Subscription = ({
+        event: (_id: string) => ({
+          update: async ({ status }) => {
+            expect(status).toEqual('PROCESSED');
+          },
+        }),
+      } as unknown) as Subscription;
+
+      const spyGetCustomer = jest.spyOn(algoanCustomerService, 'getCustomerById').mockReturnValue(
+        Promise.resolve(({
+          id: 'mockCustomerId',
+          aggregationDetails: { mode: AggregationDetailsMode.REDIRECT, callbackUrl: 'http://fake.url' },
+        } as unknown) as Customer),
+      );
+
+      const spyPatchCustomer = jest
+        .spyOn(algoanCustomerService, 'updateCustomer')
+        .mockReturnValue(Promise.resolve(({} as unknown) as Customer));
+
+      await hooksService.dispatchAndHandleWebhook(event, mockSubscription, mockServiceAccount, new Date());
+
+      expect(spyHttpService).toBeCalled();
+      expect(spyGetCustomer).toBeCalledWith('mockCustomerId');
+      expect(spyPatchCustomer).toBeCalledWith('mockCustomerId', {
+        aggregationDetails: {
+          aggregatorName: 'BUDGET_INSIGHT',
+          apiUrl: 'http://localhost:4000/',
+          clientId: 'budgetInsightClientId',
+          redirectUrl:
+            'http://localhost:4000/auth/webview/fr/connect?client_id=budgetInsightClientId&redirect_uri=http://fake.url&response_type=code&state=&types=banks',
+        },
+      });
+    });
+
+    it('and not patch the redirect url in redirect mode when no callback url is provided', async () => {
+      const mockSubscription: Subscription = ({
+        event: (_id: string) => ({
+          update: async ({ status }) => {
+            expect(status).toEqual('ERROR');
+          },
+        }),
+      } as unknown) as Subscription;
+
+      const spyGetCustomer = jest.spyOn(algoanCustomerService, 'getCustomerById').mockReturnValue(
+        Promise.resolve(({
+          id: 'mockCustomerId',
+          aggregationDetails: { mode: AggregationDetailsMode.REDIRECT },
+        } as unknown) as Customer),
+      );
+
+      const spyPatchCustomer = jest
+        .spyOn(algoanCustomerService, 'updateCustomer')
+        .mockReturnValue(Promise.resolve(({} as unknown) as Customer));
+
+      try {
+        await hooksService.dispatchAndHandleWebhook(event, mockSubscription, mockServiceAccount, new Date());
+      } catch (err) {
+        expect(err.message).toBe('Customer mockCustomerId has no callback URL');
+      }
+
+      expect(spyHttpService).toBeCalled();
+      expect(spyGetCustomer).toBeCalledWith('mockCustomerId');
+      expect(spyPatchCustomer).not.toBeCalled();
+    });
+
+    it('and patch the customer in api mode', async () => {
+      const mockSubscription: Subscription = ({
+        event: (_id: string) => ({
+          update: async ({ status }) => {
+            expect(status).toEqual('PROCESSED');
+          },
+        }),
+      } as unknown) as Subscription;
+
+      const spyGetCustomer = jest.spyOn(algoanCustomerService, 'getCustomerById').mockReturnValue(
+        Promise.resolve(({
+          id: 'mockCustomerId',
+          aggregationDetails: { mode: AggregationDetailsMode.API },
+        } as unknown) as Customer),
+      );
+
+      const spyGetJWT = jest.spyOn(aggregatorService, 'getJWToken').mockReturnValue(
+        Promise.resolve({
+          jwt_token: 'fake_jwt_token',
+          payload: { domain: 'http://fake.domain.url', id_user: 'userId' },
+        }),
+      );
+
+      const spyPatchCustomer = jest
+        .spyOn(algoanCustomerService, 'updateCustomer')
+        .mockReturnValue(Promise.resolve(({} as unknown) as Customer));
+
+      const fakeServiceAccount: ServiceAccount = {
+        ...mockServiceAccount,
+        config: {
+          baseUrl: 'https://fake-base-url.url',
+          clientId: 'fakeClientId',
+        },
+      } as ServiceAccount;
+
+      await hooksService.dispatchAndHandleWebhook(event, mockSubscription, fakeServiceAccount, new Date());
+
+      expect(spyHttpService).toBeCalled();
+      expect(spyGetCustomer).toBeCalledWith('mockCustomerId');
+      expect(spyGetJWT).toBeCalledWith({ baseUrl: 'https://fake-base-url.url', clientId: 'fakeClientId' }, undefined);
+      expect(spyPatchCustomer).toBeCalledWith('mockCustomerId', {
+        aggregationDetails: {
+          aggregatorName: 'BUDGET_INSIGHT',
+          apiUrl: 'https://fake-base-url.url',
+          clientId: 'fakeClientId',
+          token: 'fake_jwt_token',
+          userId: 'userId',
+        },
+      });
     });
   });
 
-  it('synchronizes the acccounts on bank reader required', async () => {
+  describe('should handle the bank_details_required', () => {
+    let spyHttpService: jest.SpyInstance;
+
     const connection: Connection = {
       id: 4,
       id_user: 6,
       id_connector: 5,
-      last_update: null,
       state: null,
       active: true,
       created: null,
       next_try: null,
+      last_update: null,
     };
-    const banksUserAccount: BanksUserAccount = {
-      id: 'accountId1',
-      balance: 100,
-      balanceDate: '23/06/2020',
-      connectionSource: 'mockConnectionSource',
-      currency: 'EUR',
-      type: AccountType.SAVINGS,
-      usage: UsageType.PERSONAL,
-      reference: '10',
-    };
-    const banksUserTransactionResponse: MultiResourceCreationResponse<BanksUserTransaction> = {
-      elements: [
-        {
-          resource: {
-            id: 'transactionId1',
-            amount: 50,
-            category: 'mockCategory',
-            date: '23/06/2020',
-            description: 'mockDescription',
-            type: BanksUserTransactionType.ATM,
+
+    beforeEach(() => {
+      spyHttpService = jest.spyOn(algoanHttpService, 'authenticate');
+    });
+
+    it('should throw when no customer found', async () => {
+      const mockSubscription: Subscription = ({
+        event: (_id: string) => ({
+          update: async ({ status }) => {
+            expect(status).toEqual('ERROR');
           },
-          status: 200,
+        }),
+      } as unknown) as Subscription;
+
+      const spyGetCustomer = jest
+        .spyOn(algoanCustomerService, 'getCustomerById')
+        .mockReturnValue(Promise.resolve((undefined as unknown) as Customer));
+
+      const analysisSpy = jest
+        .spyOn(algoanAnalysisService, 'updateAnalysis')
+        .mockReturnValue(Promise.resolve(({} as unknown) as Analysis));
+
+      const event: EventDTO = ({
+        ...mockEvent,
+        subscription: {
+          ...mockEvent,
+          eventName: EventName.BANK_DETAILS_REQUIRED,
         },
-      ],
-      metadata: { failure: 0, success: 1, total: 1 },
-    };
+        payload: { customerId: 'mockCustomerId', analysisId: 'mockAnalysisId' },
+      } as unknown) as EventDTO;
 
-    const serviceAccountSpy = jest
-      .spyOn(mockServiceAccount, 'getBanksUserById')
-      .mockReturnValue(Promise.resolve(mockBanksUser));
-    const resgisterSpy = jest.spyOn(aggregatorService, 'registerClient').mockResolvedValue('mockPermToken');
-    const connectionSpy = jest
-      .spyOn(aggregatorService, 'getConnections')
-      .mockReturnValueOnce(Promise.resolve([connection]))
-      .mockReturnValueOnce(Promise.resolve([{ ...connection, last_update: 'mockLastUpdate' }]));
-    const accountSpy = jest.spyOn(aggregatorService, 'getAccounts').mockResolvedValue([mockAccount]);
-    const userInfoSpy = jest.spyOn(aggregatorService, 'getInfo').mockResolvedValue({ owner: { name: 'JOHN DOE' } });
-    const banksUserAccountSpy = jest.spyOn(mockBanksUser, 'createAccounts').mockResolvedValue([banksUserAccount]);
-    const transactionSpy = jest.spyOn(aggregatorService, 'getTransactions').mockResolvedValue([mockTransaction]);
-    const categorySpy = jest.spyOn(aggregatorService, 'getCategory').mockResolvedValue(mockCategory);
-    const banksUserTransactionSpy = jest
-      .spyOn(mockBanksUser, 'createTransactions')
-      .mockResolvedValue(banksUserTransactionResponse);
-    const banksUserUpdateSpy = jest.spyOn(mockBanksUser, 'update').mockResolvedValue();
-    const mappedTransaction = await mapBudgetInsightTransactions(
-      [mockTransaction],
-      AccountType.SAVINGS,
-      'mockPermToken',
-      aggregatorService,
-    );
-    await hooksService.handleBankReaderRequiredEvent(mockServiceAccount, mockEvent.payload);
+      const fakeServiceAccount: ServiceAccount = {
+        ...mockServiceAccount,
+        config: {
+          baseUrl: 'https://fake-base-url.url',
+          clientId: 'fakeClientId',
+        },
+      } as ServiceAccount;
 
-    expect(serviceAccountSpy).toBeCalledWith(mockEvent.payload.banksUserId);
-    expect(resgisterSpy).toBeCalledWith(mockEvent.payload.temporaryCode, undefined);
-    expect(connectionSpy).toBeCalledWith('mockPermToken', undefined);
-    expect(connectionSpy).toBeCalledTimes(2);
-    expect(accountSpy).toBeCalledWith('mockPermToken', undefined);
-    expect(userInfoSpy).toBeCalledWith('mockPermToken', '4', undefined);
-    expect(userInfoSpy).toBeCalledTimes(1);
-    expect(banksUserAccountSpy).toBeCalledWith(
-      mapBudgetInsightAccount([mockAccount], [connection], { [connection.id]: { owner: { name: 'JOHN DOE' } } }),
-    );
-    expect(transactionSpy).toBeCalledWith('mockPermToken', Number(banksUserAccount.reference), undefined);
-    expect(categorySpy).toBeCalledWith('mockPermToken', mockTransaction.id_category);
-    expect(banksUserTransactionSpy).toBeCalledWith(banksUserAccount.id, mappedTransaction);
-    expect(banksUserUpdateSpy).toBeCalledTimes(3);
-    expect(banksUserUpdateSpy).toHaveBeenNthCalledWith(1, {
-      status: BanksUserStatus.SYNCHRONIZING,
+      try {
+        await hooksService.dispatchAndHandleWebhook(event, mockSubscription, fakeServiceAccount, new Date());
+      } catch (err) {
+        expect(err.message).toEqual('Could not retrieve customer for id "mockCustomerId"');
+      }
+
+      expect(spyHttpService).toBeCalled();
+      expect(spyGetCustomer).toBeCalledWith('mockCustomerId');
+      expect(analysisSpy).toBeCalledWith('mockCustomerId', 'mockAnalysisId', {
+        status: AnalysisStatus.ERROR,
+        error: {
+          code: ErrorCodes.INTERNAL_ERROR,
+          message: `An error occured when fetching data from the aggregator`,
+        },
+      });
     });
-    expect(banksUserUpdateSpy).toHaveBeenNthCalledWith(2, {
-      status: BanksUserStatus.ACCOUNTS_SYNCHRONIZED,
+
+    it('without temporaryCode nor token, nor userId in the customer details', async () => {
+      const mockSubscription: Subscription = ({
+        event: (_id: string) => ({
+          update: async ({ status }) => {
+            expect(status).toEqual('PROCESSED');
+          },
+        }),
+      } as unknown) as Subscription;
+
+      const spyGetCustomer = jest.spyOn(algoanCustomerService, 'getCustomerById').mockReturnValue(
+        Promise.resolve(({
+          id: 'mockCustomerId',
+        } as unknown) as Customer),
+      );
+
+      const event: EventDTO = ({
+        ...mockEvent,
+        subscription: {
+          ...mockEvent,
+          eventName: EventName.BANK_DETAILS_REQUIRED,
+        },
+        payload: { customerId: 'mockCustomerId', analysisId: 'mockAnalysisId' },
+      } as unknown) as EventDTO;
+
+      const fakeServiceAccount: ServiceAccount = {
+        ...mockServiceAccount,
+        config: {
+          baseUrl: 'https://fake-base-url.url',
+          clientId: 'fakeClientId',
+        },
+      } as ServiceAccount;
+
+      await hooksService.dispatchAndHandleWebhook(event, mockSubscription, fakeServiceAccount, new Date());
+
+      expect(spyHttpService).toBeCalled();
+      expect(spyGetCustomer).toBeCalledWith('mockCustomerId');
     });
-    expect(banksUserUpdateSpy).toHaveBeenNthCalledWith(3, {
-      status: BanksUserStatus.FINISHED,
+
+    it('with token in the customer and have a timeout', async () => {
+      const mockSubscription: Subscription = ({
+        event: (_id: string) => ({
+          update: async ({ status }) => {
+            expect(status).toEqual('PROCESSED');
+          },
+        }),
+      } as unknown) as Subscription;
+
+      const spyGetCustomer = jest.spyOn(algoanCustomerService, 'getCustomerById').mockReturnValue(
+        Promise.resolve(({
+          id: 'mockCustomerId',
+          aggregationDetails: { mode: AggregationDetailsMode.API, token: 'fakeToken' },
+        } as unknown) as Customer),
+      );
+
+      const connectionSpy = jest
+        .spyOn(aggregatorService, 'getConnections')
+        .mockReturnValueOnce(Promise.resolve([connection]))
+        .mockReturnValue(Promise.resolve([{ ...connection, last_update: 'mockLastUpdate' }]));
+      const accountSpy = jest.spyOn(aggregatorService, 'getAccounts').mockResolvedValue([mockAccount]);
+      const userInfoSpy = jest.spyOn(aggregatorService, 'getInfo').mockResolvedValue({ owner: { name: 'JOHN DOE' } });
+      const transactionSpy = jest.spyOn(aggregatorService, 'getTransactions').mockResolvedValue([mockTransaction]);
+      const categorySpy = jest.spyOn(aggregatorService, 'getCategory').mockResolvedValue(mockCategory);
+      const analysisSpy = jest
+        .spyOn(algoanAnalysisService, 'updateAnalysis')
+        .mockReturnValue(Promise.resolve(({} as unknown) as Analysis));
+
+      const event: EventDTO = ({
+        ...mockEvent,
+        subscription: {
+          ...mockEvent,
+          eventName: EventName.BANK_DETAILS_REQUIRED,
+        },
+        payload: { customerId: 'mockCustomerId', analysisId: 'mockAnalysisId', temporaryCode: 'mockTempCode' },
+      } as unknown) as EventDTO;
+
+      const fakeServiceAccount: ServiceAccount = {
+        ...mockServiceAccount,
+        config: {
+          baseUrl: 'https://fake-base-url.url',
+          clientId: 'fakeClientId',
+        },
+      } as ServiceAccount;
+
+      await hooksService.dispatchAndHandleWebhook(event, mockSubscription, fakeServiceAccount, new Date());
+
+      const saConfig = {
+        baseUrl: 'https://fake-base-url.url',
+        clientId: 'fakeClientId',
+      };
+
+      expect(spyHttpService).toBeCalled();
+      expect(spyGetCustomer).toBeCalledWith('mockCustomerId');
+      expect(connectionSpy).toBeCalledWith('fakeToken', saConfig);
+      expect(accountSpy).toBeCalledWith('fakeToken', saConfig);
+      expect(userInfoSpy).toBeCalledWith('fakeToken', '4', saConfig);
+      expect(userInfoSpy).toBeCalledTimes(1);
+      expect(transactionSpy).toBeCalledWith('fakeToken', 1, saConfig);
+      expect(categorySpy).toBeCalledWith('fakeToken', mockTransaction.id_category, saConfig);
+      expect(analysisSpy).toBeCalledWith('mockCustomerId', 'mockAnalysisId', {
+        accounts: [
+          {
+            aggregator: { id: '1' },
+            balance: 100,
+            balanceDate: '2011-10-05T14:48:00.000Z',
+            bank: { id: undefined, name: undefined },
+            bic: 'mockBic',
+            coming: 0,
+            currency: 'id1',
+            details: { loan: undefined, savings: undefined },
+            iban: 'mockIban',
+            name: 'mockName',
+            number: 'mockNumber',
+            owners: undefined,
+            transactions: [
+              {
+                aggregator: { category: 'mockCategoryName', id: 'mockId', type: 'BANK_FEE' },
+                amount: 50,
+                currency: 'USD',
+                dates: { bookedAt: null, debitedAt: null },
+                description: 'mockOriginalWording',
+                isComing: false,
+              },
+            ],
+            type: 'CHECKING',
+            usage: 'PERSONAL',
+          },
+        ],
+      });
+    });
+
+    it('without token in the customer but a userId in the customer - duplicated fetched accounts', async () => {
+      const mockSubscription: Subscription = ({
+        event: (_id: string) => ({
+          update: async ({ status }) => {
+            expect(status).toEqual('PROCESSED');
+          },
+        }),
+      } as unknown) as Subscription;
+
+      const spyGetCustomer = jest.spyOn(algoanCustomerService, 'getCustomerById').mockReturnValue(
+        Promise.resolve(({
+          id: 'mockCustomerId',
+          aggregationDetails: { mode: AggregationDetailsMode.API, userId: 'mockUserId' },
+        } as unknown) as Customer),
+      );
+
+      const jwtTokenSpy = jest
+        .spyOn(aggregatorService, 'getJWToken')
+        .mockResolvedValue({ jwt_token: 'mockPermToken', payload: { domain: 'mockDomain', id_user: 'userId' } });
+
+      const connectionSpy = jest
+        .spyOn(aggregatorService, 'getConnections')
+        .mockReturnValueOnce(Promise.resolve([connection]))
+        .mockReturnValueOnce(Promise.resolve([{ ...connection, last_update: 'mockLastUpdate' }]));
+      const accountSpy = jest.spyOn(aggregatorService, 'getAccounts').mockResolvedValue([mockAccount, mockAccount]);
+      const userInfoSpy = jest.spyOn(aggregatorService, 'getInfo').mockResolvedValue({ owner: { name: 'JOHN DOE' } });
+      const transactionSpy = jest.spyOn(aggregatorService, 'getTransactions').mockResolvedValue([mockTransaction]);
+      const categorySpy = jest.spyOn(aggregatorService, 'getCategory').mockResolvedValue(mockCategory);
+      const analysisSpy = jest
+        .spyOn(algoanAnalysisService, 'updateAnalysis')
+        .mockReturnValue(Promise.resolve(({} as unknown) as Analysis));
+
+      const event: EventDTO = ({
+        ...mockEvent,
+        subscription: {
+          ...mockEvent,
+          eventName: EventName.BANK_DETAILS_REQUIRED,
+        },
+        payload: { customerId: 'mockCustomerId', analysisId: 'mockAnalysisId' },
+      } as unknown) as EventDTO;
+
+      const fakeServiceAccount: ServiceAccount = {
+        ...mockServiceAccount,
+        config: {
+          baseUrl: 'https://fake-base-url.url',
+          clientId: 'fakeClientId',
+        },
+      } as ServiceAccount;
+
+      await hooksService.dispatchAndHandleWebhook(event, mockSubscription, fakeServiceAccount, new Date());
+
+      const saConfig = {
+        baseUrl: 'https://fake-base-url.url',
+        clientId: 'fakeClientId',
+      };
+
+      expect(spyHttpService).toBeCalled();
+      expect(spyGetCustomer).toBeCalledWith('mockCustomerId');
+      expect(jwtTokenSpy).toBeCalledWith(saConfig, 'mockUserId');
+      expect(connectionSpy).toBeCalledWith('mockPermToken', saConfig);
+      expect(connectionSpy).toBeCalledTimes(2);
+      expect(accountSpy).toBeCalledWith('mockPermToken', saConfig);
+      expect(userInfoSpy).toBeCalledWith('mockPermToken', '4', saConfig);
+      expect(userInfoSpy).toBeCalledTimes(1);
+      expect(transactionSpy).toBeCalledWith('mockPermToken', 1, saConfig);
+      expect(categorySpy).toBeCalledWith('mockPermToken', mockTransaction.id_category, saConfig);
+      expect(analysisSpy).toBeCalledWith('mockCustomerId', 'mockAnalysisId', {
+        accounts: [
+          {
+            aggregator: { id: '1' },
+            balance: 100,
+            balanceDate: '2011-10-05T14:48:00.000Z',
+            bank: { id: undefined, name: undefined },
+            bic: 'mockBic',
+            coming: 0,
+            currency: 'id1',
+            details: { loan: undefined, savings: undefined },
+            iban: 'mockIban',
+            name: 'mockName',
+            number: 'mockNumber',
+            owners: undefined,
+            transactions: [
+              {
+                aggregator: { category: 'mockCategoryName', id: 'mockId', type: 'BANK_FEE' },
+                amount: 50,
+                currency: 'USD',
+                dates: { bookedAt: null, debitedAt: null },
+                description: 'mockOriginalWording',
+                isComing: false,
+              },
+            ],
+            type: 'CHECKING',
+            usage: 'PERSONAL',
+          },
+        ],
+      });
+    });
+
+    it('without token in the customer but a userId in the customer - there is an account with number null', async () => {
+      const mockSubscription: Subscription = ({
+        event: (_id: string) => ({
+          update: async ({ status }) => {
+            expect(status).toEqual('PROCESSED');
+          },
+        }),
+      } as unknown) as Subscription;
+
+      const spyGetCustomer = jest.spyOn(algoanCustomerService, 'getCustomerById').mockReturnValue(
+        Promise.resolve(({
+          id: 'mockCustomerId',
+          aggregationDetails: { mode: AggregationDetailsMode.API, userId: 'mockUserId' },
+        } as unknown) as Customer),
+      );
+
+      const jwtTokenSpy = jest
+        .spyOn(aggregatorService, 'getJWToken')
+        .mockResolvedValue({ jwt_token: 'mockPermToken', payload: { domain: 'mockDomain', id_user: 'userId' } });
+
+      const connectionSpy = jest
+        .spyOn(aggregatorService, 'getConnections')
+        .mockReturnValueOnce(Promise.resolve([connection]))
+        .mockReturnValueOnce(Promise.resolve([{ ...connection, last_update: 'mockLastUpdate' }]));
+      const accountSpy = jest
+        .spyOn(aggregatorService, 'getAccounts')
+        .mockResolvedValue([mockAccount, { ...mockAccount, number: null }]);
+      const userInfoSpy = jest.spyOn(aggregatorService, 'getInfo').mockResolvedValue({ owner: { name: 'JOHN DOE' } });
+      const transactionSpy = jest.spyOn(aggregatorService, 'getTransactions').mockResolvedValue([mockTransaction]);
+      const categorySpy = jest.spyOn(aggregatorService, 'getCategory').mockResolvedValue(mockCategory);
+      const analysisSpy = jest
+        .spyOn(algoanAnalysisService, 'updateAnalysis')
+        .mockReturnValue(Promise.resolve(({} as unknown) as Analysis));
+
+      const event: EventDTO = ({
+        ...mockEvent,
+        subscription: {
+          ...mockEvent,
+          eventName: EventName.BANK_DETAILS_REQUIRED,
+        },
+        payload: { customerId: 'mockCustomerId', analysisId: 'mockAnalysisId' },
+      } as unknown) as EventDTO;
+
+      const fakeServiceAccount: ServiceAccount = {
+        ...mockServiceAccount,
+        config: {
+          baseUrl: 'https://fake-base-url.url',
+          clientId: 'fakeClientId',
+        },
+      } as ServiceAccount;
+
+      await hooksService.dispatchAndHandleWebhook(event, mockSubscription, fakeServiceAccount, new Date());
+
+      const saConfig = {
+        baseUrl: 'https://fake-base-url.url',
+        clientId: 'fakeClientId',
+      };
+
+      expect(spyHttpService).toBeCalled();
+      expect(spyGetCustomer).toBeCalledWith('mockCustomerId');
+      expect(jwtTokenSpy).toBeCalledWith(saConfig, 'mockUserId');
+      expect(connectionSpy).toBeCalledWith('mockPermToken', saConfig);
+      expect(connectionSpy).toBeCalledTimes(2);
+      expect(accountSpy).toBeCalledWith('mockPermToken', saConfig);
+      expect(userInfoSpy).toBeCalledWith('mockPermToken', '4', saConfig);
+      expect(userInfoSpy).toBeCalledTimes(1);
+      expect(transactionSpy).toBeCalledWith('mockPermToken', 1, saConfig);
+      expect(categorySpy).toBeCalledWith('mockPermToken', mockTransaction.id_category, saConfig);
+      expect(analysisSpy).toBeCalledWith('mockCustomerId', 'mockAnalysisId', {
+        accounts: [
+          {
+            aggregator: { id: '1' },
+            balance: 100,
+            balanceDate: '2011-10-05T14:48:00.000Z',
+            bank: { id: undefined, name: undefined },
+            bic: 'mockBic',
+            coming: 0,
+            currency: 'id1',
+            details: { loan: undefined, savings: undefined },
+            iban: 'mockIban',
+            name: 'mockName',
+            number: 'mockNumber',
+            owners: undefined,
+            transactions: [
+              {
+                aggregator: { category: 'mockCategoryName', id: 'mockId', type: 'BANK_FEE' },
+                amount: 50,
+                currency: 'USD',
+                dates: { bookedAt: null, debitedAt: null },
+                description: 'mockOriginalWording',
+                isComing: false,
+              },
+            ],
+            type: 'CHECKING',
+            usage: 'PERSONAL',
+          },
+          {
+            aggregator: { id: '1' },
+            balance: 100,
+            balanceDate: '2011-10-05T14:48:00.000Z',
+            bank: { id: undefined, name: undefined },
+            bic: 'mockBic',
+            coming: 0,
+            currency: 'id1',
+            details: { loan: undefined, savings: undefined },
+            iban: 'mockIban',
+            name: 'mockName',
+            number: undefined,
+            owners: undefined,
+            transactions: [
+              {
+                aggregator: { category: 'mockCategoryName', id: 'mockId', type: 'BANK_FEE' },
+                amount: 50,
+                currency: 'USD',
+                dates: { bookedAt: null, debitedAt: null },
+                description: 'mockOriginalWording',
+                isComing: false,
+              },
+            ],
+            type: 'CHECKING',
+            usage: 'PERSONAL',
+          },
+        ],
+      });
+    });
+
+    it('without token in the customer but a temporaryCode', async () => {
+      const mockSubscription: Subscription = ({
+        event: (_id: string) => ({
+          update: async ({ status }) => {
+            expect(status).toEqual('PROCESSED');
+          },
+        }),
+      } as unknown) as Subscription;
+
+      const spyGetCustomer = jest.spyOn(algoanCustomerService, 'getCustomerById').mockReturnValue(
+        Promise.resolve(({
+          id: 'mockCustomerId',
+          aggregationDetails: { mode: AggregationDetailsMode.REDIRECT },
+        } as unknown) as Customer),
+      );
+      const updateCustomerSpy = jest.spyOn(algoanCustomerService, 'updateCustomer').mockResolvedValue({} as Customer);
+
+      const registerSpy = jest.spyOn(aggregatorService, 'registerClient').mockResolvedValue('mockPermToken');
+      const userIdSpy = jest.spyOn(aggregatorService, 'getUserId').mockResolvedValue(12);
+
+      const connectionSpy = jest
+        .spyOn(aggregatorService, 'getConnections')
+        .mockReturnValueOnce(Promise.resolve([connection]))
+        .mockReturnValueOnce(Promise.resolve([{ ...connection, last_update: 'mockLastUpdate' }]));
+      const accountSpy = jest.spyOn(aggregatorService, 'getAccounts').mockResolvedValue([mockAccount]);
+      const userInfoSpy = jest.spyOn(aggregatorService, 'getInfo').mockResolvedValue({ owner: { name: 'JOHN DOE' } });
+      const transactionSpy = jest.spyOn(aggregatorService, 'getTransactions').mockResolvedValue([mockTransaction]);
+      const categorySpy = jest.spyOn(aggregatorService, 'getCategory').mockResolvedValue(mockCategory);
+      const analysisSpy = jest
+        .spyOn(algoanAnalysisService, 'updateAnalysis')
+        .mockReturnValue(Promise.resolve(({} as unknown) as Analysis));
+
+      const event: EventDTO = ({
+        ...mockEvent,
+        subscription: {
+          ...mockEvent,
+          eventName: EventName.BANK_DETAILS_REQUIRED,
+        },
+        payload: { customerId: 'mockCustomerId', analysisId: 'mockAnalysisId', temporaryCode: 'mockTempCode' },
+      } as unknown) as EventDTO;
+
+      const fakeServiceAccount: ServiceAccount = {
+        ...mockServiceAccount,
+        config: {
+          baseUrl: 'https://fake-base-url.url',
+          clientId: 'fakeClientId',
+        },
+      } as ServiceAccount;
+
+      await hooksService.dispatchAndHandleWebhook(event, mockSubscription, fakeServiceAccount, new Date());
+
+      const saConfig = {
+        baseUrl: 'https://fake-base-url.url',
+        clientId: 'fakeClientId',
+      };
+
+      expect(spyHttpService).toBeCalled();
+      expect(spyGetCustomer).toBeCalledWith('mockCustomerId');
+      expect(updateCustomerSpy).toBeCalledWith('mockCustomerId', { aggregationDetails: { userId: '12' } });
+      expect(registerSpy).toBeCalledWith(mockEvent.payload.temporaryCode, saConfig);
+      expect(userIdSpy).toBeCalledWith('mockPermToken', saConfig);
+      expect(connectionSpy).toBeCalledWith('mockPermToken', saConfig);
+      expect(connectionSpy).toBeCalledTimes(2);
+      expect(accountSpy).toBeCalledWith('mockPermToken', saConfig);
+      expect(userInfoSpy).toBeCalledWith('mockPermToken', '4', saConfig);
+      expect(userInfoSpy).toBeCalledTimes(1);
+      expect(transactionSpy).toBeCalledWith('mockPermToken', 1, saConfig);
+      expect(categorySpy).toBeCalledWith('mockPermToken', mockTransaction.id_category, saConfig);
+      expect(analysisSpy).toBeCalledWith('mockCustomerId', 'mockAnalysisId', {
+        accounts: [
+          {
+            aggregator: { id: '1' },
+            balance: 100,
+            balanceDate: '2011-10-05T14:48:00.000Z',
+            bank: { id: undefined, name: undefined },
+            bic: 'mockBic',
+            coming: 0,
+            currency: 'id1',
+            details: { loan: undefined, savings: undefined },
+            iban: 'mockIban',
+            name: 'mockName',
+            number: 'mockNumber',
+            owners: undefined,
+            transactions: [
+              {
+                aggregator: { category: 'mockCategoryName', id: 'mockId', type: 'BANK_FEE' },
+                amount: 50,
+                currency: 'USD',
+                dates: { bookedAt: null, debitedAt: null },
+                description: 'mockOriginalWording',
+                isComing: false,
+              },
+            ],
+            type: 'CHECKING',
+            usage: 'PERSONAL',
+          },
+        ],
+      });
     });
   });
 });
