@@ -186,7 +186,7 @@ describe('BudgetInsightUtils', () => {
         last_update: '',
         state: null,
         active: true,
-        connector: (undefined as unknown) as Bank,
+        connector: undefined as unknown as Bank,
         created: new Date(),
         next_try: new Date(),
       },
@@ -209,7 +209,7 @@ describe('BudgetInsightUtils', () => {
         iban: null,
         name: 'account-name',
         type: BIAccountType.UNKNOWN,
-        usage: ('UNKNOWN' as unknown) as BIUsageType,
+        usage: 'UNKNOWN' as unknown as BIUsageType,
         disabled: false,
         company_name: 'mockCompanyName',
         loan: {
@@ -351,7 +351,7 @@ describe('BudgetInsightUtils', () => {
     const spy = jest.spyOn(aggregatorService, 'getCategory').mockReturnValue(Promise.resolve(mockCategory));
     const mappedTransaction = await mapBudgetInsightTransactions(
       budgetInsightTransactions,
-      ({ currency: 'EUR' } as unknown) as AnalysisAccount,
+      { currency: 'EUR' } as unknown as AnalysisAccount,
       'mockAccessToken',
       aggregatorService,
     );
@@ -400,7 +400,7 @@ describe('BudgetInsightUtils', () => {
     const spy = jest.spyOn(aggregatorService, 'getCategory').mockReturnValue(Promise.resolve(mockCategory));
     const mappedTransaction = await mapBudgetInsightTransactions(
       budgetInsightTransactions,
-      ({ currency: 'USD' } as unknown) as AnalysisAccount,
+      { currency: 'USD' } as unknown as AnalysisAccount,
       'mockAccessToken',
       aggregatorService,
     );
@@ -449,7 +449,7 @@ describe('BudgetInsightUtils', () => {
     const spy = jest.spyOn(aggregatorService, 'getCategory').mockReturnValue(Promise.resolve(mockCategory));
     const mappedTransaction = await mapBudgetInsightTransactions(
       budgetInsightTransactions,
-      ({ currency: 'EUR' } as unknown) as AnalysisAccount,
+      { currency: 'EUR' } as unknown as AnalysisAccount,
       'mockAccessToken',
       aggregatorService,
     );
@@ -461,7 +461,7 @@ describe('BudgetInsightUtils', () => {
   it('should map the budget insight transactions to analysis (getCategory=Error)', async () => {
     const budgetInsightTransactions: BudgetInsightTransaction[] = [
       {
-        type: ('UNKNOWN' as unknown) as BiTransactionType,
+        type: 'UNKNOWN' as unknown as BiTransactionType,
         id_category: 20,
         original_wording: 'original_wording',
         wording: 'wording',
@@ -470,8 +470,8 @@ describe('BudgetInsightUtils', () => {
         value: 1,
         id_account: 9,
         id: 'id',
-        date: (undefined as unknown) as string,
-        rdate: (undefined as unknown) as string,
+        date: undefined as unknown as string,
+        rdate: undefined as unknown as string,
         application_date: 'mockApplicationDate',
         original_currency: null,
         coming: false,
@@ -497,10 +497,10 @@ describe('BudgetInsightUtils', () => {
 
     const spy = jest
       .spyOn(aggregatorService, 'getCategory')
-      .mockReturnValue(Promise.resolve((undefined as unknown) as BudgetInsightCategory));
+      .mockReturnValue(Promise.resolve(undefined as unknown as BudgetInsightCategory));
     const mappedTransaction = await mapBudgetInsightTransactions(
       budgetInsightTransactions,
-      ({ currency: 'EUR' } as unknown) as AnalysisAccount,
+      { currency: 'EUR' } as unknown as AnalysisAccount,
       'mockAccessToken',
       aggregatorService,
     );

@@ -35,5 +35,6 @@ module.exports = {
     camelcase: ['off'],
     'nestjs/use-validation-pipe': ['off'],
     'no-null/no-null': 'off',
+    'class-methods-use-this': 1,
   },
 };
