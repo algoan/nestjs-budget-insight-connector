@@ -1,7 +1,7 @@
 # ---------------
 # Pull node image as Builder. we will transpile Ts files to Js here
 # ---------------
-FROM node:lts-alpine as builder
+FROM node:fermium-alpine as builder
 
 # Create app directory
 WORKDIR /usr/src/app
@@ -19,7 +19,7 @@ RUN npm run build
 # ---------------
 # Multistage docker. This will be the final image
 # ---------------
-FROM node:lts-alpine
+FROM node:fermium-alpine
 
 WORKDIR /usr/src/app
 
@@ -33,7 +33,7 @@ COPY --from=builder /usr/src/app/config config
 # Copy previously generated code
 COPY --from=builder /usr/src/app/dist dist
 
-RUN npm ci
+RUN npm install --ignore-scripts
 
 USER node
 
