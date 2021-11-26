@@ -1,4 +1,5 @@
-import { HttpModule, Module } from '@nestjs/common';
+import { HttpModule } from '@nestjs/axios';
+import { Module } from '@nestjs/common';
 import { AlgoanModule } from '../algoan/algoan.module';
 import { AggregatorService } from './services/aggregator.service';
 import { BudgetInsightClient } from './services/budget-insight/budget-insight.client';
