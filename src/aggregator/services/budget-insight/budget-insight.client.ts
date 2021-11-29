@@ -1,8 +1,10 @@
-import { HttpService, Injectable, Logger } from '@nestjs/common';
+import { HttpService } from '@nestjs/axios';
+import { Injectable, Logger } from '@nestjs/common';
 import * as moment from 'moment-timezone';
 import { AxiosResponse, AxiosRequestConfig, AxiosError } from 'axios';
 import { config } from 'node-config-ts';
 import { isNil } from 'lodash';
+import { lastValueFrom, Observable } from 'rxjs';
 import {
   AnonymousUser,
   User,
@@ -62,8 +64,8 @@ export class BudgetInsightClient {
     const url: string = `${biConfig.baseUrl}auth/token/access`;
 
     this.logger.debug(`Create user with tmpToken ${tmpToken} on ${url}`);
-    const resp: AxiosResponse<AuthTokenResponse> = await this.httpService
-      .post(
+    const resp: AxiosResponse<AuthTokenResponse> = await this.toPromise(
+      this.httpService.post<AuthTokenResponse>(
         url,
         {
           client_id: biConfig.clientId,
@@ -76,8 +78,8 @@ export class BudgetInsightClient {
             Accept: 'application/json',
           },
         },
-      )
-      .toPromise();
+      ),
+    );
 
     return resp.data.access_token;
   }
@@ -90,12 +92,12 @@ export class BudgetInsightClient {
     const url: string = `${biConfig.baseUrl}auth/init`;
     this.logger.debug(`Create an anonymous user on ${url}`);
 
-    const resp: AxiosResponse<AnonymousUser> = await this.httpService
-      .post(url, {
+    const resp: AxiosResponse<AnonymousUser> = await this.toPromise(
+      this.httpService.post(url, {
         client_id: biConfig.clientId,
         client_secret: biConfig.clientSecret,
-      })
-      .toPromise();
+      }),
+    );
 
     return resp.data;
   }
@@ -109,8 +111,8 @@ export class BudgetInsightClient {
     const url: string = `${biConfig.baseUrl}auth/jwt`;
     this.logger.debug(`Get a user JWT on ${url}`);
 
-    const resp: AxiosResponse<JWTokenResponse> = await this.httpService
-      .post(
+    const resp: AxiosResponse<JWTokenResponse> = await this.toPromise(
+      this.httpService.post(
         url,
         {
           client_id: biConfig.clientId,
@@ -124,8 +126,8 @@ export class BudgetInsightClient {
             Accept: 'application/json',
           },
         },
-      )
-      .toPromise();
+      ),
+    );
 
     return resp.data;
   }
@@ -138,7 +140,7 @@ export class BudgetInsightClient {
     const baseUrl: string = this.getClientConfig(clientConfig).baseUrl;
     const url: string = `${baseUrl}/users/me`;
     this.logger.debug(`Get a user on ${url}`);
-    const resp: AxiosResponse<User> = await this.httpService.get(url, this.setHeaders(permanentToken)).toPromise();
+    const resp: AxiosResponse<User> = await this.toPromise(this.httpService.get(url, this.setHeaders(permanentToken)));
 
     return resp.data;
   }
@@ -152,9 +154,9 @@ export class BudgetInsightClient {
   public async fetchConnection(permanentToken: string, clientConfig?: ClientConfig): Promise<Connection[]> {
     const baseUrl: string = this.getClientConfig(clientConfig).baseUrl;
     const url: string = `${baseUrl}/users/me/connections?expand=connector`;
-    const resp: AxiosResponse<ConnectionWrapper> = await this.httpService
-      .get(url, this.setHeaders(permanentToken))
-      .toPromise();
+    const resp: AxiosResponse<ConnectionWrapper> = await this.toPromise(
+      this.httpService.get(url, this.setHeaders(permanentToken)),
+    );
 
     return resp.data.connections.filter((co: Connection) => co.active);
   }
@@ -168,7 +170,9 @@ export class BudgetInsightClient {
   public async getConnectionInfo(token: string, id: string, clientConfig?: ClientConfig): Promise<BudgetInsightOwner> {
     const baseUrl: string = this.getClientConfig(clientConfig).baseUrl;
     const url: string = `${baseUrl}/users/me/connections/${id}/informations`;
-    const resp: AxiosResponse<BudgetInsightOwner> = await this.httpService.get(url, this.setHeaders(token)).toPromise();
+    const resp: AxiosResponse<BudgetInsightOwner> = await this.toPromise(
+      this.httpService.get(url, this.setHeaders(token)),
+    );
 
     return resp.data;
   }
@@ -193,9 +197,9 @@ export class BudgetInsightClient {
   public async fetchBankAccounts(permanentToken: string, clientConfig?: ClientConfig): Promise<BudgetInsightAccount[]> {
     const baseUrl: string = this.getClientConfig(clientConfig).baseUrl;
     const url: string = `${baseUrl}/users/me/accounts`;
-    const resp: AxiosResponse<AccountWrapper> = await this.httpService
-      .get(url, this.setHeaders(permanentToken))
-      .toPromise();
+    const resp: AxiosResponse<AccountWrapper> = await this.toPromise(
+      this.httpService.get(url, this.setHeaders(permanentToken)),
+    );
 
     return resp.data.accounts;
   }
@@ -216,9 +220,9 @@ export class BudgetInsightClient {
     const startDate: Date = moment(endDate).subtract(nbOfMonths, 'month').toDate();
 
     const url: string = `${baseUrl}/users/me/accounts/${accountId}/transactions?min_date=${startDate.toISOString()}&max_date=${endDate.toISOString()}`;
-    const resp: AxiosResponse<TransactionWrapper> = await this.httpService
-      .get(url, this.setHeaders(permanentToken))
-      .toPromise();
+    const resp: AxiosResponse<TransactionWrapper> = await this.toPromise(
+      this.httpService.get(url, this.setHeaders(permanentToken)),
+    );
 
     return resp.data.transactions;
   }
@@ -236,11 +240,20 @@ export class BudgetInsightClient {
     const baseUrl: string = this.getClientConfig(clientConfig).baseUrl;
 
     const url: string = `${baseUrl}/banks/categories/${categoryId}`;
-    const resp: AxiosResponse<BudgetInsightCategory> = await this.httpService
-      .get(url, this.setHeaders(permanentToken))
-      .toPromise();
+    const resp: AxiosResponse<BudgetInsightCategory> = await this.toPromise(
+      this.httpService.get(url, this.setHeaders(permanentToken)),
+    );
 
     return resp.data;
+  }
+
+  /**
+   * Convert an Observable to a promise
+   * @param response Axios observable response
+   * @returns Promisify observable
+   */
+  private async toPromise<T>(response: Observable<T>): Promise<T> {
+    return lastValueFrom(response);
   }
 
   /**
