@@ -60,6 +60,13 @@ export class HooksService {
       (sub: Subscription) => sub.id === event.subscription.id,
     );
 
+    /**
+     * NOTE: this statement is impossible to cover
+     * L.57: we are looking for a service account with the subscription id provided by the event
+     * To do this, we loop into the subscriptions array. If we do not find the subscription,
+     * a 401 error is sent. So necessarily, subscription is defined.
+     * TODO: return SA and subscription above. This statement is just a typed-check.
+     */
     if (subscription === undefined) {
       return;
     }
@@ -111,6 +118,10 @@ export class HooksService {
     } catch (err) {
       void se.update({ status: EventStatus.ERROR });
 
+      /**
+       * NOTE: throwing an error here is useless
+       * Because we don't handled "unhandled promise rejection"
+       */
       throw err;
     }
 
