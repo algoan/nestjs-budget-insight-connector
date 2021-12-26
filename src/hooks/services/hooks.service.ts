@@ -118,11 +118,7 @@ export class HooksService {
     } catch (err) {
       void se.update({ status: EventStatus.ERROR });
 
-      /**
-       * NOTE: throwing an error here is useless
-       * Because we don't handled "unhandled promise rejection"
-       */
-      throw err;
+      return;
     }
 
     void se.update({ status: EventStatus.PROCESSED });
@@ -144,6 +140,7 @@ export class HooksService {
     /** Get the customer to retrieve the callbackUrl and connection mode */
     const customer: Customer | undefined = await this.algoanCustomerService.getCustomerById(payload.customerId);
 
+    /** NOTE: should never be reached: if customer does not exist, a 404 error is thrown just above */
     if (customer === undefined) {
       throw new Error(`Could not retrieve customer for id "${payload.customerId}"`);
     }
