@@ -9,7 +9,8 @@
     "clientId": "budgetInsightClientId",
     "clientSecret": "budgetInsightClientSecret",
     "synchronizationTimeout": 1200,
-    "waitingTime": 1000
+    "waitingTime": 1000,
+    "apiVersion": "2.0"
   },
   "targetUrl": "http://localhost:8080/hooks",
   "eventList": [

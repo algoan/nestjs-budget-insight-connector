@@ -5,7 +5,7 @@
     "clientSecret": "b"
   },
   "budgetInsight": {
-    "url": "https://fake-budget-insights.com",
+    "url": "https://fake-budget-insights.com/2.0",
     "clientId": "budgetInsightClientId",
     "clientSecret": "budgetInsightClientSecret",
     "waitingTime": 0
