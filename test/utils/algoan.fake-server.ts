@@ -1,4 +1,4 @@
-import { EventStatus, SubscriptionEvent } from '@algoan/rest';
+import { EventStatus } from '@algoan/rest';
 import { HttpStatus } from '@nestjs/common';
 import * as nock from 'nock';
 import { config } from 'node-config-ts';
@@ -226,6 +226,192 @@ export const mockNoAggregationDetails = (customerId: string): nock.Scope => {
     .reply(HttpStatus.OK, {
       id: customerId,
     })
+    .patch('/v1/subscriptions/1/events/event_id', {
+      status: EventStatus.ERROR,
+    })
+    .reply(HttpStatus.OK);
+};
+
+/**
+ * Mock "bank_details_required" event in redirect mode.
+ * A temporary code is defined in the hook payload
+ */
+export const mockBankDetailsRequiredRedirectMode = (customerId: string): nock.Scope => {
+  return nock(config.algoan.baseUrl)
+    .post('/v1/oauth/token')
+    .reply(HttpStatus.OK, {
+      access_token: 'token',
+      refresh_token: 'refresh_token',
+      expires_in: 3000,
+      refresh_expires_in: 10000,
+    })
+    .get(`/v2/customers/${customerId}`)
+    .reply(HttpStatus.OK, {
+      id: customerId,
+      aggregationDetails: {
+        mode: 'REDIRECT',
+      },
+    })
+    .patch(`/v2/customers/${customerId}`, {
+      aggregationDetails: {
+        userId: 'user_id',
+      },
+    })
+    .reply(HttpStatus.OK)
+    .patch(`/v2/customers/${customerId}/analyses/analysis_id`)
+    .reply(HttpStatus.OK, {})
+    .patch('/v1/subscriptions/1/events/event_id', {
+      status: EventStatus.PROCESSED,
+    })
+    .reply(HttpStatus.OK);
+};
+
+/**
+ * Mock "bank_details_required" event in redirect mode.
+ * A temporary code is not defined in the hook payload
+ */
+export const mockBankDetailsRequiredRedirectModeRefresh = (customerId: string): nock.Scope => {
+  return nock(config.algoan.baseUrl)
+    .post('/v1/oauth/token')
+    .reply(HttpStatus.OK, {
+      access_token: 'token',
+      refresh_token: 'refresh_token',
+      expires_in: 3000,
+      refresh_expires_in: 10000,
+    })
+    .get(`/v2/customers/${customerId}`)
+    .reply(HttpStatus.OK, {
+      id: customerId,
+      aggregationDetails: {
+        mode: 'REDIRECT',
+        userId: 'user_id',
+      },
+    })
+    .patch(`/v2/customers/${customerId}/analyses/analysis_id`)
+    .reply(HttpStatus.OK, {})
+    .patch('/v1/subscriptions/1/events/event_id', {
+      status: EventStatus.PROCESSED,
+    })
+    .reply(HttpStatus.OK);
+};
+
+/**
+ * Mock "bank_details_required" event in API mode.
+ */
+export const mockBankDetailsRequiredAPIMode = (customerId: string): nock.Scope => {
+  return nock(config.algoan.baseUrl)
+    .post('/v1/oauth/token')
+    .reply(HttpStatus.OK, {
+      access_token: 'token',
+      refresh_token: 'refresh_token',
+      expires_in: 3000,
+      refresh_expires_in: 10000,
+    })
+    .get(`/v2/customers/${customerId}`)
+    .reply(HttpStatus.OK, {
+      id: customerId,
+      aggregationDetails: {
+        mode: 'API',
+        userId: 'user_id',
+        apiUrl: config.budgetInsight.url,
+        clientId: config.budgetInsight.clientId,
+        token: 'jwt_token',
+      },
+    })
+    .patch(`/v2/customers/${customerId}/analyses/analysis_id`)
+    .reply(HttpStatus.OK, {})
+    .patch('/v1/subscriptions/1/events/event_id', {
+      status: EventStatus.PROCESSED,
+    })
+    .reply(HttpStatus.OK);
+};
+
+/**
+ * Mock "bank_details_required" event in API mode
+ * No aggregation details are defined in the customer
+ */
+export const mockBankDetailsRequiredNoAggregationDetails = (customerId: string): nock.Scope => {
+  return nock(config.algoan.baseUrl)
+    .post('/v1/oauth/token')
+    .reply(HttpStatus.OK, {
+      access_token: 'token',
+      refresh_token: 'refresh_token',
+      expires_in: 3000,
+      refresh_expires_in: 10000,
+    })
+    .get(`/v2/customers/${customerId}`)
+    .reply(HttpStatus.OK, {
+      id: customerId,
+      aggregationDetails: {},
+    })
+    .patch('/v1/subscriptions/1/events/event_id', {
+      status: EventStatus.PROCESSED,
+    })
+    .reply(HttpStatus.OK);
+};
+
+/**
+ * Mock "bank_details_required" event in API mode
+ * No aggregation details are defined in the customer
+ */
+export const mockBankDetailsRequiredAPIModeNoBIConnection = (customerId: string): nock.Scope => {
+  return nock(config.algoan.baseUrl)
+    .post('/v1/oauth/token')
+    .reply(HttpStatus.OK, {
+      access_token: 'token',
+      refresh_token: 'refresh_token',
+      expires_in: 3000,
+      refresh_expires_in: 10000,
+    })
+    .get(`/v2/customers/${customerId}`)
+    .reply(HttpStatus.OK, {
+      id: customerId,
+      aggregationDetails: {
+        mode: 'API',
+        userId: 'user_id',
+        apiUrl: config.budgetInsight.url,
+        clientId: config.budgetInsight.clientId,
+        token: 'jwt_token',
+      },
+    })
+    .patch('/v1/subscriptions/1/events/event_id', {
+      status: EventStatus.PROCESSED,
+    })
+    .reply(HttpStatus.OK);
+};
+
+/**
+ * Mock "bank_details_required" event in API mode
+ * No aggregation details are defined in the customer
+ */
+export const mockBankDetailsRequiredAPIModeNoConnectionSync = (customerId: string): nock.Scope => {
+  return nock(config.algoan.baseUrl)
+    .post('/v1/oauth/token')
+    .reply(HttpStatus.OK, {
+      access_token: 'token',
+      refresh_token: 'refresh_token',
+      expires_in: 3000,
+      refresh_expires_in: 10000,
+    })
+    .get(`/v2/customers/${customerId}`)
+    .reply(HttpStatus.OK, {
+      id: customerId,
+      aggregationDetails: {
+        mode: 'API',
+        userId: 'user_id',
+        apiUrl: config.budgetInsight.url,
+        clientId: config.budgetInsight.clientId,
+        token: 'jwt_token',
+      },
+    })
+    .patch(`/v2/customers/${customerId}/analyses/analysis_id`, {
+      status: 'ERROR',
+      error: {
+        code: 'INTERNAL_ERROR',
+        message: 'An error occured when fetching data from the aggregator',
+      },
+    })
+    .reply(HttpStatus.OK)
     .patch('/v1/subscriptions/1/events/event_id', {
       status: EventStatus.ERROR,
     })

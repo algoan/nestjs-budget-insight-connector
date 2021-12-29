@@ -8,7 +8,8 @@
     "url": "https://fake-budget-insights.com/2.0",
     "clientId": "budgetInsightClientId",
     "clientSecret": "budgetInsightClientSecret",
-    "waitingTime": 0
+    "waitingTime": 0,
+    "synchronizationTimeout": 0.01
   },
   "targetUrl": "https://test",
   "eventList": [
