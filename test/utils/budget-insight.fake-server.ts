@@ -3,6 +3,59 @@ import * as nock from 'nock';
 import { config } from 'node-config-ts';
 import { ParsedUrlQueryInput } from 'querystring';
 
+const fakeConnections = [
+  {
+    id: 'connection_id_1',
+    active: false,
+  },
+  {
+    id: 'connection_id_2',
+    active: true,
+    state: null,
+    last_update: Date.now(),
+  },
+];
+
+const fakeAccounts = [
+  {
+    id: '1',
+    id_connection: 'connection_id_2',
+    id_user: 'user_id',
+    number: 'account_number',
+    original_name: 'account_original_name',
+    coming: 0,
+    currency: {
+      id: 'currency_id',
+    },
+    balance: 100,
+    name: 'account_name',
+    last_update: Date.now(),
+    type: 'checking',
+    iban: 'iban',
+    bic: 'bic',
+    usage: 'PRIV',
+  },
+];
+
+const fakeTransactions = [
+  {
+    id_account: 'account_id_1',
+    id: 'transaction_id_1',
+    date: new Date().toISOString(),
+    rdate: new Date().toISOString(),
+    simplified_wording: 'simple_wording',
+    value: 50,
+    wording: 'long_wording',
+    original_wording: 'original_wording',
+    type: 'transfer',
+    id_category: 'category_id_1',
+    original_currency: {
+      id: 'currency_id',
+    },
+    coming: false,
+  },
+];
+
 /**
  * Mock the /auth/jwt API
  */
@@ -32,41 +85,11 @@ export const getAccountAndTrFromRedirectMode = (): nock.Scope => {
     })
     .get('/users/me/connections?expand=connector')
     .reply(HttpStatus.OK, {
-      connections: [
-        {
-          id: 'connection_id_1',
-          active: false,
-        },
-        {
-          id: 'connection_id_2',
-          active: true,
-          state: null,
-          last_update: Date.now(),
-        },
-      ],
+      connections: fakeConnections,
     })
     .get('/users/me/accounts')
     .reply(HttpStatus.OK, {
-      accounts: [
-        {
-          id: '1',
-          id_connection: 'connection_id_2',
-          id_user: 'user_id',
-          number: 'account_number',
-          original_name: 'account_original_name',
-          coming: 0,
-          currency: {
-            id: 'currency_id',
-          },
-          balance: 100,
-          name: 'account_name',
-          last_update: Date.now(),
-          type: 'checking',
-          iban: 'iban',
-          bic: 'bic',
-          usage: 'PRIV',
-        },
-      ],
+      accounts: fakeAccounts,
     })
     .get('/users/me/connections/connection_id_2/informations')
     .reply(HttpStatus.OK, {
@@ -79,24 +102,7 @@ export const getAccountAndTrFromRedirectMode = (): nock.Scope => {
       return parsedQuery.min_date !== undefined && parsedQuery.max_date !== undefined;
     })
     .reply(HttpStatus.OK, {
-      transactions: [
-        {
-          id_account: 'account_id_1',
-          id: 'transaction_id_1',
-          date: new Date().toISOString(),
-          rdate: new Date().toISOString(),
-          simplified_wording: 'simple_wording',
-          value: 50,
-          wording: 'long_wording',
-          original_wording: 'original_wording',
-          type: 'transfer',
-          id_category: 'category_id_1',
-          original_currency: {
-            id: 'currency_id',
-          },
-          coming: false,
-        },
-      ],
+      transactions: fakeTransactions,
     })
     .get('/banks/categories/category_id_1')
     .reply(HttpStatus.OK, {
@@ -119,41 +125,11 @@ export const getAccountAndTrFromRedirectModeNoTmpCode = (): nock.Scope => {
     })
     .get('/users/me/connections?expand=connector')
     .reply(HttpStatus.OK, {
-      connections: [
-        {
-          id: 'connection_id_1',
-          active: false,
-        },
-        {
-          id: 'connection_id_2',
-          active: true,
-          state: null,
-          last_update: Date.now(),
-        },
-      ],
+      connections: fakeConnections,
     })
     .get('/users/me/accounts')
     .reply(HttpStatus.OK, {
-      accounts: [
-        {
-          id: '1',
-          id_connection: 'connection_id_2',
-          id_user: 'user_id',
-          number: 'account_number',
-          original_name: 'account_original_name',
-          coming: 0,
-          currency: {
-            id: 'currency_id',
-          },
-          balance: 100,
-          name: 'account_name',
-          last_update: Date.now(),
-          type: 'checking',
-          iban: 'iban',
-          bic: 'bic',
-          usage: 'PRIV',
-        },
-      ],
+      accounts: fakeAccounts,
     })
     .get('/users/me/connections/connection_id_2/informations')
     .reply(HttpStatus.OK, {
@@ -166,24 +142,7 @@ export const getAccountAndTrFromRedirectModeNoTmpCode = (): nock.Scope => {
       return parsedQuery.min_date !== undefined && parsedQuery.max_date !== undefined;
     })
     .reply(HttpStatus.OK, {
-      transactions: [
-        {
-          id_account: 'account_id_1',
-          id: 'transaction_id_1',
-          date: new Date().toISOString(),
-          rdate: new Date().toISOString(),
-          simplified_wording: 'simple_wording',
-          value: 50,
-          wording: 'long_wording',
-          original_wording: 'original_wording',
-          type: 'transfer',
-          id_category: 'category_id_1',
-          original_currency: {
-            id: 'currency_id',
-          },
-          coming: false,
-        },
-      ],
+      transactions: fakeTransactions,
     })
     .get('/banks/categories/category_id_1')
     .reply(HttpStatus.OK, {
@@ -199,41 +158,11 @@ export const getAccountAndTrFromAPIMode = (): nock.Scope => {
   return nock(config.budgetInsight.url)
     .get('/users/me/connections?expand=connector')
     .reply(HttpStatus.OK, {
-      connections: [
-        {
-          id: 'connection_id_1',
-          active: false,
-        },
-        {
-          id: 'connection_id_2',
-          active: true,
-          state: null,
-          last_update: Date.now(),
-        },
-      ],
+      connections: fakeConnections,
     })
     .get('/users/me/accounts')
     .reply(HttpStatus.OK, {
-      accounts: [
-        {
-          id: '1',
-          id_connection: 'connection_id_2',
-          id_user: 'user_id',
-          number: 'account_number',
-          original_name: 'account_original_name',
-          coming: 0,
-          currency: {
-            id: 'currency_id',
-          },
-          balance: 100,
-          name: 'account_name',
-          last_update: Date.now(),
-          type: 'checking',
-          iban: 'iban',
-          bic: 'bic',
-          usage: 'PRIV',
-        },
-      ],
+      accounts: fakeAccounts,
     })
     .get('/users/me/connections/connection_id_2/informations')
     .reply(HttpStatus.OK, {
@@ -246,24 +175,7 @@ export const getAccountAndTrFromAPIMode = (): nock.Scope => {
       return parsedQuery.min_date !== undefined && parsedQuery.max_date !== undefined;
     })
     .reply(HttpStatus.OK, {
-      transactions: [
-        {
-          id_account: 'account_id_1',
-          id: 'transaction_id_1',
-          date: new Date().toISOString(),
-          rdate: new Date().toISOString(),
-          simplified_wording: 'simple_wording',
-          value: 50,
-          wording: 'long_wording',
-          original_wording: 'original_wording',
-          type: 'transfer',
-          id_category: 'category_id_1',
-          original_currency: {
-            id: 'currency_id',
-          },
-          coming: false,
-        },
-      ],
+      transactions: fakeTransactions,
     })
     .get('/banks/categories/category_id_1')
     .reply(HttpStatus.OK, {

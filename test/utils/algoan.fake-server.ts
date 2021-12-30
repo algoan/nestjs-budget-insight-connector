@@ -4,7 +4,23 @@ import * as nock from 'nock';
 import { config } from 'node-config-ts';
 
 import { AggregationDetailsAggregatorName } from '../../src/algoan/dto/customer.enums';
+import { ANALYSIS_ID, CUSTOMER_ID, EVENT_ID, SUBSCRIPTION_ID } from './tools';
 
+/**
+ * Returns a nock interceptor where all mock servers begin with
+ * @param nock Nock scope
+ */
+const baseScenario = (nock: nock.Scope): nock.Interceptor => {
+  return nock
+    .post('/v1/oauth/token')
+    .reply(HttpStatus.OK, {
+      access_token: 'token',
+      refresh_token: 'refresh_token',
+      expires_in: 3000,
+      refresh_expires_in: 10000,
+    })
+    .get(`/v2/customers/${CUSTOMER_ID}`);
+};
 /**
  * Nock server when application starts and no subscription exist yet
  */
@@ -65,34 +81,27 @@ export const patchEventStatus = (subscriptionId: string, eventId: string, status
  * @param customerId CustomerId
  * @returns
  */
-export const mockAggregatorLinkRequiredRedirectModeWithCb = (customerId: string): nock.Scope => {
+export const mockAggregatorLinkRequiredRedirectModeWithCb = (): nock.Scope => {
   const callbackUrl: string = 'http://callback.url';
-  return nock(config.algoan.baseUrl)
-    .post('/v1/oauth/token')
+
+  return baseScenario(nock(config.algoan.baseUrl))
     .reply(HttpStatus.OK, {
-      access_token: 'token',
-      refresh_token: 'refresh_token',
-      expires_in: 3000,
-      refresh_expires_in: 10000,
-    })
-    .get(`/v2/customers/${customerId}`)
-    .reply(HttpStatus.OK, {
-      id: customerId,
+      id: CUSTOMER_ID,
       aggregationDetails: {
         callbackUrl,
         mode: 'REDIRECT',
       },
     })
-    .patch(`/v2/customers/${customerId}`, {
+    .patch(`/v2/customers/${CUSTOMER_ID}`, {
       aggregationDetails: {
-        redirectUrl: `${config.budgetInsight.url}auth/webview/fr/connect?client_id=${config.budgetInsight.clientId}&redirect_uri=${callbackUrl}&response_type=code&state=&types=banks`,
+        redirectUrl: `${config.budgetInsight.url}/auth/webview/fr/connect?client_id=${config.budgetInsight.clientId}&redirect_uri=${callbackUrl}&response_type=code&state=&types=banks`,
         aggregatorName: AggregationDetailsAggregatorName.BUDGET_INSIGHT,
         apiUrl: config.budgetInsight.url,
         clientId: config.budgetInsight.clientId,
       },
     })
     .reply(HttpStatus.OK, {})
-    .patch('/v1/subscriptions/1/events/event_id', {
+    .patch(`/v1/subscriptions/${SUBSCRIPTION_ID}/events/${EVENT_ID}`, {
       status: EventStatus.PROCESSED,
     })
     .reply(HttpStatus.OK);
@@ -104,23 +113,15 @@ export const mockAggregatorLinkRequiredRedirectModeWithCb = (customerId: string)
  * @param customerId CustomerId
  * @returns
  */
-export const mockAggregatorLinkRequiredRedirectModeWithoutCb = (customerId: string): nock.Scope => {
-  return nock(config.algoan.baseUrl)
-    .post('/v1/oauth/token')
+export const mockAggregatorLinkRequiredRedirectModeWithoutCb = (): nock.Scope => {
+  return baseScenario(nock(config.algoan.baseUrl))
     .reply(HttpStatus.OK, {
-      access_token: 'token',
-      refresh_token: 'refresh_token',
-      expires_in: 3000,
-      refresh_expires_in: 10000,
-    })
-    .get(`/v2/customers/${customerId}`)
-    .reply(HttpStatus.OK, {
-      id: customerId,
+      id: CUSTOMER_ID,
       aggregationDetails: {
         mode: 'REDIRECT',
       },
     })
-    .patch('/v1/subscriptions/1/events/event_id', {
+    .patch(`/v1/subscriptions/${SUBSCRIPTION_ID}/events/${EVENT_ID}`, {
       status: EventStatus.ERROR,
     })
     .reply(HttpStatus.OK);
@@ -130,23 +131,15 @@ export const mockAggregatorLinkRequiredRedirectModeWithoutCb = (customerId: stri
  * Mock Algoan API when handling "aggregator_link_required" event in API Mode
  * @param customerId Customer ID
  */
-export const mockAggregatorLinkRequiredAPIMode = (customerId: string): nock.Scope => {
-  return nock(config.algoan.baseUrl)
-    .post('/v1/oauth/token')
+export const mockAggregatorLinkRequiredAPIMode = (): nock.Scope => {
+  return baseScenario(nock(config.algoan.baseUrl))
     .reply(HttpStatus.OK, {
-      access_token: 'token',
-      refresh_token: 'refresh_token',
-      expires_in: 3000,
-      refresh_expires_in: 10000,
-    })
-    .get(`/v2/customers/${customerId}`)
-    .reply(HttpStatus.OK, {
-      id: customerId,
+      id: CUSTOMER_ID,
       aggregationDetails: {
         mode: 'API',
       },
     })
-    .patch(`/v2/customers/${customerId}`, {
+    .patch(`/v2/customers/${CUSTOMER_ID}`, {
       aggregationDetails: {
         token: 'bi_token',
         userId: 'user_id',
@@ -156,7 +149,7 @@ export const mockAggregatorLinkRequiredAPIMode = (customerId: string): nock.Scop
       },
     })
     .reply(HttpStatus.OK, {})
-    .patch('/v1/subscriptions/1/events/event_id', {
+    .patch(`/v1/subscriptions/${SUBSCRIPTION_ID}/events/${EVENT_ID}`, {
       status: EventStatus.PROCESSED,
     })
     .reply(HttpStatus.OK);
@@ -166,23 +159,15 @@ export const mockAggregatorLinkRequiredAPIMode = (customerId: string): nock.Scop
  * Mock a customer with a unknown mode
  * @param customerId CustomerId
  */
-export const mockInvalidMode = (customerId: string): nock.Scope => {
-  return nock(config.algoan.baseUrl)
-    .post('/v1/oauth/token')
+export const mockInvalidMode = (): nock.Scope => {
+  return baseScenario(nock(config.algoan.baseUrl))
     .reply(HttpStatus.OK, {
-      access_token: 'token',
-      refresh_token: 'refresh_token',
-      expires_in: 3000,
-      refresh_expires_in: 10000,
-    })
-    .get(`/v2/customers/${customerId}`)
-    .reply(HttpStatus.OK, {
-      id: customerId,
+      id: CUSTOMER_ID,
       aggregationDetails: {
         mode: 'UNKNOWN',
       },
     })
-    .patch('/v1/subscriptions/1/events/event_id', {
+    .patch(`/v1/subscriptions/${SUBSCRIPTION_ID}/events/${EVENT_ID}`, {
       status: EventStatus.ERROR,
     })
     .reply(HttpStatus.OK);
@@ -192,18 +177,10 @@ export const mockInvalidMode = (customerId: string): nock.Scope => {
  * Mock a unknown customer
  * @param customerId CustomerId
  */
-export const mockUnknownCustomer = (customerId: string): nock.Scope => {
-  return nock(config.algoan.baseUrl)
-    .post('/v1/oauth/token')
-    .reply(HttpStatus.OK, {
-      access_token: 'token',
-      refresh_token: 'refresh_token',
-      expires_in: 3000,
-      refresh_expires_in: 10000,
-    })
-    .get(`/v2/customers/${customerId}`)
+export const mockUnknownCustomer = (): nock.Scope => {
+  return baseScenario(nock(config.algoan.baseUrl))
     .reply(HttpStatus.NOT_FOUND)
-    .patch('/v1/subscriptions/1/events/event_id', {
+    .patch(`/v1/subscriptions/${SUBSCRIPTION_ID}/events/${EVENT_ID}`, {
       status: EventStatus.ERROR,
     })
     .reply(HttpStatus.OK);
@@ -213,20 +190,12 @@ export const mockUnknownCustomer = (customerId: string): nock.Scope => {
  * Mock a customer without aggregationDetails
  * @param customerId CustomerId
  */
-export const mockNoAggregationDetails = (customerId: string): nock.Scope => {
-  return nock(config.algoan.baseUrl)
-    .post('/v1/oauth/token')
+export const mockNoAggregationDetails = (): nock.Scope => {
+  return baseScenario(nock(config.algoan.baseUrl))
     .reply(HttpStatus.OK, {
-      access_token: 'token',
-      refresh_token: 'refresh_token',
-      expires_in: 3000,
-      refresh_expires_in: 10000,
+      id: CUSTOMER_ID,
     })
-    .get(`/v2/customers/${customerId}`)
-    .reply(HttpStatus.OK, {
-      id: customerId,
-    })
-    .patch('/v1/subscriptions/1/events/event_id', {
+    .patch(`/v1/subscriptions/${SUBSCRIPTION_ID}/events/${EVENT_ID}`, {
       status: EventStatus.ERROR,
     })
     .reply(HttpStatus.OK);
@@ -237,30 +206,22 @@ export const mockNoAggregationDetails = (customerId: string): nock.Scope => {
  * A temporary code is defined in the hook payload
  */
 export const mockBankDetailsRequiredRedirectMode = (customerId: string): nock.Scope => {
-  return nock(config.algoan.baseUrl)
-    .post('/v1/oauth/token')
-    .reply(HttpStatus.OK, {
-      access_token: 'token',
-      refresh_token: 'refresh_token',
-      expires_in: 3000,
-      refresh_expires_in: 10000,
-    })
-    .get(`/v2/customers/${customerId}`)
+  return baseScenario(nock(config.algoan.baseUrl))
     .reply(HttpStatus.OK, {
       id: customerId,
       aggregationDetails: {
         mode: 'REDIRECT',
       },
     })
-    .patch(`/v2/customers/${customerId}`, {
+    .patch(`/v2/customers/${CUSTOMER_ID}`, {
       aggregationDetails: {
         userId: 'user_id',
       },
     })
     .reply(HttpStatus.OK)
-    .patch(`/v2/customers/${customerId}/analyses/analysis_id`)
+    .patch(`/v2/customers/${CUSTOMER_ID}/analyses/${ANALYSIS_ID}`)
     .reply(HttpStatus.OK, {})
-    .patch('/v1/subscriptions/1/events/event_id', {
+    .patch(`/v1/subscriptions/${SUBSCRIPTION_ID}/events/${EVENT_ID}`, {
       status: EventStatus.PROCESSED,
     })
     .reply(HttpStatus.OK);
@@ -271,15 +232,7 @@ export const mockBankDetailsRequiredRedirectMode = (customerId: string): nock.Sc
  * A temporary code is not defined in the hook payload
  */
 export const mockBankDetailsRequiredRedirectModeRefresh = (customerId: string): nock.Scope => {
-  return nock(config.algoan.baseUrl)
-    .post('/v1/oauth/token')
-    .reply(HttpStatus.OK, {
-      access_token: 'token',
-      refresh_token: 'refresh_token',
-      expires_in: 3000,
-      refresh_expires_in: 10000,
-    })
-    .get(`/v2/customers/${customerId}`)
+  return baseScenario(nock(config.algoan.baseUrl))
     .reply(HttpStatus.OK, {
       id: customerId,
       aggregationDetails: {
@@ -287,9 +240,9 @@ export const mockBankDetailsRequiredRedirectModeRefresh = (customerId: string): 
         userId: 'user_id',
       },
     })
-    .patch(`/v2/customers/${customerId}/analyses/analysis_id`)
+    .patch(`/v2/customers/${CUSTOMER_ID}/analyses/${ANALYSIS_ID}`)
     .reply(HttpStatus.OK, {})
-    .patch('/v1/subscriptions/1/events/event_id', {
+    .patch(`/v1/subscriptions/${SUBSCRIPTION_ID}/events/${EVENT_ID}`, {
       status: EventStatus.PROCESSED,
     })
     .reply(HttpStatus.OK);
@@ -299,15 +252,7 @@ export const mockBankDetailsRequiredRedirectModeRefresh = (customerId: string): 
  * Mock "bank_details_required" event in API mode.
  */
 export const mockBankDetailsRequiredAPIMode = (customerId: string): nock.Scope => {
-  return nock(config.algoan.baseUrl)
-    .post('/v1/oauth/token')
-    .reply(HttpStatus.OK, {
-      access_token: 'token',
-      refresh_token: 'refresh_token',
-      expires_in: 3000,
-      refresh_expires_in: 10000,
-    })
-    .get(`/v2/customers/${customerId}`)
+  return baseScenario(nock(config.algoan.baseUrl))
     .reply(HttpStatus.OK, {
       id: customerId,
       aggregationDetails: {
@@ -318,9 +263,9 @@ export const mockBankDetailsRequiredAPIMode = (customerId: string): nock.Scope =
         token: 'jwt_token',
       },
     })
-    .patch(`/v2/customers/${customerId}/analyses/analysis_id`)
+    .patch(`/v2/customers/${CUSTOMER_ID}/analyses/${ANALYSIS_ID}`)
     .reply(HttpStatus.OK, {})
-    .patch('/v1/subscriptions/1/events/event_id', {
+    .patch(`/v1/subscriptions/${SUBSCRIPTION_ID}/events/${EVENT_ID}`, {
       status: EventStatus.PROCESSED,
     })
     .reply(HttpStatus.OK);
@@ -331,20 +276,12 @@ export const mockBankDetailsRequiredAPIMode = (customerId: string): nock.Scope =
  * No aggregation details are defined in the customer
  */
 export const mockBankDetailsRequiredNoAggregationDetails = (customerId: string): nock.Scope => {
-  return nock(config.algoan.baseUrl)
-    .post('/v1/oauth/token')
-    .reply(HttpStatus.OK, {
-      access_token: 'token',
-      refresh_token: 'refresh_token',
-      expires_in: 3000,
-      refresh_expires_in: 10000,
-    })
-    .get(`/v2/customers/${customerId}`)
+  return baseScenario(nock(config.algoan.baseUrl))
     .reply(HttpStatus.OK, {
       id: customerId,
       aggregationDetails: {},
     })
-    .patch('/v1/subscriptions/1/events/event_id', {
+    .patch(`/v1/subscriptions/${SUBSCRIPTION_ID}/events/${EVENT_ID}`, {
       status: EventStatus.PROCESSED,
     })
     .reply(HttpStatus.OK);
@@ -354,18 +291,10 @@ export const mockBankDetailsRequiredNoAggregationDetails = (customerId: string):
  * Mock "bank_details_required" event in API mode
  * No aggregation details are defined in the customer
  */
-export const mockBankDetailsRequiredAPIModeNoBIConnection = (customerId: string): nock.Scope => {
-  return nock(config.algoan.baseUrl)
-    .post('/v1/oauth/token')
+export const mockBankDetailsRequiredAPIModeNoBIConnection = (): nock.Scope => {
+  return baseScenario(nock(config.algoan.baseUrl))
     .reply(HttpStatus.OK, {
-      access_token: 'token',
-      refresh_token: 'refresh_token',
-      expires_in: 3000,
-      refresh_expires_in: 10000,
-    })
-    .get(`/v2/customers/${customerId}`)
-    .reply(HttpStatus.OK, {
-      id: customerId,
+      id: CUSTOMER_ID,
       aggregationDetails: {
         mode: 'API',
         userId: 'user_id',
@@ -374,7 +303,7 @@ export const mockBankDetailsRequiredAPIModeNoBIConnection = (customerId: string)
         token: 'jwt_token',
       },
     })
-    .patch('/v1/subscriptions/1/events/event_id', {
+    .patch(`/v1/subscriptions/${SUBSCRIPTION_ID}/events/${EVENT_ID}`, {
       status: EventStatus.PROCESSED,
     })
     .reply(HttpStatus.OK);
@@ -384,18 +313,10 @@ export const mockBankDetailsRequiredAPIModeNoBIConnection = (customerId: string)
  * Mock "bank_details_required" event in API mode
  * No aggregation details are defined in the customer
  */
-export const mockBankDetailsRequiredAPIModeNoConnectionSync = (customerId: string): nock.Scope => {
-  return nock(config.algoan.baseUrl)
-    .post('/v1/oauth/token')
+export const mockBankDetailsRequiredAPIModeNoConnectionSync = (): nock.Scope => {
+  return baseScenario(nock(config.algoan.baseUrl))
     .reply(HttpStatus.OK, {
-      access_token: 'token',
-      refresh_token: 'refresh_token',
-      expires_in: 3000,
-      refresh_expires_in: 10000,
-    })
-    .get(`/v2/customers/${customerId}`)
-    .reply(HttpStatus.OK, {
-      id: customerId,
+      id: CUSTOMER_ID,
       aggregationDetails: {
         mode: 'API',
         userId: 'user_id',
@@ -404,7 +325,7 @@ export const mockBankDetailsRequiredAPIModeNoConnectionSync = (customerId: strin
         token: 'jwt_token',
       },
     })
-    .patch(`/v2/customers/${customerId}/analyses/analysis_id`, {
+    .patch(`/v2/customers/${CUSTOMER_ID}/analyses/${ANALYSIS_ID}`, {
       status: 'ERROR',
       error: {
         code: 'INTERNAL_ERROR',
@@ -412,7 +333,7 @@ export const mockBankDetailsRequiredAPIModeNoConnectionSync = (customerId: strin
       },
     })
     .reply(HttpStatus.OK)
-    .patch('/v1/subscriptions/1/events/event_id', {
+    .patch(`/v1/subscriptions/${SUBSCRIPTION_ID}/events/${EVENT_ID}`, {
       status: EventStatus.ERROR,
     })
     .reply(HttpStatus.OK);
