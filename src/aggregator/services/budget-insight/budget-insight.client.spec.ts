@@ -54,7 +54,7 @@ describe('BudgetInsightClient', () => {
     const permToken = await service.register(token);
     expect(permToken).toBe('mockAccessToken');
     expect(spy).toHaveBeenCalledWith(
-      'http://localhost:4000/auth/token/access',
+      'https://fake-budget-insights.com/2.0/auth/token/access',
       {
         client_id: 'budgetInsightClientId',
         client_secret: 'budgetInsightClientSecret',
@@ -77,7 +77,7 @@ describe('BudgetInsightClient', () => {
     const jwtResponse = await service.createUser();
     expect(jwtResponse).toEqual(user);
 
-    expect(spy).toHaveBeenCalledWith('http://localhost:4000/auth/init', {
+    expect(spy).toHaveBeenCalledWith('https://fake-budget-insights.com/2.0/auth/init', {
       client_id: 'budgetInsightClientId',
       client_secret: 'budgetInsightClientSecret',
     });
@@ -98,7 +98,7 @@ describe('BudgetInsightClient', () => {
     expect(jwtResponse).toEqual(jwtReturn);
 
     expect(spy).toHaveBeenCalledWith(
-      'http://localhost:4000/auth/jwt',
+      'https://fake-budget-insights.com/2.0/auth/jwt',
       {
         client_id: 'budgetInsightClientId',
         client_secret: 'budgetInsightClientSecret',
@@ -123,7 +123,7 @@ describe('BudgetInsightClient', () => {
     expect(jwtResponse).toEqual(jwtReturn);
 
     expect(spy).toHaveBeenCalledWith(
-      'http://localhost:4000/auth/jwt',
+      'https://fake-budget-insights.com/2.0/auth/jwt',
       {
         client_id: 'budgetInsightClientId',
         client_secret: 'budgetInsightClientSecret',
@@ -145,7 +145,7 @@ describe('BudgetInsightClient', () => {
 
     const user = await service.getUser(token);
     expect(user).toEqual(userResponse);
-    expect(spy).toHaveBeenCalledWith('http://localhost:4000//users/me', {
+    expect(spy).toHaveBeenCalledWith('https://fake-budget-insights.com/2.0/users/me', {
       headers: {
         ...headers.headers,
         Authorization: `Bearer ${token}`,
@@ -178,7 +178,7 @@ describe('BudgetInsightClient', () => {
     const actualResponse = await service.fetchConnection(token);
     expect(actualResponse).toEqual([makeConnection(0), makeConnection(2)]);
 
-    expect(spy).toHaveBeenCalledWith('http://localhost:4000//users/me/connections?expand=connector', {
+    expect(spy).toHaveBeenCalledWith('https://fake-budget-insights.com/2.0/users/me/connections?expand=connector', {
       headers: {
         ...headers.headers,
         Authorization: `Bearer ${token}`,
@@ -207,7 +207,7 @@ describe('BudgetInsightClient', () => {
 
     const connections = await service.getConnectionInfo(token, '1');
     expect(connections).toEqual(connectionsResponse);
-    expect(spy).toHaveBeenCalledWith('http://localhost:4000//users/me/connections/1/informations', {
+    expect(spy).toHaveBeenCalledWith('https://fake-budget-insights.com/2.0/users/me/connections/1/informations', {
       headers: {
         ...headers.headers,
         Authorization: `Bearer ${token}`,
@@ -223,7 +223,7 @@ describe('BudgetInsightClient', () => {
 
     const accounts = await service.fetchBankAccounts(token);
     expect(accounts).toEqual([mockAccount]);
-    expect(spy).toHaveBeenCalledWith('http://localhost:4000//users/me/accounts', {
+    expect(spy).toHaveBeenCalledWith('https://fake-budget-insights.com/2.0/users/me/accounts', {
       headers: {
         ...headers.headers,
         Authorization: `Bearer ${token}`,
@@ -242,7 +242,7 @@ describe('BudgetInsightClient', () => {
     const spy = jest.spyOn(httpService, 'get').mockImplementationOnce(() => of(result));
 
     const startDate: Date = moment(new Date(Date.now())).subtract(5, 'month').toDate();
-    const url: string = `http://localhost:4000//users/me/accounts/${accountId}/transactions?min_date=${startDate.toISOString()}&max_date=${new Date(
+    const url: string = `https://fake-budget-insights.com/2.0/users/me/accounts/${accountId}/transactions?min_date=${startDate.toISOString()}&max_date=${new Date(
       Date.now(),
     ).toISOString()}`;
 
@@ -264,7 +264,7 @@ describe('BudgetInsightClient', () => {
 
     const category = await service.fetchCategory(token, categoryId);
     expect(category).toEqual(mockCategory);
-    expect(spy).toHaveBeenCalledWith(`http://localhost:4000//banks/categories/${categoryId}`, {
+    expect(spy).toHaveBeenCalledWith(`https://fake-budget-insights.com/2.0/banks/categories/${categoryId}`, {
       headers: {
         ...headers.headers,
         Authorization: `Bearer ${token}`,
@@ -278,26 +278,26 @@ describe('BudgetInsightClient', () => {
     /** Configs from the configmap */
     config = service.getClientConfig();
     expect(config).toEqual({
-      baseUrl: 'http://localhost:4000/',
+      baseUrl: 'https://fake-budget-insights.com/2.0',
       clientId: 'budgetInsightClientId',
       clientSecret: 'budgetInsightClientSecret',
     });
 
-    config = service.getClientConfig({ baseUrl: 'test.url' } as ClientConfig);
+    config = service.getClientConfig({ baseUrl: 'http://test.url' } as ClientConfig);
     expect(config).toEqual({
-      baseUrl: 'http://localhost:4000/',
+      baseUrl: 'https://fake-budget-insights.com/2.0',
       clientId: 'budgetInsightClientId',
       clientSecret: 'budgetInsightClientSecret',
     });
 
     /** Configs from the parameter */
     config = service.getClientConfig({
-      baseUrl: 'test.url',
+      baseUrl: 'http://test.url/2.0',
       clientId: 'testClientId',
       clientSecret: 'testClientSecret',
     } as ClientConfig);
     expect(config).toEqual({
-      baseUrl: 'test.url',
+      baseUrl: 'http://test.url/2.0',
       clientId: 'testClientId',
       clientSecret: 'testClientSecret',
     });
