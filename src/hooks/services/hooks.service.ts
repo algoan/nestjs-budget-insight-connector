@@ -115,7 +115,8 @@ export class HooksService {
 
           return;
       }
-    } catch (err) {
+    } catch (err: unknown) {
+      this.logger.error({ message: `An error occurred in the "dispatchAndHandleWebhook" method`, err });
       void se.update({ status: EventStatus.ERROR });
 
       return;
