@@ -1,3 +1,4 @@
+import { URL } from 'url';
 import { HttpService } from '@nestjs/axios';
 import { Injectable, Logger } from '@nestjs/common';
 import * as moment from 'moment-timezone';
@@ -61,7 +62,7 @@ export class BudgetInsightClient {
    */
   public async register(tmpToken: string, clientConfig?: ClientConfig): Promise<string> {
     const biConfig: ClientConfig = this.getClientConfig(clientConfig);
-    const url: string = `${biConfig.baseUrl}auth/token/access`;
+    const url: string = `${biConfig.baseUrl}/auth/token/access`;
 
     this.logger.debug(`Create user with tmpToken ${tmpToken} on ${url}`);
     const resp: AxiosResponse<AuthTokenResponse> = await this.toPromise(
@@ -89,7 +90,7 @@ export class BudgetInsightClient {
    */
   public async createUser(clientConfig?: ClientConfig): Promise<AnonymousUser> {
     const biConfig: ClientConfig = this.getClientConfig(clientConfig);
-    const url: string = `${biConfig.baseUrl}auth/init`;
+    const url: string = `${biConfig.baseUrl}/auth/init`;
     this.logger.debug(`Create an anonymous user on ${url}`);
 
     const resp: AxiosResponse<AnonymousUser> = await this.toPromise(
@@ -108,7 +109,7 @@ export class BudgetInsightClient {
    */
   public async getUserJWT(clientConfig?: ClientConfig, userId?: string): Promise<JWTokenResponse> {
     const biConfig: ClientConfig = this.getClientConfig(clientConfig);
-    const url: string = `${biConfig.baseUrl}auth/jwt`;
+    const url: string = `${biConfig.baseUrl}/auth/jwt`;
     this.logger.debug(`Get a user JWT on ${url}`);
 
     const resp: AxiosResponse<JWTokenResponse> = await this.toPromise(
@@ -179,15 +180,28 @@ export class BudgetInsightClient {
 
   /**
    * Get the client config for budget insight.
+   * Also parse the provided URL
+   * @param serviceAccountConfig Configurations optionally defined in the SA
    */
-  public getClientConfig = (clientConfig?: ClientConfig): ClientConfig =>
-    clientConfig?.baseUrl !== undefined && !isNil(clientConfig?.clientSecret) && !isNil(clientConfig?.clientId)
-      ? clientConfig
-      : {
-          clientId: config.budgetInsight.clientId,
-          clientSecret: config.budgetInsight.clientSecret,
-          baseUrl: config.budgetInsight.url,
-        };
+  public getClientConfig = (serviceAccountConfig?: ClientConfig): ClientConfig => {
+    const clientConfig: ClientConfig =
+      serviceAccountConfig?.baseUrl !== undefined &&
+      !isNil(serviceAccountConfig?.clientSecret) &&
+      !isNil(serviceAccountConfig?.clientId)
+        ? serviceAccountConfig
+        : {
+            clientId: config.budgetInsight.clientId,
+            clientSecret: config.budgetInsight.clientSecret,
+            baseUrl: config.budgetInsight.url,
+          };
+
+    const parsedUrl: URL = new URL(clientConfig.baseUrl);
+
+    return {
+      ...clientConfig,
+      baseUrl: `${parsedUrl.origin}/${config.budgetInsight.apiVersion}`,
+    };
+  };
 
   /**
    * Retrieves all user's accounts from Budget Insight

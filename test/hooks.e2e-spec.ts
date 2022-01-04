@@ -1,16 +1,26 @@
-import { Subscription } from '@algoan/rest';
+import { EventStatus } from '@algoan/rest';
 import { INestApplication, HttpStatus } from '@nestjs/common';
 import * as assert from 'assert';
+import * as crypto from 'crypto';
+import delay from 'delay';
 import * as nock from 'nock';
+import { config } from 'node-config-ts';
+import { HooksService } from '../src/hooks/services/hooks.service';
 import * as request from 'supertest';
-import { buildFakeApp, fakeAlgoanBaseUrl } from './utils/app';
-import { fakeAPI } from './utils/fake-server';
+import { patchEventStatus } from './utils/algoan.fake-server';
+import { buildFakeApp } from './utils/app';
 
-describe('HooksController (e2e)', () => {
+describe('HooksController (e2e) - Basic scenario', () => {
   let app: INestApplication;
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     app = await buildFakeApp();
+  });
+
+  afterAll(async () => {
+    nock.restore();
+    jest.clearAllMocks();
+    await app.close();
   });
 
   describe('POST /hooks', () => {
@@ -43,44 +53,110 @@ describe('HooksController (e2e)', () => {
           index: 1,
           time: Date.now(),
           payload: {
-            banksUserId: 'banks_user_id',
-            applicationId: 'app_id',
+            customerId: 'customer_id',
           },
         })
         .expect(HttpStatus.UNAUTHORIZED);
     });
 
-    it('HK004 - should be failed - event not handled', async () => {
-      const spy = jest.spyOn(Subscription.prototype, 'validateSignature').mockImplementation(() => true);
-
-      const fakeGetEvent: nock.Scope = fakeAPI({
-        baseUrl: fakeAlgoanBaseUrl,
-        method: 'patch',
-        result: { status: 'FAILED' },
-        path: '/v1/subscriptions/1/events/random',
-      });
+    // NOTE: this scenario should never happen in real life
+    it('HK004 - should be ok, but the event status is patched to fail because unknown event', async () => {
+      const subscriptionId: string = '1';
+      const eventId: string = 'random';
+      const fakePatchEvent: nock.Scope = patchEventStatus(subscriptionId, eventId, EventStatus.FAILED);
+      const payload = {
+        customerId: 'customer_id',
+      };
+      const encryptedSignature: string = crypto
+        .createHmac('sha256', config.restHooksSecret)
+        .update(JSON.stringify(payload))
+        .digest('hex');
 
       await request(app.getHttpServer())
         .post('/hooks')
+        .set('x-hub-signature', `sha256=${encryptedSignature}`)
         .send({
           subscription: {
-            id: '1',
-            target: 'http://',
+            id: subscriptionId,
+            target: config.targetUrl,
             status: 'ACTIVE',
-            eventName: 'service_account_deleted',
+            eventName: 'unknown_event',
           },
-          id: 'random',
+          id: eventId,
           index: 1,
           time: Date.now(),
-          payload: {
-            banksUserId: 'banks_user_id',
-            applicationId: 'app_id',
-          },
+          payload,
         })
         .expect(HttpStatus.NO_CONTENT);
 
-      expect(spy).toHaveBeenCalled();
-      assert.strictEqual(fakeGetEvent.isDone(), true);
+      await delay(1000);
+
+      assert.strictEqual(fakePatchEvent.isDone(), true);
+    });
+
+    it('HK005 - should be unauthorized - invalid signature', async () => {
+      const subscriptionId: string = '1';
+      const eventId: string = 'random';
+
+      await request(app.getHttpServer())
+        .post('/hooks')
+        .set('x-hub-signature', 'sha256=random_signature')
+        .send({
+          subscription: {
+            id: subscriptionId,
+            target: config.targetUrl,
+            status: 'ACTIVE',
+            eventName: 'aggregation_link_required',
+          },
+          id: eventId,
+          index: 1,
+          time: Date.now(),
+          payload: {
+            customerId: 'customerId',
+          },
+        })
+        .expect(HttpStatus.UNAUTHORIZED, {
+          message: 'Invalid X-Hub-Signature: you cannot call this API',
+          statusCode: HttpStatus.UNAUTHORIZED,
+          error: 'Unauthorized',
+        });
+    });
+
+    it('HK006 - should be ok - correct signature', async () => {
+      const subscriptionId: string = '1';
+      const eventId: string = 'eventId';
+      const payload = {
+        customerId: 'customer_id',
+      };
+      // Simulate the fact that the event has been well handled
+      jest.spyOn(HooksService.prototype, 'handleAggregatorLinkRequiredEvent').mockImplementation();
+      const fakePatchEvent: nock.Scope = patchEventStatus(subscriptionId, eventId, EventStatus.PROCESSED);
+
+      const encryptedSignature: string = crypto
+        .createHmac('sha256', config.restHooksSecret)
+        .update(JSON.stringify(payload))
+        .digest('hex');
+
+      await request(app.getHttpServer())
+        .post('/hooks')
+        .set('x-hub-signature', `sha256=${encryptedSignature}`)
+        .send({
+          subscription: {
+            id: subscriptionId,
+            target: config.targetUrl,
+            status: 'ACTIVE',
+            eventName: 'aggregator_link_required',
+          },
+          id: eventId,
+          index: 1,
+          time: Date.now(),
+          payload,
+        })
+        .expect(HttpStatus.NO_CONTENT);
+
+      await delay(1000);
+
+      fakePatchEvent.done();
     });
   });
 });

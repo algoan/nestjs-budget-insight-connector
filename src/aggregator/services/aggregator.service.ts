@@ -52,7 +52,7 @@ export class AggregatorService {
   public generateRedirectUrl(callbackUrl: string, clientConfig?: ClientConfig): string {
     const config: ClientConfig = this.budgetInsightClient.getClientConfig(clientConfig);
 
-    return `${config.baseUrl}auth/webview/fr/connect?client_id=${config.clientId}&redirect_uri=${callbackUrl}&response_type=code&state=&types=banks`;
+    return `${config.baseUrl}/auth/webview/fr/connect?client_id=${config.clientId}&redirect_uri=${callbackUrl}&response_type=code&state=&types=banks`;
   }
 
   /**
@@ -111,7 +111,7 @@ export class AggregatorService {
   public getBankLogoUrl(connection?: Connection, clientConfig?: ClientConfig): string | undefined {
     return connection?.connector?.uuid === undefined
       ? undefined
-      : `${this.budgetInsightClient.getClientConfig(clientConfig).baseUrl}logos/${
+      : `${this.budgetInsightClient.getClientConfig(clientConfig).baseUrl}/logos/${
           connection.connector.uuid
         }-thumbnail@2x.png`;
   }

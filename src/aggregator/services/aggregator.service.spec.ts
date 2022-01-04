@@ -93,7 +93,7 @@ describe('AggregatorService', () => {
   it('should create the webviewUrl base on the callbackUrl', () => {
     const url: string = service.generateRedirectUrl('callbackUrl');
     expect(url).toBe(
-      'http://localhost:4000/auth/webview/fr/connect?client_id=budgetInsightClientId&redirect_uri=callbackUrl&response_type=code&state=&types=banks',
+      'https://fake-budget-insights.com/2.0/auth/webview/fr/connect?client_id=budgetInsightClientId&redirect_uri=callbackUrl&response_type=code&state=&types=banks',
     );
   });
 

@@ -2,12 +2,9 @@ import * as assert from 'assert';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { TestingModule, Test } from '@nestjs/testing';
 import * as nock from 'nock';
-import { config } from 'node-config-ts';
 
 import { AppModule } from '../../src/app.module';
-import { fakeAPI } from './fake-server';
-
-export const fakeAlgoanBaseUrl: string = config.algoan.baseUrl;
+import { onApplicationStart } from './algoan.fake-server';
 
 /**
  * Build a fake nest application
@@ -18,46 +15,7 @@ export const buildFakeApp = async (): Promise<INestApplication> => {
   }).compile();
 
   const app: INestApplication = moduleFixture.createNestApplication();
-
-  /**
-   * Create fake servers to init resthooks
-   */
-  const fakeOAuthServer: nock.Scope = fakeAPI({
-    baseUrl: fakeAlgoanBaseUrl,
-    method: 'post',
-    result: {
-      access_token: 'token',
-      refresh_token: 'refresh_token',
-      expires_in: 3000,
-      refresh_expires_in: 10000,
-    },
-    path: '/v1/oauth/token',
-    nbOfCalls: 2,
-  });
-  const fakeServiceAccounts: nock.Scope = fakeAPI({
-    baseUrl: fakeAlgoanBaseUrl,
-    method: 'get',
-    result: [
-      {
-        clientId: 'client1',
-        clientSecret: 'secret',
-        id: 'id1',
-      },
-    ],
-    path: '/v1/service-accounts',
-  });
-  const fakeGetSubscriptions: nock.Scope = fakeAPI({
-    baseUrl: fakeAlgoanBaseUrl,
-    method: 'get',
-    result: [],
-    path: `/v1/subscriptions?filter=${JSON.stringify({ eventName: { $in: config.eventList } })}`,
-  });
-  const fakePostSubscriptionsSA: nock.Scope = fakeAPI({
-    baseUrl: fakeAlgoanBaseUrl,
-    method: 'post',
-    result: { id: '1', secret: 'a', eventName: 'service_account_created', target: 'https://test' },
-    path: '/v1/subscriptions',
-  });
+  const appStartMock: nock.Scope = onApplicationStart();
 
   /**
    * Attach global dependencies
@@ -74,10 +32,7 @@ export const buildFakeApp = async (): Promise<INestApplication> => {
 
   await app.init();
 
-  assert.strictEqual(fakeOAuthServer.isDone(), true);
-  assert.strictEqual(fakeServiceAccounts.isDone(), true);
-  assert.strictEqual(fakeGetSubscriptions.isDone(), true);
-  assert.strictEqual(fakePostSubscriptionsSA.isDone(), true);
+  assert.strictEqual(appStartMock.isDone(), true);
 
   return app;
 };

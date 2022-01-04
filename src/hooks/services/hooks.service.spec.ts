@@ -231,10 +231,10 @@ describe('HooksService', () => {
       expect(spyPatchCustomer).toBeCalledWith('mockCustomerId', {
         aggregationDetails: {
           aggregatorName: 'BUDGET_INSIGHT',
-          apiUrl: 'http://localhost:4000/',
+          apiUrl: 'https://fake-budget-insights.com/2.0',
           clientId: 'budgetInsightClientId',
           redirectUrl:
-            'http://localhost:4000/auth/webview/fr/connect?client_id=budgetInsightClientId&redirect_uri=http://fake.url&response_type=code&state=&types=banks',
+            'https://fake-budget-insights.com/2.0/auth/webview/fr/connect?client_id=budgetInsightClientId&redirect_uri=http://fake.url&response_type=code&state=&types=banks',
         },
       });
     });

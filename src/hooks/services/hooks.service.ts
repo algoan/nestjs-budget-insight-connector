@@ -60,6 +60,13 @@ export class HooksService {
       (sub: Subscription) => sub.id === event.subscription.id,
     );
 
+    /**
+     * NOTE: this statement is impossible to cover
+     * L.57: we are looking for a service account with the subscription id provided by the event
+     * To do this, we loop into the subscriptions array. If we do not find the subscription,
+     * a 401 error is sent. So necessarily, subscription is defined.
+     * TODO: return SA and subscription above. This statement is just a typed-check.
+     */
     if (subscription === undefined) {
       return;
     }
@@ -108,10 +115,11 @@ export class HooksService {
 
           return;
       }
-    } catch (err) {
+    } catch (err: unknown) {
+      this.logger.error({ message: `An error occurred in the "dispatchAndHandleWebhook" method`, err });
       void se.update({ status: EventStatus.ERROR });
 
-      throw err;
+      return;
     }
 
     void se.update({ status: EventStatus.PROCESSED });
@@ -133,6 +141,7 @@ export class HooksService {
     /** Get the customer to retrieve the callbackUrl and connection mode */
     const customer: Customer | undefined = await this.algoanCustomerService.getCustomerById(payload.customerId);
 
+    /** NOTE: should never be reached: if customer does not exist, a 404 error is thrown just above */
     if (customer === undefined) {
       throw new Error(`Could not retrieve customer for id "${payload.customerId}"`);
     }
@@ -196,6 +205,7 @@ export class HooksService {
       /** Get the customer to retrieve the callbackUrl and connection mode */
       const customer: Customer | undefined = await this.algoanCustomerService.getCustomerById(payload.customerId);
 
+      /** NOTE: should never be reached: if customer does not exist, a 404 error is thrown just above */
       if (customer === undefined) {
         throw new Error(`Could not retrieve customer for id "${payload.customerId}"`);
       }

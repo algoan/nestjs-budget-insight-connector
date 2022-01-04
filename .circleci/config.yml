@@ -44,7 +44,7 @@ jobs:
           command: npm test
       - run:
           name: Run e2e tests
-          command: npm run test:cov
+          command: npm run test:e2e:cov
       - save_cache:
           paths:
             - node_modules
