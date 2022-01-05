@@ -1,0 +1,21 @@
+version: 2
+updates:
+- package-ecosystem: npm
+  directory: "/"
+  schedule:
+    interval: monthly
+    time: "04:00"
+  open-pull-requests-limit: 10
+  ignore:
+  - dependency-name: "@algoan/eslint-config"
+    versions:
+    - 1.1.2
+  - dependency-name: class-transformer
+    versions:
+    - 0.3.2
+  - dependency-name: "@nestjs/common"
+    versions:
+    - 7.6.8
+  - dependency-name: "@nestjs/platform-express"
+    versions:
+    - 7.6.8
