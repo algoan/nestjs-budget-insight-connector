@@ -1,4 +1,11 @@
-import { AccountType, AccountUsage, AccountSavingType, AccountLoanType, AnalysisStatus } from './analysis.enum';
+import {
+  AccountType,
+  AccountUsage,
+  AccountSavingType,
+  AccountLoanType,
+  AnalysisStatus,
+  AccountOwnership,
+} from './analysis.enum';
 import { AnalysisError } from './analysis.objects';
 
 /**
@@ -19,6 +26,7 @@ export interface Account {
   currency: string; // ISO4217
   type: AccountType;
   usage: AccountUsage;
+  ownership?: AccountOwnership;
   owners?: AccountOwner[];
   iban?: string;
   bic?: string;

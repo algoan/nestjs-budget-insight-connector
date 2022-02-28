@@ -31,6 +31,16 @@ export enum AccountUsage {
 }
 
 /**
+ * Account Ownership enum
+ */
+export enum AccountOwnership {
+  HOLDER = 'HOLDER',
+  CO_HOLDER = 'CO_HOLDER',
+  ATTORNEY = 'ATTORNEY',
+  OTHER = 'OTHER',
+}
+
+/**
  * Account Sing Type enum
  */
 export enum AccountSavingType {
