@@ -15,7 +15,7 @@ import {
   ConnectionWrapper,
 } from '../../interfaces/budget-insight.interface';
 import { mockAccount, mockTransaction, mockCategory } from '../../interfaces/budget-insight-mock';
-import { ClientConfig } from '../budget-insight/budget-insight.client';
+import { ClientConfig } from './budget-insight.client';
 describe('BudgetInsightClient', () => {
   let service: BudgetInsightClient;
   let httpService: HttpService;

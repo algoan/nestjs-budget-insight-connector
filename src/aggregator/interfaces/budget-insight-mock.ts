@@ -1,10 +1,11 @@
 import {
-  BudgetInsightAccount,
   AccountType,
+  BankAccountOwnership,
+  BankAccountUsage,
+  BudgetInsightAccount,
+  BudgetInsightCategory,
   BudgetInsightTransaction,
   TransactionType,
-  BudgetInsightCategory,
-  BankAccountUsage,
 } from './budget-insight.interface';
 
 export const mockAccount: BudgetInsightAccount = {
@@ -27,6 +28,7 @@ export const mockAccount: BudgetInsightAccount = {
   disabled: false,
   company_name: 'mockCompany',
   usage: BankAccountUsage.PRIVATE,
+  ownership: BankAccountOwnership.OWNER,
 };
 
 export const mockTransaction: BudgetInsightTransaction = {

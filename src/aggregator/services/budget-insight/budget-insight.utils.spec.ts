@@ -1,12 +1,13 @@
 import { BanksUserTransactionType as TransactionType } from '@algoan/rest';
 import { Test, TestingModule } from '@nestjs/testing';
-import { AccountLoanType, AccountType, AccountUsage } from '../../../algoan/dto/analysis.enum';
+import { AccountLoanType, AccountOwnership, AccountType, AccountUsage } from '../../../algoan/dto/analysis.enum';
 import { Account as AnalysisAccount, AccountTransactions } from '../../../algoan/dto/analysis.inputs';
 import { AggregatorModule } from '../../aggregator.module';
 import { mockCategory } from '../../interfaces/budget-insight-mock';
 import {
   AccountType as BIAccountType,
   Bank,
+  BankAccountOwnership,
   BankAccountUsage as BIUsageType,
   BudgetInsightAccount,
   BudgetInsightCategory,
@@ -74,6 +75,7 @@ describe('BudgetInsightUtils', () => {
         name: 'account-name',
         type: BIAccountType.LOAN,
         usage: BIUsageType.PRIVATE,
+        ownership: BankAccountOwnership.CO_OWNER,
         disabled: false,
         company_name: 'mockCompanyName',
         loan: {
@@ -105,6 +107,7 @@ describe('BudgetInsightUtils', () => {
         name: 'account-name',
         type: BIAccountType.CARD,
         usage: BIUsageType.PRIVATE,
+        ownership: null,
         disabled: false,
         company_name: 'mockCompanyName',
       },
@@ -140,6 +143,7 @@ describe('BudgetInsightUtils', () => {
         number: 'mockNumber',
         type: AccountType.LOAN,
         usage: AccountUsage.PERSONAL,
+        ownership: AccountOwnership.CO_HOLDER,
         owners: [{ name: 'M. JOHN DOE' }],
         aggregator: {
           id: '1',
@@ -168,6 +172,7 @@ describe('BudgetInsightUtils', () => {
         },
         type: AccountType.CREDIT_CARD,
         usage: AccountUsage.PERSONAL,
+        ownership: undefined,
         owners: [{ name: 'M. JOHN DOE' }],
       },
     ];
@@ -210,6 +215,7 @@ describe('BudgetInsightUtils', () => {
         name: 'account-name',
         type: BIAccountType.UNKNOWN,
         usage: 'UNKNOWN' as unknown as BIUsageType,
+        ownership: 'foo' as BankAccountOwnership,
         disabled: false,
         company_name: 'mockCompanyName',
         loan: {
@@ -241,6 +247,7 @@ describe('BudgetInsightUtils', () => {
         name: 'account-name',
         type: BIAccountType.CARD,
         usage: BIUsageType.PRIVATE,
+        ownership: BankAccountOwnership.ATTORNEY,
         disabled: false,
         company_name: 'mockCompanyName',
       },
@@ -275,6 +282,7 @@ describe('BudgetInsightUtils', () => {
         number: 'mockNumber',
         type: AccountType.UNKNOWN,
         usage: AccountUsage.UNKNOWN,
+        ownership: AccountOwnership.OTHER,
         owners: undefined,
         aggregator: {
           id: '1',
@@ -302,6 +310,7 @@ describe('BudgetInsightUtils', () => {
         },
         type: AccountType.CREDIT_CARD,
         usage: AccountUsage.PERSONAL,
+        ownership: AccountOwnership.ATTORNEY,
         owners: undefined,
       },
     ];
