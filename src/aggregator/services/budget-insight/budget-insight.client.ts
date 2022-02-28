@@ -1,6 +1,6 @@
 import { URL } from 'url';
 import { HttpService } from '@nestjs/axios';
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import * as moment from 'moment-timezone';
 import { AxiosResponse, AxiosRequestConfig, AxiosError } from 'axios';
 import { config } from 'node-config-ts';
@@ -112,25 +112,30 @@ export class BudgetInsightClient {
     const url: string = `${biConfig.baseUrl}/auth/jwt`;
     this.logger.debug(`Get a user JWT on ${url}`);
 
-    const resp: AxiosResponse<JWTokenResponse> = await this.toPromise(
-      this.httpService.post(
-        url,
-        {
-          client_id: biConfig.clientId,
-          client_secret: biConfig.clientSecret,
-          // eslint-disable-next-line no-null/no-null
-          id_user: userId ?? null,
-        },
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            Accept: 'application/json',
+    try {
+      const resp: AxiosResponse<JWTokenResponse> = await this.toPromise(
+        this.httpService.post(
+          url,
+          {
+            client_id: biConfig.clientId,
+            client_secret: biConfig.clientSecret,
+            // eslint-disable-next-line no-null/no-null
+            id_user: userId ?? null,
           },
-        },
-      ),
-    );
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              Accept: 'application/json',
+            },
+          },
+        ),
+      );
 
-    return resp.data;
+      return resp.data;
+    } catch (err) {
+      this.logger.error("An error occurred when generating user's JWT token");
+      throw new UnauthorizedException(err);
+    }
   }
 
   /**
