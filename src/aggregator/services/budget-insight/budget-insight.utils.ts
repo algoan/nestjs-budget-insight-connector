@@ -1,11 +1,12 @@
 import { BanksUserTransactionType as TransactionType } from '@algoan/rest';
 import { get, isNil } from 'lodash';
 import * as moment from 'moment-timezone';
-import { AccountLoanType, AccountType, AccountUsage } from '../../../algoan/dto/analysis.enum';
+import { AccountLoanType, AccountOwnership, AccountType, AccountUsage } from '../../../algoan/dto/analysis.enum';
 import { Account as AnalysisAccount, AccountTransactions } from '../../../algoan/dto/analysis.inputs';
 import {
   AccountType as BiAccountType,
   Bank,
+  BankAccountOwnership as BiOwnershipType,
   BankAccountUsage as BiUsageType,
   BudgetInsightAccount,
   BudgetInsightOwner,
@@ -53,6 +54,7 @@ const fromBIToAlgoanAccounts = (
   currency: account.currency?.id,
   type: mapAccountType(account.type),
   usage: mapUsageType(account.usage),
+  ownership: mapOwnershipType(account.ownership),
   owners: !isNil(ownerInfo) && !isNil(ownerInfo?.owner?.name) ? [{ name: ownerInfo.owner.name }] : undefined,
   iban: account.iban === null ? undefined : account.iban,
   bic: account.bic,
@@ -229,3 +231,23 @@ const mapUsageType = (usageType: BiUsageType): AccountUsage => USAGE_TYPE_MAPPIN
  * Undefined category id
  */
 const undefinedCategory: number = 9998;
+
+/**
+ * OwnershipType TypeMapping
+ */
+interface OwnershipTypeMapping {
+  [index: string]: AccountOwnership;
+}
+
+const OWNERSHIP_TYPE_MAPPING: OwnershipTypeMapping = {
+  [BiOwnershipType.OWNER]: AccountOwnership.HOLDER,
+  [BiOwnershipType.CO_OWNER]: AccountOwnership.CO_HOLDER,
+  [BiOwnershipType.ATTORNEY]: AccountOwnership.ATTORNEY,
+};
+
+/**
+ * mapOwnershipType map the ownership type from the Budget Insights
+ * @param ownershipType Budget Insight ownership type
+ */
+const mapOwnershipType = (ownershipType: BiOwnershipType | null): AccountOwnership | undefined =>
+  ownershipType ? OWNERSHIP_TYPE_MAPPING[ownershipType] ?? AccountOwnership.OTHER : undefined;

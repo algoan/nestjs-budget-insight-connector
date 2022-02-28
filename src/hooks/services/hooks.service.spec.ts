@@ -516,6 +516,7 @@ describe('HooksService', () => {
             ],
             type: 'CHECKING',
             usage: 'PERSONAL',
+            ownership: 'HOLDER',
           },
         ],
       });
@@ -614,6 +615,7 @@ describe('HooksService', () => {
             ],
             type: 'CHECKING',
             usage: 'PERSONAL',
+            ownership: 'HOLDER',
           },
         ],
       });
@@ -714,6 +716,7 @@ describe('HooksService', () => {
             ],
             type: 'CHECKING',
             usage: 'PERSONAL',
+            ownership: 'HOLDER',
           },
           {
             aggregator: { id: '1' },
@@ -740,6 +743,7 @@ describe('HooksService', () => {
             ],
             type: 'CHECKING',
             usage: 'PERSONAL',
+            ownership: 'HOLDER',
           },
         ],
       });
@@ -840,6 +844,7 @@ describe('HooksService', () => {
             ],
             type: 'CHECKING',
             usage: 'PERSONAL',
+            ownership: 'HOLDER',
           },
         ],
       });

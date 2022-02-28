@@ -62,6 +62,7 @@ export interface BudgetInsightAccount {
   bic: string;
   loan?: Loan | null;
   usage: BankAccountUsage;
+  ownership: BankAccountOwnership | null;
   disabled: boolean;
   company_name: string | null;
 }
@@ -211,6 +212,16 @@ export enum BankAccountUsage {
   PRIVATE = 'PRIV',
   PROFESSIONAL = 'ORGA',
   ASSOCIATION = 'ASSO',
+}
+
+/**
+ * Relationship between the credentials owner and the account
+ * https://docs.budget-insight.com/reference/bank-accounts#bankaccountownership-values
+ */
+export enum BankAccountOwnership {
+  OWNER = 'owner',
+  CO_OWNER = 'co-owner',
+  ATTORNEY = 'attorney',
 }
 
 /**
