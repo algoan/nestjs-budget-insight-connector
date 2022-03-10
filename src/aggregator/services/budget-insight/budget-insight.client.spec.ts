@@ -94,15 +94,14 @@ describe('BudgetInsightClient', () => {
     result.data = jwtReturn;
     const spy = jest.spyOn(httpService, 'post').mockImplementationOnce(() => of(result));
 
-    const jwtResponse = await service.getUserJWT();
+    const jwtResponse = await service.getNewUserJWT();
     expect(jwtResponse).toEqual(jwtReturn);
 
     expect(spy).toHaveBeenCalledWith(
-      'https://fake-budget-insights.com/2.0/auth/jwt',
+      'https://fake-budget-insights.com/2.0/auth/init',
       {
         client_id: 'budgetInsightClientId',
         client_secret: 'budgetInsightClientSecret',
-        id_user: null,
       },
       { headers: { Accept: 'application/json', 'Content-Type': 'application/json' } },
     );
@@ -119,14 +118,15 @@ describe('BudgetInsightClient', () => {
     result.data = jwtReturn;
     const spy = jest.spyOn(httpService, 'post').mockImplementationOnce(() => of(result));
 
-    const jwtResponse = await service.getUserJWT(undefined, 'mockUserId');
+    const jwtResponse = await service.getExistingUserJWT(undefined, 'mockUserId');
     expect(jwtResponse).toEqual(jwtReturn);
 
     expect(spy).toHaveBeenCalledWith(
-      'https://fake-budget-insights.com/2.0/auth/jwt',
+      'https://fake-budget-insights.com/2.0/auth/renew',
       {
         client_id: 'budgetInsightClientId',
         client_secret: 'budgetInsightClientSecret',
+        grant_type: 'client_credentials',
         id_user: 'mockUserId',
       },
       { headers: { Accept: 'application/json', 'Content-Type': 'application/json' } },

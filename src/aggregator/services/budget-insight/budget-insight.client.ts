@@ -104,12 +104,48 @@ export class BudgetInsightClient {
   }
 
   /**
-   * Get a user JWT
+   * Get an existing user JWT
    * @returns The user JWT token
    */
-  public async getUserJWT(clientConfig?: ClientConfig, userId?: string): Promise<JWTokenResponse> {
+  public async getExistingUserJWT(clientConfig?: ClientConfig, userId?: string): Promise<JWTokenResponse> {
     const biConfig: ClientConfig = this.getClientConfig(clientConfig);
-    const url: string = `${biConfig.baseUrl}/auth/jwt`;
+    const url: string = `${biConfig.baseUrl}/auth/renew`;
+    this.logger.debug(`Get a user JWT on ${url}`);
+
+    try {
+      const resp: AxiosResponse<JWTokenResponse> = await this.toPromise(
+        this.httpService.post(
+          url,
+          {
+            grant_type: 'client_credentials',
+            client_id: biConfig.clientId,
+            client_secret: biConfig.clientSecret,
+            // eslint-disable-next-line no-null/no-null
+            id_user: userId ?? null,
+          },
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              Accept: 'application/json',
+            },
+          },
+        ),
+      );
+
+      return resp.data;
+    } catch (err) {
+      this.logger.error("An error occurred when generating user's JWT token");
+      throw new UnauthorizedException(err);
+    }
+  }
+
+  /**
+   * Get a new user JWT
+   * @returns the new JWT token
+   */
+  public async getNewUserJWT(clientConfig?: ClientConfig): Promise<JWTokenResponse> {
+    const biConfig: ClientConfig = this.getClientConfig(clientConfig);
+    const url: string = `${biConfig.baseUrl}/auth/init`;
     this.logger.debug(`Get a user JWT on ${url}`);
 
     try {
@@ -119,8 +155,6 @@ export class BudgetInsightClient {
           {
             client_id: biConfig.clientId,
             client_secret: biConfig.clientSecret,
-            // eslint-disable-next-line no-null/no-null
-            id_user: userId ?? null,
           },
           {
             headers: {

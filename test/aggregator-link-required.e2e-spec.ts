@@ -10,7 +10,7 @@ import {
 } from './utils/algoan.fake-server';
 
 import { buildFakeApp } from './utils/app';
-import { getUserJwt } from './utils/budget-insight.fake-server';
+import { getNewUserJwt } from './utils/budget-insight.fake-server';
 import { runTestScenario } from './utils/tools';
 
 let app: INestApplication;
@@ -52,7 +52,7 @@ describe('HooksController (e2e) - aggregation_link_required event handler', () =
     it('HK102 - should get and send a token to Algoan', () =>
       runTestScenario(app, 'aggregator_link_required', {
         algoanMockServerGenerator: mockAggregatorLinkRequiredAPIMode,
-        biMockServerGenerator: getUserJwt,
+        biMockServerGenerator: getNewUserJwt,
       }));
   });
 

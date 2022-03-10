@@ -61,7 +61,7 @@ describe('AggregatorService', () => {
   });
 
   it('should get the jwt token', async () => {
-    const spy = jest.spyOn(client, 'getUserJWT').mockReturnValue(
+    const spy = jest.spyOn(client, 'getNewUserJWT').mockReturnValue(
       Promise.resolve({
         jwt_token: 'mockJwt',
         payload: {
@@ -70,13 +70,13 @@ describe('AggregatorService', () => {
         },
       }),
     );
-    await service.getJWToken();
+    await service.getJWTokenForNewUser();
 
     expect(spy).toBeCalled();
   });
 
   it('should get the jwt token from a user', async () => {
-    const spy = jest.spyOn(client, 'getUserJWT').mockReturnValue(
+    const spy = jest.spyOn(client, 'getExistingUserJWT').mockReturnValue(
       Promise.resolve({
         jwt_token: 'mockJwt',
         payload: {
@@ -85,7 +85,7 @@ describe('AggregatorService', () => {
         },
       }),
     );
-    await service.getJWToken(undefined, 'mockUserId');
+    await service.getJWTokenForExistingUser(undefined, 'mockUserId');
 
     expect(spy).toBeCalledWith(undefined, 'mockUserId');
   });

@@ -9,6 +9,7 @@ import {
   BudgetInsightOwner,
   BudgetInsightTransaction,
   Connection,
+  JWTokenResponse,
 } from '../../aggregator/interfaces/budget-insight.interface';
 import { AggregatorService } from '../../aggregator/services/aggregator.service';
 import { ClientConfig } from '../../aggregator/services/budget-insight/budget-insight.client';
@@ -169,7 +170,16 @@ export class HooksService {
 
       case AggregationDetailsMode.API:
         /** Get the JWT token */
-        const token = await this.aggregator.getJWToken(serviceAccountConfig, customer.aggregationDetails.userId);
+        let token: JWTokenResponse;
+        if (customer.aggregationDetails.userId !== undefined) {
+          token = await this.aggregator.getJWTokenForExistingUser(
+            serviceAccountConfig,
+            customer.aggregationDetails.userId,
+          );
+        } else {
+          token = await this.aggregator.getJWTokenForNewUser(serviceAccountConfig);
+        }
+
         aggregationDetails.token = token.jwt_token;
         aggregationDetails.userId = `${token.payload.id_user}`;
         break;
@@ -250,7 +260,9 @@ export class HooksService {
         const userId: string | undefined =
           newUserId !== undefined ? `${newUserId}` : customer.aggregationDetails?.userId?.split(',')[0];
         if (userId !== undefined) {
-          permanentToken = (await this.aggregator.getJWToken(serviceAccount.config as ClientConfig, userId)).jwt_token;
+          permanentToken = (
+            await this.aggregator.getJWTokenForExistingUser(serviceAccount.config as ClientConfig, userId)
+          ).jwt_token;
         } else {
           this.logger.warn('Aggregation process stopped: no permanent token generated');
 
