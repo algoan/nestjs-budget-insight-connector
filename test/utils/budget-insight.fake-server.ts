@@ -60,28 +60,21 @@ const fakeTransactions = [
  * Mock the /auth/renew API
  */
 export const getExistingUserJwt = (): nock.Scope => {
-  return nock(config.budgetInsight.url)
-    .post('/auth/renew')
-    .reply(HttpStatus.OK, {
-      jwt_token: 'bi_token',
-      payload: {
-        id_user: 'user_id',
-      },
-    });
+  return nock(config.budgetInsight.url).post('/auth/renew').reply(HttpStatus.OK, {
+    access_token: 'bi_token',
+    token_type: 'Bearer',
+  });
 };
 
 /**
  * Mock the /auth/init API
  */
 export const getNewUserJwt = (): nock.Scope => {
-  return nock(config.budgetInsight.url)
-    .post('/auth/init')
-    .reply(HttpStatus.OK, {
-      jwt_token: 'bi_token',
-      payload: {
-        id_user: 'user_id',
-      },
-    });
+  return nock(config.budgetInsight.url).post('/auth/init').reply(HttpStatus.OK, {
+    auth_token: 'bi_token',
+    type: 'permanent',
+    id_user: 'user_id',
+  });
 };
 
 /**

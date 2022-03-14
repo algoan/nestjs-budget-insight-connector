@@ -197,6 +197,25 @@ export interface JWTokenResponse {
 }
 
 /**
+ * Access Token Response
+ * https://docs.budget-insight.com/reference/authentication#generate-a-user-scoped-token
+ */
+export interface AccessTokenResponse {
+  access_token: string;
+  token_type: string;
+}
+
+/**
+ * Auth Token Respone
+ * https://docs.budget-insight.com/reference/authentication#generate-a-user-scoped-token
+ */
+export interface AuthJWTokenResponse {
+  auth_token: string;
+  type: string;
+  id_user: string;
+}
+
+/**
  * Body returned after registration
  */
 export interface AuthTokenResponse {

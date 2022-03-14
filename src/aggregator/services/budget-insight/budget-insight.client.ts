@@ -19,6 +19,8 @@ import {
   AccountWrapper,
   BudgetInsightCategory,
   BudgetInsightOwner,
+  AccessTokenResponse,
+  AuthJWTokenResponse,
 } from '../../interfaces/budget-insight.interface';
 const DEFAULT_NUMBER_OF_MONTHS: number = 5;
 /**
@@ -113,7 +115,7 @@ export class BudgetInsightClient {
     this.logger.debug(`Get a user JWT on ${url}`);
 
     try {
-      const resp: AxiosResponse<JWTokenResponse> = await this.toPromise(
+      const resp: AxiosResponse<AccessTokenResponse> = await this.toPromise(
         this.httpService.post(
           url,
           {
@@ -132,7 +134,15 @@ export class BudgetInsightClient {
         ),
       );
 
-      return resp.data;
+      const response: JWTokenResponse = {
+        jwt_token: resp.data.access_token,
+        payload: {
+          domain: biConfig.baseUrl,
+          id_user: userId as string,
+        },
+      };
+
+      return response;
     } catch (err) {
       this.logger.error("An error occurred when generating user's JWT token");
       throw new UnauthorizedException(err);
@@ -149,7 +159,7 @@ export class BudgetInsightClient {
     this.logger.debug(`Get a user JWT on ${url}`);
 
     try {
-      const resp: AxiosResponse<JWTokenResponse> = await this.toPromise(
+      const resp: AxiosResponse<AuthJWTokenResponse> = await this.toPromise(
         this.httpService.post(
           url,
           {
@@ -165,7 +175,15 @@ export class BudgetInsightClient {
         ),
       );
 
-      return resp.data;
+      const response: JWTokenResponse = {
+        jwt_token: resp.data.auth_token,
+        payload: {
+          domain: biConfig.baseUrl,
+          id_user: resp.data.id_user,
+        },
+      };
+
+      return response;
     } catch (err) {
       this.logger.error("An error occurred when generating new user's JWT token");
       throw new UnauthorizedException(err);
