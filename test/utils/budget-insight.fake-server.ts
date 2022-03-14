@@ -57,11 +57,25 @@ const fakeTransactions = [
 ];
 
 /**
- * Mock the /auth/jwt API
+ * Mock the /auth/renew API
  */
-export const getUserJwt = (): nock.Scope => {
+export const getExistingUserJwt = (): nock.Scope => {
   return nock(config.budgetInsight.url)
-    .post('/auth/jwt')
+    .post('/auth/renew')
+    .reply(HttpStatus.OK, {
+      jwt_token: 'bi_token',
+      payload: {
+        id_user: 'user_id',
+      },
+    });
+};
+
+/**
+ * Mock the /auth/init API
+ */
+export const getNewUserJwt = (): nock.Scope => {
+  return nock(config.budgetInsight.url)
+    .post('/auth/init')
     .reply(HttpStatus.OK, {
       jwt_token: 'bi_token',
       payload: {
@@ -116,7 +130,7 @@ export const getAccountAndTrFromRedirectMode = (): nock.Scope => {
  */
 export const getAccountAndTrFromRedirectModeNoTmpCode = (): nock.Scope => {
   return nock(config.budgetInsight.url)
-    .post('/auth/jwt')
+    .post('/auth/renew')
     .reply(HttpStatus.OK, {
       jwt_token: 'bi_access_token',
       payload: {

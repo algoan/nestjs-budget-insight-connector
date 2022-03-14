@@ -41,8 +41,15 @@ export class AggregatorService {
   /**
    * Get user JSON Web Token
    */
-  public async getJWToken(clientConfig?: ClientConfig, userId?: string): Promise<JWTokenResponse> {
-    return this.budgetInsightClient.getUserJWT(clientConfig, userId);
+  public async getJWTokenForExistingUser(clientConfig?: ClientConfig, userId?: string): Promise<JWTokenResponse> {
+    return this.budgetInsightClient.getExistingUserJWT(clientConfig, userId);
+  }
+
+  /**
+   * Get new user JSON Web Token
+   */
+  public async getJWTokenForNewUser(clientConfig?: ClientConfig) {
+    return this.budgetInsightClient.getNewUserJWT(clientConfig);
   }
 
   /**

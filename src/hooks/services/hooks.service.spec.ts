@@ -286,7 +286,7 @@ describe('HooksService', () => {
         } as unknown as Customer),
       );
 
-      const spyGetJWT = jest.spyOn(aggregatorService, 'getJWToken').mockReturnValue(
+      const spyGetJWT = jest.spyOn(aggregatorService, 'getJWTokenForNewUser').mockReturnValue(
         Promise.resolve({
           jwt_token: 'fake_jwt_token',
           payload: { domain: 'http://fake.domain.url', id_user: 'userId' },
@@ -309,7 +309,7 @@ describe('HooksService', () => {
 
       expect(spyHttpService).toBeCalled();
       expect(spyGetCustomer).toBeCalledWith('mockCustomerId');
-      expect(spyGetJWT).toBeCalledWith({ baseUrl: 'https://fake-base-url.url', clientId: 'fakeClientId' }, undefined);
+      expect(spyGetJWT).toBeCalledWith({ baseUrl: 'https://fake-base-url.url', clientId: 'fakeClientId' });
       expect(spyPatchCustomer).toBeCalledWith('mockCustomerId', {
         aggregationDetails: {
           aggregatorName: 'BUDGET_INSIGHT',
@@ -539,7 +539,7 @@ describe('HooksService', () => {
       );
 
       const jwtTokenSpy = jest
-        .spyOn(aggregatorService, 'getJWToken')
+        .spyOn(aggregatorService, 'getJWTokenForExistingUser')
         .mockResolvedValue({ jwt_token: 'mockPermToken', payload: { domain: 'mockDomain', id_user: 'userId' } });
 
       const connectionSpy = jest
@@ -638,7 +638,7 @@ describe('HooksService', () => {
       );
 
       const jwtTokenSpy = jest
-        .spyOn(aggregatorService, 'getJWToken')
+        .spyOn(aggregatorService, 'getJWTokenForExistingUser')
         .mockResolvedValue({ jwt_token: 'mockPermToken', payload: { domain: 'mockDomain', id_user: 'userId' } });
 
       const connectionSpy = jest
