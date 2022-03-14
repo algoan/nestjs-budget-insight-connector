@@ -170,15 +170,10 @@ export class HooksService {
 
       case AggregationDetailsMode.API:
         /** Get the JWT token */
-        let token: JWTokenResponse;
-        if (customer.aggregationDetails.userId !== undefined) {
-          token = await this.aggregator.getJWTokenForExistingUser(
-            serviceAccountConfig,
-            customer.aggregationDetails.userId,
-          );
-        } else {
-          token = await this.aggregator.getJWTokenForNewUser(serviceAccountConfig);
-        }
+        const token: JWTokenResponse =
+          customer.aggregationDetails.userId !== undefined
+            ? await this.aggregator.getJWTokenForExistingUser(serviceAccountConfig, customer.aggregationDetails.userId)
+            : await this.aggregator.getJWTokenForNewUser(serviceAccountConfig);
 
         aggregationDetails.token = token.jwt_token;
         aggregationDetails.userId = `${token.payload.id_user}`;

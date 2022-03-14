@@ -167,7 +167,7 @@ export class BudgetInsightClient {
 
       return resp.data;
     } catch (err) {
-      this.logger.error("An error occurred when generating user's JWT token");
+      this.logger.error("An error occurred when generating new user's JWT token");
       throw new UnauthorizedException(err);
     }
   }
