@@ -87,11 +87,17 @@ describe('BudgetInsightClient', () => {
     const jwtReturn: JWTokenResponse = {
       jwt_token: 'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9',
       payload: {
-        domain: 'algoan-testa-sandbox.biapi.pro',
+        domain: 'https://fake-budget-insights.com/2.0',
         id_user: 'userId',
       },
     };
-    result.data = jwtReturn;
+
+    result.data = {
+      auth_token: 'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9',
+      type: 'permanent',
+      id_user: 'userId',
+    };
+
     const spy = jest.spyOn(httpService, 'post').mockImplementationOnce(() => of(result));
 
     const jwtResponse = await service.getNewUserJWT();
@@ -111,11 +117,16 @@ describe('BudgetInsightClient', () => {
     const jwtReturn: JWTokenResponse = {
       jwt_token: 'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9',
       payload: {
-        domain: 'algoan-testa-sandbox.biapi.pro',
-        id_user: 'userId',
+        domain: 'https://fake-budget-insights.com/2.0',
+        id_user: 'mockUserId',
       },
     };
-    result.data = jwtReturn;
+
+    result.data = {
+      access_token: 'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9',
+      token_type: 'Bearer',
+    };
+
     const spy = jest.spyOn(httpService, 'post').mockImplementationOnce(() => of(result));
 
     const jwtResponse = await service.getExistingUserJWT(undefined, 'mockUserId');
