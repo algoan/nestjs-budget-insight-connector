@@ -347,12 +347,7 @@ export class HooksService {
         // eslint-disable-next-line no-null/no-null
         (connection: Connection) =>
           (connection.state === null && connection.last_update !== null) ||
-          [
-            ConnectionErrorState.WRONGPASS,
-            ConnectionErrorState.BUG,
-            ConnectionErrorState.WEBSITE_UNAVAILABLE,
-            ConnectionErrorState.PASSWORD_EXPIRED,
-          ].includes(connection.state as ConnectionErrorState),
+          this.config.budgetInsight.ignoredConnectionStates.includes(connection.state as string),
       ) as boolean;
     } while (!synchronizationCompleted && moment().isBefore(timeout) && (await delayNext()));
 
