@@ -9,6 +9,7 @@ import {
   BudgetInsightOwner,
   BudgetInsightTransaction,
   Connection,
+  ConnectionErrorState,
   JWTokenResponse,
 } from '../../aggregator/interfaces/budget-insight.interface';
 import { AggregatorService } from '../../aggregator/services/aggregator.service';
@@ -340,7 +341,14 @@ export class HooksService {
       connections = await this.aggregator.getConnections(permanentToken, serviceAccountConfig);
       synchronizationCompleted = connections?.every(
         // eslint-disable-next-line no-null/no-null
-        (connection: Connection) => connection.state === null && connection.last_update !== null,
+        (connection: Connection) =>
+          (connection.state === null && connection.last_update !== null) ||
+          [
+            ConnectionErrorState.WRONGPASS,
+            ConnectionErrorState.BUG,
+            ConnectionErrorState.WEBSITE_UNAVAILABLE,
+            ConnectionErrorState.PASSWORD_EXPIRED,
+          ].includes(connection.state as ConnectionErrorState),
       ) as boolean;
     } while (!synchronizationCompleted && moment().isBefore(timeout) && (await delayNext()));
 
