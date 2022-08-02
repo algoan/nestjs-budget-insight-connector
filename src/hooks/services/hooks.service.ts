@@ -9,6 +9,7 @@ import {
   BudgetInsightOwner,
   BudgetInsightTransaction,
   Connection,
+  ConnectionErrorState,
   JWTokenResponse,
 } from '../../aggregator/interfaces/budget-insight.interface';
 import { AggregatorService } from '../../aggregator/services/aggregator.service';
@@ -117,7 +118,11 @@ export class HooksService {
           return;
       }
     } catch (err: unknown) {
-      this.logger.error({ message: `An error occurred in the "dispatchAndHandleWebhook" method`, err });
+      this.logger.error(
+        { message: `An error occurred in the "dispatchAndHandleWebhook" method`, event },
+        (err as { stack: string }).stack as string,
+        (err as { message: string }).message as string,
+      );
       void se.update({ status: EventStatus.ERROR });
 
       return;
@@ -340,7 +345,9 @@ export class HooksService {
       connections = await this.aggregator.getConnections(permanentToken, serviceAccountConfig);
       synchronizationCompleted = connections?.every(
         // eslint-disable-next-line no-null/no-null
-        (connection: Connection) => connection.state === null && connection.last_update !== null,
+        (connection: Connection) =>
+          (connection.state === null && connection.last_update !== null) ||
+          this.config.budgetInsight.ignoredConnectionStates.includes(connection.state as string),
       ) as boolean;
     } while (!synchronizationCompleted && moment().isBefore(timeout) && (await delayNext()));
 
@@ -353,13 +360,19 @@ export class HooksService {
     });
 
     if (!synchronizationCompleted) {
-      const err = new Error('Synchronization failed');
       this.logger.warn({
         message: 'Synchronization failed after a timeout',
         customerId: payload.customerId,
         timeout: this.config.budgetInsight.synchronizationTimeout,
+        connections,
       });
-      throw err;
+      /**
+       * Continue the process if there is at least a finished connection
+       */
+      if (connections.findIndex((connection) => connection.state === null && connection.last_update !== null) < 0) {
+        const err = new Error('Synchronization failed');
+        throw err;
+      }
     }
 
     if (isEmpty(connections)) {

@@ -10,7 +10,8 @@
     "clientSecret": "budgetInsightClientSecret",
     "synchronizationTimeout": 1200,
     "waitingTime": 1000,
-    "apiVersion": "2.0"
+    "apiVersion": "2.0",
+    "ignoredConnectionStates": ["wrongpass", "bug", "passwordExpired", "websiteUnavailable"]
   },
   "targetUrl": "http://localhost:8080/hooks",
   "eventList": [
