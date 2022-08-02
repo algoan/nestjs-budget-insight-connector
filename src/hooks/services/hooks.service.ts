@@ -365,13 +365,19 @@ export class HooksService {
     });
 
     if (!synchronizationCompleted) {
-      const err = new Error('Synchronization failed');
       this.logger.warn({
         message: 'Synchronization failed after a timeout',
         customerId: payload.customerId,
         timeout: this.config.budgetInsight.synchronizationTimeout,
+        connections,
       });
-      throw err;
+      /**
+       * Continue the process if there is at least a finished connection
+       */
+      if (connections.findIndex((connection) => connection.state === null && connection.last_update !== null) < 0) {
+        const err = new Error('Synchronization failed');
+        throw err;
+      }
     }
 
     if (isEmpty(connections)) {

@@ -20,6 +20,7 @@ import { AlgoanHttpService } from '../../algoan/services/algoan-http.service';
 import { ConfigModule } from '../../config/config.module';
 import { HooksService } from './hooks.service';
 import { AnalysisStatus, ErrorCodes } from '../../algoan/dto/analysis.enum';
+import { Logger } from '@nestjs/common';
 
 describe('HooksService', () => {
   let hooksService: HooksService;
@@ -611,6 +612,116 @@ describe('HooksService', () => {
             ownership: 'HOLDER',
           },
         ],
+      });
+    });
+
+    it('should fetch bank details if there is at least a finished connection with a warning (after timeout)', async () => {
+      const connectionSync: Connection = {
+        id: 5,
+        id_user: 6,
+        id_connector: 5,
+        state: 'sync' as ConnectionErrorState,
+        active: true,
+        created: null,
+        next_try: null,
+        last_update: null,
+      };
+
+      const mockSubscription: Subscription = {
+        event: (_id: string) => ({
+          update: async ({ status }) => {
+            expect(status).toEqual('PROCESSED');
+          },
+        }),
+      } as unknown as Subscription;
+
+      const spyGetCustomer = jest.spyOn(algoanCustomerService, 'getCustomerById').mockReturnValue(
+        Promise.resolve({
+          id: 'mockCustomerId',
+          userId: 'mockCustomerUserId',
+          aggregationDetails: { mode: AggregationDetailsMode.API, token: 'fakeToken' },
+        } as unknown as Customer),
+      );
+
+      const connectionSpy = jest
+        .spyOn(aggregatorService, 'getConnections')
+        .mockReturnValue(Promise.resolve([{ ...connection, last_update: 'lastUpdate' }, connectionSync]));
+      const accountSpy = jest.spyOn(aggregatorService, 'getAccounts').mockResolvedValue([mockAccount]);
+      const userInfoSpy = jest.spyOn(aggregatorService, 'getInfo').mockResolvedValue({ owner: { name: 'JOHN DOE' } });
+      const transactionSpy = jest.spyOn(aggregatorService, 'getTransactions').mockResolvedValue([mockTransaction]);
+      const categorySpy = jest.spyOn(aggregatorService, 'getCategory').mockResolvedValue(mockCategory);
+      const analysisSpy = jest
+        .spyOn(algoanAnalysisService, 'updateAnalysis')
+        .mockReturnValue(Promise.resolve({} as unknown as Analysis));
+      const warnLoggerSpy = jest.spyOn(Logger.prototype, 'warn');
+      const event: EventDTO = {
+        ...mockEvent,
+        subscription: {
+          ...mockEvent,
+          eventName: EventName.BANK_DETAILS_REQUIRED,
+        },
+        payload: { customerId: 'mockCustomerId', analysisId: 'mockAnalysisId', temporaryCode: 'mockTempCode' },
+      } as unknown as EventDTO;
+
+      const fakeServiceAccount: ServiceAccount = {
+        ...mockServiceAccount,
+        config: {
+          baseUrl: 'https://fake-base-url.url',
+          clientId: 'fakeClientId',
+        },
+      } as ServiceAccount;
+
+      await hooksService.dispatchAndHandleWebhook(event, mockSubscription, fakeServiceAccount, new Date());
+
+      const saConfig = {
+        baseUrl: 'https://fake-base-url.url',
+        clientId: 'fakeClientId',
+      };
+
+      expect(spyHttpService).toBeCalled();
+      expect(spyGetCustomer).toBeCalledWith('mockCustomerId');
+      expect(connectionSpy).toBeCalledWith('fakeToken', saConfig);
+      expect(accountSpy).toBeCalledWith('fakeToken', saConfig);
+      expect(userInfoSpy).toBeCalledWith('fakeToken', '4', saConfig);
+      expect(userInfoSpy).toBeCalledTimes(2);
+      expect(transactionSpy).toBeCalledWith('fakeToken', 1, saConfig);
+      expect(categorySpy).toBeCalledWith('fakeToken', mockTransaction.id_category, saConfig);
+      expect(analysisSpy).toBeCalledWith('mockCustomerId', 'mockAnalysisId', {
+        accounts: [
+          {
+            aggregator: { id: '1' },
+            balance: 100,
+            balanceDate: '2011-10-05T14:48:00.000Z',
+            bank: { id: undefined, name: undefined },
+            bic: 'mockBic',
+            coming: 0,
+            currency: 'id1',
+            details: { loan: undefined, savings: undefined },
+            iban: 'mockIban',
+            name: 'mockName',
+            number: 'mockNumber',
+            owners: undefined,
+            transactions: [
+              {
+                aggregator: { category: 'mockCategoryName', id: 'mockId', type: 'BANK_FEE' },
+                amount: 50,
+                currency: 'USD',
+                dates: { bookedAt: null, debitedAt: null },
+                description: 'mockOriginalWording',
+                isComing: false,
+              },
+            ],
+            type: 'CHECKING',
+            usage: 'PERSONAL',
+            ownership: 'HOLDER',
+          },
+        ],
+      });
+      expect(warnLoggerSpy).toBeCalledWith({
+        connections: [{ ...connection, last_update: 'lastUpdate' }, connectionSync],
+        customerId: 'mockCustomerId',
+        message: 'Synchronization failed after a timeout',
+        timeout: 0.01,
       });
     });
 
