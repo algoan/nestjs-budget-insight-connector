@@ -163,14 +163,26 @@ export class HooksService {
     switch (customer.aggregationDetails?.mode) {
       case AggregationDetailsMode.REDIRECT:
         /** Generate the redirect url */
-        const callbackUrl: string | undefined = customer.aggregationDetails.callbackUrl;
-        this.logger.debug(`Found customer with id ${customer.id} and callbackUrl ${callbackUrl}`);
+        const redirectCallbackUrl: string | undefined = customer.aggregationDetails.callbackUrl;
+        this.logger.debug(`Found customer with id ${customer.id} and callbackUrl ${redirectCallbackUrl}`);
 
-        if (callbackUrl === undefined) {
+        if (redirectCallbackUrl === undefined) {
           throw new NotFoundException(`Customer ${customer.id} has no callback URL`);
         }
 
-        aggregationDetails.redirectUrl = this.aggregator.generateRedirectUrl(callbackUrl, serviceAccountConfig);
+        aggregationDetails.redirectUrl = this.aggregator.generateRedirectUrl(redirectCallbackUrl, serviceAccountConfig);
+        break;
+
+      case AggregationDetailsMode.IFRAME:
+        /** Generate the redirect url */
+        const iframeCallbackUrl: string | undefined = customer.aggregationDetails.callbackUrl;
+        this.logger.debug(`Found customer with id ${customer.id} and callbackUrl ${iframeCallbackUrl}`);
+
+        if (iframeCallbackUrl === undefined) {
+          throw new NotFoundException(`Customer ${customer.id} has no callback URL`);
+        }
+
+        aggregationDetails.iframeUrl = this.aggregator.generateRedirectUrl(iframeCallbackUrl, serviceAccountConfig);
         break;
 
       case AggregationDetailsMode.API:
@@ -193,8 +205,6 @@ export class HooksService {
     this.logger.debug(
       `Added aggregation details to customer ${customer.id} for mode ${customer.aggregationDetails.mode}`,
     );
-
-    return;
   }
 
   /**

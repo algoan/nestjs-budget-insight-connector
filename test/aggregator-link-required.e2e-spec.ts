@@ -4,6 +4,8 @@ import {
   mockAggregatorLinkRequiredAPIMode,
   mockAggregatorLinkRequiredRedirectModeWithCb,
   mockAggregatorLinkRequiredRedirectModeWithoutCb,
+  mockAggregatorLinkRequiredIframeModeWithCb,
+  mockAggregatorLinkRequiredIframeModeWithoutCb,
   mockInvalidMode,
   mockNoAggregationDetails,
   mockUnknownCustomer,
@@ -45,6 +47,18 @@ describe('HooksController (e2e) - aggregation_link_required event handler', () =
     it('HK101 - should fail because no callbackURL is defined in the customer', () =>
       runTestScenario(app, 'aggregator_link_required', {
         algoanMockServerGenerator: mockAggregatorLinkRequiredRedirectModeWithoutCb,
+      }));
+  });
+
+  describe('IFRAME MODE', () => {
+    it('HK100 - should send to Algoan a iframe URL', () =>
+      runTestScenario(app, 'aggregator_link_required', {
+        algoanMockServerGenerator: mockAggregatorLinkRequiredIframeModeWithCb,
+      }));
+
+    it('HK101 - should fail because no callbackURL is defined in the customer', () =>
+      runTestScenario(app, 'aggregator_link_required', {
+        algoanMockServerGenerator: mockAggregatorLinkRequiredIframeModeWithoutCb,
       }));
   });
 

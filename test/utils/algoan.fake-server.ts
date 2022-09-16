@@ -128,6 +128,58 @@ export const mockAggregatorLinkRequiredRedirectModeWithoutCb = (): nock.Scope =>
 };
 
 /**
+ * Mock Algoan API for the "aggreator_link_required" event with iframe mode
+ * The Customer owns a callback URL
+ * @param customerId CustomerId
+ * @returns
+ */
+export const mockAggregatorLinkRequiredIframeModeWithCb = (): nock.Scope => {
+  const callbackUrl: string = 'http://callback.url';
+
+  return baseScenario(nock(config.algoan.baseUrl))
+    .reply(HttpStatus.OK, {
+      id: CUSTOMER_ID,
+      aggregationDetails: {
+        callbackUrl,
+        mode: 'IFRAME',
+      },
+    })
+    .patch(`/v2/customers/${CUSTOMER_ID}`, {
+      aggregationDetails: {
+        iframeUrl: `${config.budgetInsight.url}/auth/webview/fr/connect?client_id=${config.budgetInsight.clientId}&redirect_uri=${callbackUrl}&response_type=code&state=&types=banks`,
+        aggregatorName: AggregationDetailsAggregatorName.BUDGET_INSIGHT,
+        apiUrl: config.budgetInsight.url,
+        clientId: config.budgetInsight.clientId,
+      },
+    })
+    .reply(HttpStatus.OK, {})
+    .patch(`/v1/subscriptions/${SUBSCRIPTION_ID}/events/${EVENT_ID}`, {
+      status: EventStatus.PROCESSED,
+    })
+    .reply(HttpStatus.OK);
+};
+
+/**
+ * Mock Algoan API for the "aggreator_link_required" event with iframe mode
+ * The Customer does not have a callback URL
+ * @param customerId CustomerId
+ * @returns
+ */
+export const mockAggregatorLinkRequiredIframeModeWithoutCb = (): nock.Scope => {
+  return baseScenario(nock(config.algoan.baseUrl))
+    .reply(HttpStatus.OK, {
+      id: CUSTOMER_ID,
+      aggregationDetails: {
+        mode: 'IFRAME',
+      },
+    })
+    .patch(`/v1/subscriptions/${SUBSCRIPTION_ID}/events/${EVENT_ID}`, {
+      status: EventStatus.ERROR,
+    })
+    .reply(HttpStatus.OK);
+};
+
+/**
  * Mock Algoan API when handling "aggregator_link_required" event in API Mode
  * @param customerId Customer ID
  */
