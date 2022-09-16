@@ -16,6 +16,7 @@ export interface Customer {
 export interface AggregationDetails {
   aggregatorName?: AggregationDetailsAggregatorName;
   callbackUrl?: string;
+  iframeUrl?: string;
   token?: string;
   mode?: AggregationDetailsMode;
   redirectUrl?: string;
