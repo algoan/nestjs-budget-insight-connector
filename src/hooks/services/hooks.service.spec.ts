@@ -271,6 +271,72 @@ describe('HooksService', () => {
       expect(spyPatchCustomer).not.toBeCalled();
     });
 
+    it('and patch the iframe url in iframe mode', async () => {
+      const mockSubscription: Subscription = {
+        event: (_id: string) => ({
+          update: async ({ status }) => {
+            expect(status).toEqual('PROCESSED');
+          },
+        }),
+      } as unknown as Subscription;
+
+      const spyGetCustomer = jest.spyOn(algoanCustomerService, 'getCustomerById').mockReturnValue(
+        Promise.resolve({
+          id: 'mockCustomerId',
+          aggregationDetails: { mode: AggregationDetailsMode.IFRAME, callbackUrl: 'http://fake.url' },
+        } as unknown as Customer),
+      );
+
+      const spyPatchCustomer = jest
+        .spyOn(algoanCustomerService, 'updateCustomer')
+        .mockReturnValue(Promise.resolve({} as unknown as Customer));
+
+      await hooksService.dispatchAndHandleWebhook(event, mockSubscription, mockServiceAccount, new Date());
+
+      expect(spyHttpService).toBeCalled();
+      expect(spyGetCustomer).toBeCalledWith('mockCustomerId');
+      expect(spyPatchCustomer).toBeCalledWith('mockCustomerId', {
+        aggregationDetails: {
+          aggregatorName: 'BUDGET_INSIGHT',
+          apiUrl: 'https://fake-budget-insights.com/2.0',
+          clientId: 'budgetInsightClientId',
+          iframeUrl:
+            'https://fake-budget-insights.com/2.0/auth/webview/fr/connect?client_id=budgetInsightClientId&redirect_uri=http://fake.url&response_type=code&state=&types=banks',
+        },
+      });
+    });
+
+    it('and not patch the iframe url in redirect mode when no callback url is provided', async () => {
+      const mockSubscription: Subscription = {
+        event: (_id: string) => ({
+          update: async ({ status }) => {
+            expect(status).toEqual('ERROR');
+          },
+        }),
+      } as unknown as Subscription;
+
+      const spyGetCustomer = jest.spyOn(algoanCustomerService, 'getCustomerById').mockReturnValue(
+        Promise.resolve({
+          id: 'mockCustomerId',
+          aggregationDetails: { mode: AggregationDetailsMode.IFRAME },
+        } as unknown as Customer),
+      );
+
+      const spyPatchCustomer = jest
+        .spyOn(algoanCustomerService, 'updateCustomer')
+        .mockReturnValue(Promise.resolve({} as unknown as Customer));
+
+      try {
+        await hooksService.dispatchAndHandleWebhook(event, mockSubscription, mockServiceAccount, new Date());
+      } catch (err) {
+        expect(err.message).toBe('Customer mockCustomerId has no callback URL');
+      }
+
+      expect(spyHttpService).toBeCalled();
+      expect(spyGetCustomer).toBeCalledWith('mockCustomerId');
+      expect(spyPatchCustomer).not.toBeCalled();
+    });
+
     it('and patch the customer in api mode', async () => {
       const mockSubscription: Subscription = {
         event: (_id: string) => ({
