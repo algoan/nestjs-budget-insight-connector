@@ -237,6 +237,7 @@ export class HooksService {
       let newUserId: number | undefined;
       switch (customer.aggregationDetails?.mode) {
         case AggregationDetailsMode.REDIRECT:
+        case AggregationDetailsMode.IFRAME:
           if (payload.temporaryCode !== undefined && permanentToken === undefined) {
             permanentToken = await this.aggregator.registerClient(
               payload.temporaryCode,
