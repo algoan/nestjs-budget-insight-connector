@@ -59,7 +59,9 @@ export class AggregatorService {
   public generateRedirectUrl(callbackUrl: string, clientConfig?: ClientConfig): string {
     const config: ClientConfig = this.budgetInsightClient.getClientConfig(clientConfig);
 
-    return `${config.baseUrl}/auth/webview/fr/connect?client_id=${config.clientId}&redirect_uri=${callbackUrl}&response_type=code&state=&types=banks`;
+    const language = config.language ?? 'fr';
+
+    return `${config.baseUrl}/auth/webview/${language}/connect?client_id=${config.clientId}&redirect_uri=${callbackUrl}&response_type=code&state=&types=banks`;
   }
 
   /**
