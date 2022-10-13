@@ -5,7 +5,7 @@ import { AppModule } from '../../app.module';
 import { Connection } from '../interfaces/budget-insight.interface';
 import { mockAccount, mockTransaction, mockCategory } from '../interfaces/budget-insight-mock';
 import { AggregatorService } from './aggregator.service';
-import { BudgetInsightClient } from './budget-insight/budget-insight.client';
+import { BudgetInsightClient, ClientConfig } from './budget-insight/budget-insight.client';
 
 describe('AggregatorService', () => {
   let service: AggregatorService;
@@ -94,6 +94,20 @@ describe('AggregatorService', () => {
     const url: string = service.generateRedirectUrl('callbackUrl');
     expect(url).toBe(
       'https://fake-budget-insights.com/2.0/auth/webview/fr/connect?client_id=budgetInsightClientId&redirect_uri=callbackUrl&response_type=code&state=&types=banks',
+    );
+  });
+
+  it('should create the webviewUrl base on the callbackUrl with a custom language', () => {
+    const config: ClientConfig = {
+      clientId: 'budgetInsightClientId',
+      clientSecret: 'budgetInsightClientSecret',
+      baseUrl: 'https://fake-budget-insights.com/2.0',
+      language: 'en',
+    };
+
+    const url: string = service.generateRedirectUrl('callbackUrl', config);
+    expect(url).toBe(
+      'https://fake-budget-insights.com/2.0/auth/webview/en/connect?client_id=budgetInsightClientId&redirect_uri=callbackUrl&response_type=code&state=&types=banks',
     );
   });
 

@@ -31,6 +31,7 @@ export interface ClientConfig {
   clientSecret: string;
   baseUrl: string;
   nbOfMonths?: number;
+  language?: string;
 }
 
 /**
