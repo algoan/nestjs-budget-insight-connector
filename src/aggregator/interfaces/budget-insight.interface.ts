@@ -20,6 +20,10 @@ export interface AccountWrapper {
  */
 export interface TransactionWrapper {
   transactions: BudgetInsightTransaction[];
+  pagination: {
+    previous_uri: string | null;
+    next_uri: string | null;
+  };
 }
 
 /**

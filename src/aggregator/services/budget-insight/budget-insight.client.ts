@@ -285,18 +285,36 @@ export class BudgetInsightClient {
     permanentToken: string,
     accountId: number,
     clientConfig?: ClientConfig,
+    nextUri?: string,
+    transactions?: BudgetInsightTransaction[],
   ): Promise<BudgetInsightTransaction[]> {
     const baseUrl: string = this.getClientConfig(clientConfig).baseUrl;
     const endDate: Date = new Date(Date.now());
     const nbOfMonths: number = clientConfig?.nbOfMonths ?? DEFAULT_NUMBER_OF_MONTHS;
     const startDate: Date = moment(endDate).subtract(nbOfMonths, 'month').toDate();
 
-    const url: string = `${baseUrl}/users/me/accounts/${accountId}/transactions?min_date=${startDate.toISOString()}&max_date=${endDate.toISOString()}`;
+    const uri: string =
+      nextUri ??
+      `/users/me/accounts/${accountId}/transactions?limit=100&min_date=${startDate.toISOString()}&max_date=${endDate.toISOString()}`;
+    const url: string = `${baseUrl}${uri}`;
+
     const resp: AxiosResponse<TransactionWrapper> = await this.toPromise(
       this.httpService.get(url, this.setHeaders(permanentToken)),
     );
 
-    return resp.data.transactions;
+    const mergedTransactions: BudgetInsightTransaction[] = [...(transactions ?? []), ...resp.data.transactions];
+
+    if (!isNil(resp.data.pagination.next_uri)) {
+      return this.fetchTransactions(
+        permanentToken,
+        accountId,
+        clientConfig,
+        resp.data.pagination.next_uri,
+        mergedTransactions,
+      );
+    }
+
+    return mergedTransactions;
   }
 
   /**

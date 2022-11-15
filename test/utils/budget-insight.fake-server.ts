@@ -106,10 +106,13 @@ export const getAccountAndTrFromRedirectMode = (): nock.Scope => {
     })
     .get('/users/me/accounts/1/transactions')
     .query((parsedQuery: ParsedUrlQueryInput) => {
-      return parsedQuery.min_date !== undefined && parsedQuery.max_date !== undefined;
+      return (
+        parsedQuery.limit !== undefined && parsedQuery.min_date !== undefined && parsedQuery.max_date !== undefined
+      );
     })
     .reply(HttpStatus.OK, {
       transactions: fakeTransactions,
+      pagination: { previous_uri: null, next_uri: null },
     })
     .get('/banks/categories/category_id_1')
     .reply(HttpStatus.OK, {
@@ -146,10 +149,13 @@ export const getAccountAndTrFromRedirectModeNoTmpCode = (): nock.Scope => {
     })
     .get('/users/me/accounts/1/transactions')
     .query((parsedQuery: ParsedUrlQueryInput) => {
-      return parsedQuery.min_date !== undefined && parsedQuery.max_date !== undefined;
+      return (
+        parsedQuery.limit !== undefined && parsedQuery.min_date !== undefined && parsedQuery.max_date !== undefined
+      );
     })
     .reply(HttpStatus.OK, {
       transactions: fakeTransactions,
+      pagination: { previous_uri: null, next_uri: null },
     })
     .get('/banks/categories/category_id_1')
     .reply(HttpStatus.OK, {
@@ -179,10 +185,13 @@ export const getAccountAndTrFromAPIMode = (): nock.Scope => {
     })
     .get('/users/me/accounts/1/transactions')
     .query((parsedQuery: ParsedUrlQueryInput) => {
-      return parsedQuery.min_date !== undefined && parsedQuery.max_date !== undefined;
+      return (
+        parsedQuery.limit !== undefined && parsedQuery.min_date !== undefined && parsedQuery.max_date !== undefined
+      );
     })
     .reply(HttpStatus.OK, {
       transactions: fakeTransactions,
+      pagination: { previous_uri: null, next_uri: null },
     })
     .get('/banks/categories/category_id_1')
     .reply(HttpStatus.OK, {
