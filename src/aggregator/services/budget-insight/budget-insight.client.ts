@@ -287,15 +287,17 @@ export class BudgetInsightClient {
     clientConfig?: ClientConfig,
     nextUri?: string,
     transactions?: BudgetInsightTransaction[],
+    oldOffset?: number,
   ): Promise<BudgetInsightTransaction[]> {
     const baseUrl: string = this.getClientConfig(clientConfig).baseUrl;
     const endDate: Date = new Date(Date.now());
     const nbOfMonths: number = clientConfig?.nbOfMonths ?? DEFAULT_NUMBER_OF_MONTHS;
     const startDate: Date = moment(endDate).subtract(nbOfMonths, 'month').toDate();
-
+    const limit: number = 100;
+    let offset: number = oldOffset ?? 0;
     const uri: string =
       nextUri ??
-      `/users/me/accounts/${accountId}/transactions?limit=100&min_date=${startDate.toISOString()}&max_date=${endDate.toISOString()}`;
+      `/users/me/accounts/${accountId}/transactions?limit=${limit}&offset=${offset}&min_date=${startDate.toISOString()}&max_date=${endDate.toISOString()}`;
     const url: string = `${baseUrl}${uri}`;
 
     const resp: AxiosResponse<TransactionWrapper> = await this.toPromise(
@@ -304,13 +306,18 @@ export class BudgetInsightClient {
 
     const mergedTransactions: BudgetInsightTransaction[] = [...(transactions ?? []), ...resp.data.transactions];
 
-    if (!isNil(resp.data.pagination.next_uri)) {
+    if (resp.data.transactions.length > 0) {
+      offset++;
+      const calculatedOffset = offset * limit + 1;
+      const nextTransactionsUri = `/users/me/accounts/${accountId}/transactions?limit=${limit}&offset=${calculatedOffset}&min_date=${startDate.toISOString()}&max_date=${endDate.toISOString()}`;
+
       return this.fetchTransactions(
         permanentToken,
         accountId,
         clientConfig,
-        resp.data.pagination.next_uri,
+        nextTransactionsUri,
         mergedTransactions,
+        offset,
       );
     }
 
