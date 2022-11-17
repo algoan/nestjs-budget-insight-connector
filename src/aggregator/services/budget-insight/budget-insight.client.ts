@@ -285,43 +285,32 @@ export class BudgetInsightClient {
     permanentToken: string,
     accountId: number,
     clientConfig?: ClientConfig,
-    nextUri?: string,
-    transactions?: BudgetInsightTransaction[],
-    oldOffset?: number,
   ): Promise<BudgetInsightTransaction[]> {
     const baseUrl: string = this.getClientConfig(clientConfig).baseUrl;
     const endDate: Date = new Date(Date.now());
     const nbOfMonths: number = clientConfig?.nbOfMonths ?? DEFAULT_NUMBER_OF_MONTHS;
     const startDate: Date = moment(endDate).subtract(nbOfMonths, 'month').toDate();
     const limit: number = 100;
-    let offset: number = oldOffset ?? 0;
-    const uri: string =
-      nextUri ??
-      `/users/me/accounts/${accountId}/transactions?limit=${limit}&offset=${offset}&min_date=${startDate.toISOString()}&max_date=${endDate.toISOString()}`;
-    const url: string = `${baseUrl}${uri}`;
+    let offset: number = 0;
 
-    const resp: AxiosResponse<TransactionWrapper> = await this.toPromise(
-      this.httpService.get(url, this.setHeaders(permanentToken)),
-    );
+    let uri: string;
+    let url: string;
 
-    const mergedTransactions: BudgetInsightTransaction[] = [...(transactions ?? []), ...resp.data.transactions];
+    let transactions: BudgetInsightTransaction[] = [];
+    let resp: AxiosResponse<TransactionWrapper>;
+    do {
+      uri = `/users/me/accounts/${accountId}/transactions?limit=${limit}&offset=${
+        offset * limit
+      }&min_date=${startDate.toISOString()}&max_date=${endDate.toISOString()}`;
+      url = `${baseUrl}${uri}`;
+      resp = await this.toPromise(this.httpService.get(url, this.setHeaders(permanentToken)));
 
-    if (resp.data.transactions.length > 0) {
+      transactions = [...transactions, ...resp.data.transactions];
+
       offset++;
-      const calculatedOffset = offset * limit + 1;
-      const nextTransactionsUri = `/users/me/accounts/${accountId}/transactions?limit=${limit}&offset=${calculatedOffset}&min_date=${startDate.toISOString()}&max_date=${endDate.toISOString()}`;
+    } while (resp.data.transactions.length > 0);
 
-      return this.fetchTransactions(
-        permanentToken,
-        accountId,
-        clientConfig,
-        nextTransactionsUri,
-        mergedTransactions,
-        offset,
-      );
-    }
-
-    return mergedTransactions;
+    return transactions;
   }
 
   /**
