@@ -246,14 +246,28 @@ describe('BudgetInsightClient', () => {
     const dateTime = new Date('2019-04-22T10:20:30Z').getTime();
     global.Date.now = jest.fn(() => dateTime);
     Date.now = () => dateTime;
-    const transactionResponse: TransactionWrapper = { transactions: [mockTransaction] };
+    const transactionResponse: TransactionWrapper = {
+      transactions: [mockTransaction],
+    };
+    const secondTransactionResponse: TransactionWrapper = {
+      transactions: [],
+    };
     result.data = transactionResponse;
+    let secondResult: AxiosResponse = {
+      data: {},
+      status: 200,
+      statusText: '',
+      headers: {},
+      config: {},
+    };
+    secondResult.data = secondTransactionResponse;
     const token = 'token';
     const accountId = 7;
     const spy = jest.spyOn(httpService, 'get').mockImplementationOnce(() => of(result));
+    jest.spyOn(httpService, 'get').mockImplementationOnce(() => of(secondResult));
 
     const startDate: Date = moment(new Date(Date.now())).subtract(5, 'month').toDate();
-    const url: string = `https://fake-budget-insights.com/2.0/users/me/accounts/${accountId}/transactions?min_date=${startDate.toISOString()}&max_date=${new Date(
+    const url: string = `https://fake-budget-insights.com/2.0/users/me/accounts/${accountId}/transactions?limit=100&offset=0&min_date=${startDate.toISOString()}&max_date=${new Date(
       Date.now(),
     ).toISOString()}`;
 

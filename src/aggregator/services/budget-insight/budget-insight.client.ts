@@ -290,13 +290,27 @@ export class BudgetInsightClient {
     const endDate: Date = new Date(Date.now());
     const nbOfMonths: number = clientConfig?.nbOfMonths ?? DEFAULT_NUMBER_OF_MONTHS;
     const startDate: Date = moment(endDate).subtract(nbOfMonths, 'month').toDate();
+    const limit: number = 100;
+    let offset: number = 0;
 
-    const url: string = `${baseUrl}/users/me/accounts/${accountId}/transactions?min_date=${startDate.toISOString()}&max_date=${endDate.toISOString()}`;
-    const resp: AxiosResponse<TransactionWrapper> = await this.toPromise(
-      this.httpService.get(url, this.setHeaders(permanentToken)),
-    );
+    let uri: string;
+    let url: string;
 
-    return resp.data.transactions;
+    let transactions: BudgetInsightTransaction[] = [];
+    let resp: AxiosResponse<TransactionWrapper>;
+    do {
+      uri = `/users/me/accounts/${accountId}/transactions?limit=${limit}&offset=${
+        offset * limit
+      }&min_date=${startDate.toISOString()}&max_date=${endDate.toISOString()}`;
+      url = `${baseUrl}${uri}`;
+      resp = await this.toPromise(this.httpService.get(url, this.setHeaders(permanentToken)));
+
+      transactions = [...transactions, ...resp.data.transactions];
+
+      offset++;
+    } while (resp.data.transactions.length > 0);
+
+    return transactions;
   }
 
   /**
