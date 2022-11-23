@@ -32,6 +32,7 @@ export interface ClientConfig {
   baseUrl: string;
   nbOfMonths?: number;
   language?: string;
+  deleteUsers?: boolean;
 }
 
 /**
@@ -304,7 +305,6 @@ export class BudgetInsightClient {
       }&min_date=${startDate.toISOString()}&max_date=${endDate.toISOString()}`;
       url = `${baseUrl}${uri}`;
       resp = await this.toPromise(this.httpService.get(url, this.setHeaders(permanentToken)));
-
       transactions = [...transactions, ...resp.data.transactions];
 
       offset++;
@@ -331,6 +331,19 @@ export class BudgetInsightClient {
     );
 
     return resp.data;
+  }
+
+  /**
+   * Delete user by its id
+   * https://docs.budget-insight.com/reference/users#delete-a-user
+   * @param permanentToken The Budget Insight token
+   */
+  public async deleteUser(id: number, permanentToken: string, clientConfig?: ClientConfig): Promise<void> {
+    const biConfig: ClientConfig = this.getClientConfig(clientConfig);
+    const url: string = `${biConfig.baseUrl}/users/${id}`;
+    this.logger.debug(`Deleting the connexion with the id ${id}`);
+
+    await this.toPromise(this.httpService.delete(url, this.setHeaders(permanentToken)));
   }
 
   /**

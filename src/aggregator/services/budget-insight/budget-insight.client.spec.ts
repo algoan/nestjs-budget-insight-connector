@@ -16,6 +16,7 @@ import {
 } from '../../interfaces/budget-insight.interface';
 import { mockAccount, mockTransaction, mockCategory } from '../../interfaces/budget-insight-mock';
 import { ClientConfig } from './budget-insight.client';
+
 describe('BudgetInsightClient', () => {
   let service: BudgetInsightClient;
   let httpService: HttpService;
@@ -325,6 +326,27 @@ describe('BudgetInsightClient', () => {
       baseUrl: 'http://test.url/2.0',
       clientId: 'testClientId',
       clientSecret: 'testClientSecret',
+    });
+  });
+
+  it('delete the user after the account recuperation if deleteUser is true', async () => {
+    const user: User = {
+      id: 3,
+      platform: 'mockPlatform',
+      signin: new Date(),
+    };
+
+    const permanentToken = 'token';
+
+    const spy = jest.spyOn(httpService, 'delete').mockImplementationOnce(() => of(result));
+
+    await service.deleteUser(user.id, permanentToken);
+
+    expect(spy).toHaveBeenCalledWith(`https://fake-budget-insights.com/2.0/users/${user.id}`, {
+      headers: {
+        ...headers.headers,
+        Authorization: `Bearer ${permanentToken}`,
+      },
     });
   });
 });

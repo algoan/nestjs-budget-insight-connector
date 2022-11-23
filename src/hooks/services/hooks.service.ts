@@ -286,6 +286,12 @@ export class HooksService {
         payload,
         serviceAccount.config as ClientConfig,
       );
+
+      // We remove the user if deleteUsers is set to true
+      if ((serviceAccount.config as ClientConfig)?.deleteUsers === true && newUserId !== undefined) {
+        await this.aggregator.deleteUser(newUserId, permanentToken, serviceAccount.config as ClientConfig);
+      }
+
       if (algoanAccounts === undefined) {
         return;
       }
