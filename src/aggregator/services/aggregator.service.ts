@@ -39,6 +39,13 @@ export class AggregatorService {
   }
 
   /**
+   * Delete a user by it's id
+   */
+  public async deleteUser(id: number, permanentToken: string, clientConfig?: ClientConfig): Promise<void> {
+    return this.budgetInsightClient.deleteUser(id, permanentToken, clientConfig);
+  }
+
+  /**
    * Get user JSON Web Token
    */
   public async getJWTokenForExistingUser(clientConfig?: ClientConfig, userId?: string): Promise<JWTokenResponse> {
