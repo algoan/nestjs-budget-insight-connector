@@ -16,6 +16,7 @@ import {
 } from '../../interfaces/budget-insight.interface';
 import { mockAccount, mockTransaction, mockCategory } from '../../interfaces/budget-insight-mock';
 import { ClientConfig } from './budget-insight.client';
+import { config } from 'node-config-ts';
 
 describe('BudgetInsightClient', () => {
   let service: BudgetInsightClient;
@@ -268,9 +269,9 @@ describe('BudgetInsightClient', () => {
     jest.spyOn(httpService, 'get').mockImplementationOnce(() => of(secondResult));
 
     const startDate: Date = moment(new Date(Date.now())).subtract(5, 'month').toDate();
-    const url: string = `https://fake-budget-insights.com/2.0/users/me/accounts/${accountId}/transactions?limit=100&offset=0&min_date=${startDate.toISOString()}&max_date=${new Date(
-      Date.now(),
-    ).toISOString()}`;
+    const url: string = `https://fake-budget-insights.com/2.0/users/me/accounts/${accountId}/transactions?limit=${
+      config.budgetInsight.paginationLimit
+    }&offset=0&min_date=${startDate.toISOString()}&max_date=${new Date(Date.now()).toISOString()}`;
 
     const transactions = await service.fetchTransactions(token, accountId);
     expect(transactions).toEqual([mockTransaction]);

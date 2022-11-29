@@ -291,7 +291,7 @@ export class BudgetInsightClient {
     const endDate: Date = new Date(Date.now());
     const nbOfMonths: number = clientConfig?.nbOfMonths ?? DEFAULT_NUMBER_OF_MONTHS;
     const startDate: Date = moment(endDate).subtract(nbOfMonths, 'month').toDate();
-    const limit: number = 100;
+    const limit: number = config.budgetInsight.paginationLimit;
     let offset: number = 0;
 
     let uri: string;
