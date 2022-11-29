@@ -9,7 +9,8 @@
     "clientId": "budgetInsightClientId",
     "clientSecret": "budgetInsightClientSecret",
     "waitingTime": 0,
-    "synchronizationTimeout": 0.01
+    "synchronizationTimeout": 0.01,
+    "paginationLimit": 20
   },
   "targetUrl": "https://test",
   "eventList": [

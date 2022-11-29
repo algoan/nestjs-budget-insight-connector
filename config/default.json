@@ -11,7 +11,8 @@
     "synchronizationTimeout": 1200,
     "waitingTime": 1000,
     "apiVersion": "2.0",
-    "ignoredConnectionStates": ["wrongpass", "bug", "passwordExpired", "websiteUnavailable"]
+    "ignoredConnectionStates": ["wrongpass", "bug", "passwordExpired", "websiteUnavailable"],
+    "paginationLimit": 20
   },
   "targetUrl": "http://localhost:8080/hooks",
   "eventList": [
