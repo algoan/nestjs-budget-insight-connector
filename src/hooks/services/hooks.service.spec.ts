@@ -3,7 +3,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ContextIdFactory } from '@nestjs/core';
 import { ServiceAccount, Subscription, RequestBuilder } from '@algoan/rest';
 import { EventName } from '../enums/event-name.enum';
-
+import { EventName as AlgoanRestEventName } from '@algoan/rest';
 import { EventDTO } from '../dto';
 import { AggregationDetailsMode } from '../../algoan/dto/customer.enums';
 import { Customer } from '../../algoan/dto/customer.objects';
@@ -49,7 +49,12 @@ describe('HooksService', () => {
 
   const subscriptions: Subscription[] = [
     new Subscription(
-      { id: 'mockEventSubId', eventName: EventName.BANKREADER_COMPLETED, status: 'ACTIVE', target: 'mockSubTarget' },
+      {
+        id: 'mockEventSubId',
+        eventName: AlgoanRestEventName.BANKREADER_COMPLETED,
+        status: 'ACTIVE',
+        target: 'mockSubTarget',
+      },
       new RequestBuilder('mockBaseURL', { clientId: 'mockClientId' }),
     ),
   ];
