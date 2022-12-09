@@ -6,13 +6,19 @@ import {
   BanksDetailsRequiredDTO,
   ServiceAccountCreatedDTO,
   ServiceAccountDeletedDTO,
+  ServiceAccountUpdatedDTO,
   SubscriptionDTO,
 } from '.';
 
 /**
  * Events payload types
  */
-type Events = ServiceAccountCreatedDTO | ServiceAccountDeletedDTO | AggregatorLinkRequiredDTO | BanksDetailsRequiredDTO;
+type Events =
+  | ServiceAccountCreatedDTO
+  | ServiceAccountDeletedDTO
+  | ServiceAccountUpdatedDTO
+  | AggregatorLinkRequiredDTO
+  | BanksDetailsRequiredDTO;
 
 /**
  * Event

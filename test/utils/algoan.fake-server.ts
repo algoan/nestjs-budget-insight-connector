@@ -57,6 +57,20 @@ export const onApplicationStart = (): nock.Scope => {
       secret: config.restHooksSecret,
       eventName: 'bank_details_required',
       target: config.targetUrl,
+    })
+    .post('/v1/subscriptions')
+    .reply(HttpStatus.CREATED, {
+      id: '3',
+      secret: config.restHooksSecret,
+      eventName: 'service_account_created',
+      target: config.targetUrl,
+    })
+    .post('/v1/subscriptions')
+    .reply(HttpStatus.CREATED, {
+      id: '4',
+      secret: config.restHooksSecret,
+      eventName: 'service_account_updated',
+      target: config.targetUrl,
     });
 };
 
