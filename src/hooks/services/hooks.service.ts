@@ -1,4 +1,5 @@
-import { EventName, EventStatus, ServiceAccount, Subscription, SubscriptionEvent } from '@algoan/rest';
+/* eslint-disable max-lines */
+import { EventStatus, ServiceAccount, Subscription, SubscriptionEvent } from '@algoan/rest';
 import { Inject, Injectable, Logger, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import * as delay from 'delay';
 import { isEmpty } from 'lodash';
@@ -9,7 +10,6 @@ import {
   BudgetInsightOwner,
   BudgetInsightTransaction,
   Connection,
-  ConnectionErrorState,
   JWTokenResponse,
 } from '../../aggregator/interfaces/budget-insight.interface';
 import { AggregatorService } from '../../aggregator/services/aggregator.service';
@@ -27,8 +27,16 @@ import { AlgoanCustomerService } from '../../algoan/services/algoan-customer.ser
 import { AlgoanHttpService } from '../../algoan/services/algoan-http.service';
 import { AlgoanService } from '../../algoan/services/algoan.service';
 import { CONFIG } from '../../config/config.module';
-import { AggregatorLinkRequiredDTO, BanksDetailsRequiredDTO, EventDTO } from '../dto';
+import {
+  AggregatorLinkRequiredDTO,
+  BanksDetailsRequiredDTO,
+  EventDTO,
+  ServiceAccountCreatedDTO,
+  ServiceAccountUpdatedDTO,
+  SubscriptionDTO,
+} from '../dto';
 import { joinUserId } from '../helpers/join-user-id.helpers';
+import { EventName } from '../enums/event-name.enum';
 
 /**
  * Hook service
@@ -96,7 +104,6 @@ export class HooksService {
   ): Promise<void> {
     // ACKnowledged event
     const se: SubscriptionEvent = subscription.event(event.id);
-
     try {
       switch (event.subscription.eventName) {
         case EventName.AGGREGATOR_LINK_REQUIRED:
@@ -109,6 +116,16 @@ export class HooksService {
             event.payload as BanksDetailsRequiredDTO,
             aggregationStartDate,
           );
+          break;
+
+        case EventName.SERVICE_ACCOUNT_CREATED:
+          await this.handleServiceAccountCreatedEvent(event.payload as ServiceAccountCreatedDTO, event.subscription);
+          // await this.algoanService.saveServiceAccount(serviceAccount, event.subscription);
+          break;
+
+        case EventName.SERVICE_ACCOUNT_UPDATED:
+          this.handleServiceAccountUpdatedEvent(event.payload as ServiceAccountUpdatedDTO);
+          // await this.algoanService.updateServiceAccount(event.payload as ServiceAccountUpdatedDTO);
           break;
 
         // The default case should never be reached, as the eventName is already checked in the DTO
@@ -333,6 +350,23 @@ export class HooksService {
   }
 
   /**
+   * Handles the service_account_created event
+   * @param payload the new service account id
+   * @param subscription
+   */
+  public async handleServiceAccountCreatedEvent(payload: ServiceAccountCreatedDTO, subscription: SubscriptionDTO) {
+    await this.algoanService.saveServiceAccount(payload, subscription);
+  }
+
+  /**
+   * Handles the service_account_updated event
+   * @param payload service account update dto
+   */
+  public handleServiceAccountUpdatedEvent(payload: ServiceAccountUpdatedDTO) {
+    this.algoanService.updateServiceAccount(payload);
+  }
+
+  /**
    * Fetch accounts, connections info and transactions from BI (and format them to algoan format)
    * @param permanentToken the token to connect to BI
    * @param customerId the id of the customer
@@ -481,7 +515,7 @@ export class HooksService {
    * Gets the Service Account given the event
    */
   public async getServiceAccount(event: EventDTO): Promise<ServiceAccount> {
-    const serviceAccount = this.algoanService.algoanClient.getServiceAccountBySubscriptionId(event.subscription.id);
+    const serviceAccount = this.algoanService.getServiceAccountBySubscriptionId(event.subscription.id);
     if (serviceAccount === undefined) {
       throw new UnauthorizedException(`No service account found for subscription ${event.subscription.id}`);
     }

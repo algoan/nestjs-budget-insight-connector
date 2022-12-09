@@ -1,10 +1,13 @@
-import { INestApplication } from '@nestjs/common';
-import nock from 'nock/types';
+import { HttpStatus, INestApplication } from '@nestjs/common';
+import * as nock from 'nock';
 import { buildFakeApp } from './utils/app';
 import * as request from 'supertest';
 import delay from 'delay';
 import * as crypto from 'crypto';
 import { config } from 'node-config-ts';
+import { patchEventStatus } from './utils/algoan.fake-server';
+import { EventStatus } from '@algoan/rest';
+import { HooksService } from '../src/hooks/services/hooks.service';
 
 let app: INestApplication;
 
@@ -29,11 +32,14 @@ describe('HooksController (e2e) - service_account_created event handler', () => 
   });
 
   it('HK300 - should successfully create a new service account', async () => {
-    const subscriptionId: string = '1';
+    const subscriptionId: string = '3';
     const eventId: string = 'eventId';
     const payload = {
-      customerId: 'customer_id',
+      serviceAccountId: 'serviceAccountId',
     };
+
+    jest.spyOn(HooksService.prototype, 'handleServiceAccountCreatedEvent').mockImplementation();
+    const fakePatchEvent: nock.Scope = patchEventStatus(subscriptionId, eventId, EventStatus.PROCESSED);
 
     const encryptedSignature: string = crypto
       .createHmac('sha256', config.restHooksSecret)
@@ -51,11 +57,16 @@ describe('HooksController (e2e) - service_account_created event handler', () => 
           eventName: 'service_account_created',
         },
         id: eventId,
-        index: 1,
+        index: 3,
         time: Date.now(),
         payload: {
           serviceAccountId: 'serviceAccountId',
         },
-      });
+      })
+      .expect(HttpStatus.NO_CONTENT);
+
+    await delay(1000);
+
+    fakePatchEvent.done();
   });
 });
