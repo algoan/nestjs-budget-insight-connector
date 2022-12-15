@@ -8,10 +8,11 @@ import { config } from 'node-config-ts';
 import { patchEventStatus } from './utils/algoan.fake-server';
 import { EventStatus } from '@algoan/rest';
 import { HooksService } from '../src/hooks/services/hooks.service';
-
-let app: INestApplication;
+import { v4 as uuidv4 } from 'uuid';
 
 describe('HooksController (e2e) - service_account_created event handler', () => {
+  let app: INestApplication;
+
   beforeAll(async () => {
     app = await buildFakeApp();
   });
@@ -33,9 +34,10 @@ describe('HooksController (e2e) - service_account_created event handler', () => 
 
   it('HK300 - should successfully create a new service account', async () => {
     const subscriptionId: string = '3';
-    const eventId: string = 'eventId';
+    const eventId: string = uuidv4();
+    const serviceAccountId: string = uuidv4();
     const payload = {
-      serviceAccountId: 'serviceAccountId',
+      serviceAccountId,
     };
 
     jest.spyOn(HooksService.prototype, 'handleServiceAccountCreatedEvent').mockImplementation();
@@ -60,7 +62,7 @@ describe('HooksController (e2e) - service_account_created event handler', () => 
         index: 3,
         time: Date.now(),
         payload: {
-          serviceAccountId: 'serviceAccountId',
+          serviceAccountId,
         },
       })
       .expect(HttpStatus.NO_CONTENT);

@@ -120,12 +120,10 @@ export class HooksService {
 
         case EventName.SERVICE_ACCOUNT_CREATED:
           await this.handleServiceAccountCreatedEvent(event.payload as ServiceAccountCreatedDTO, event.subscription);
-          // await this.algoanService.saveServiceAccount(serviceAccount, event.subscription);
           break;
 
         case EventName.SERVICE_ACCOUNT_UPDATED:
           this.handleServiceAccountUpdatedEvent(event.payload as ServiceAccountUpdatedDTO);
-          // await this.algoanService.updateServiceAccount(event.payload as ServiceAccountUpdatedDTO);
           break;
 
         // The default case should never be reached, as the eventName is already checked in the DTO

@@ -51,21 +51,4 @@ describe('AlgoanService', () => {
 
     await expect(algoanService.onModuleInit()).rejects.toThrow('No event list given');
   });
-
-  it('should handle the service account created event', async () => {
-    const subscriptionId: string = '3';
-
-    const payload = {
-      serviceAccountId: 'serviceAccountId',
-    };
-
-    const subscription = {
-      id: subscriptionId,
-      target: config.targetUrl,
-      status: 'ACTIVE' as SubscriptionStatus,
-      eventName: EventName.SERVICE_ACCOUNT_CREATED,
-    };
-
-    algoanService.saveServiceAccount(payload, subscription);
-  });
 });

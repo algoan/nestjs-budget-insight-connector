@@ -82,7 +82,7 @@ export class AlgoanService implements OnModuleInit {
       baseUrl: this.config.algoan.baseUrl,
       clientId: this.config.algoan.clientId,
       clientSecret: this.config.algoan.clientSecret,
-      version: this.config.algoan.version, // Should be 2, it is temporary to 1
+      version: this.config.algoan.version,
       loggerOptions: {
         format:
           nodeEnv === 'production' ? format.json() : format.combine(format.timestamp(), utilities.format.nestLike()),
