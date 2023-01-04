@@ -1,3 +1,4 @@
+import { EnrichedConnection } from '../../aggregator/interfaces/enriched-budget-insight.interface';
 import {
   AccountType,
   AccountUsage,
@@ -11,11 +12,18 @@ import { AnalysisError } from './analysis.objects';
 /**
  * Analysis Update Input
  */
-export interface AnalysisUpdateInput {
-  accounts?: Account[];
-  status?: AnalysisStatus;
-  error?: AnalysisError;
-}
+export type AnalysisUpdateInput =
+  | {
+      status?: AnalysisStatus;
+      error?: AnalysisError;
+    }
+  | {
+      connections?: EnrichedConnection[];
+      format: 'BUDGET_INSIGHT_V2_0';
+    }
+  | {
+      accounts?: Account[];
+    };
 
 /**
  * Account
