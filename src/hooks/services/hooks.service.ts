@@ -9,7 +9,6 @@ import {
   BudgetInsightOwner,
   BudgetInsightTransaction,
   Connection,
-  ConnectionErrorState,
   JWTokenResponse,
 } from '../../aggregator/interfaces/budget-insight.interface';
 import { AggregatorService } from '../../aggregator/services/aggregator.service';
