@@ -315,7 +315,7 @@ export class HooksService {
       });
     } catch (err) {
       this.logger.debug({
-        message: `An error occured when fetching data from the aggregator for analysis id ${payload.analysisId} and customer id ${payload.customerId}`,
+        message: `An error occurred when fetching data from the aggregator for analysis id ${payload.analysisId} and customer id ${payload.customerId}`,
         error: err,
       });
 
@@ -324,7 +324,7 @@ export class HooksService {
         status: AnalysisStatus.ERROR,
         error: {
           code: ErrorCodes.INTERNAL_ERROR,
-          message: `An error occured when fetching data from the aggregator`,
+          message: `An error occurred when fetching data from the aggregator`,
         },
       });
 

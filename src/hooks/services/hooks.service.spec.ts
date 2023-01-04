@@ -453,7 +453,7 @@ describe('HooksService', () => {
         status: AnalysisStatus.ERROR,
         error: {
           code: ErrorCodes.INTERNAL_ERROR,
-          message: `An error occured when fetching data from the aggregator`,
+          message: `An error occurred when fetching data from the aggregator`,
         },
       });
     });
