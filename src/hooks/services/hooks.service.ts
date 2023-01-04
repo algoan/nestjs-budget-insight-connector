@@ -17,8 +17,8 @@ import {
   mapBudgetInsightAccount,
   mapBudgetInsightTransactions,
 } from '../../aggregator/services/budget-insight/budget-insight.utils';
+import { EnrichedConnection } from '../../aggregator/interfaces/enriched-budget-insight.interface';
 import { AnalysisStatus, ErrorCodes } from '../../algoan/dto/analysis.enum';
-import { Account } from '../../algoan/dto/analysis.inputs';
 import { AggregationDetailsAggregatorName, AggregationDetailsMode } from '../../algoan/dto/customer.enums';
 import { AggregationDetails, Customer } from '../../algoan/dto/customer.objects';
 import { AlgoanAnalysisService } from '../../algoan/services/algoan-analysis.service';
@@ -280,7 +280,7 @@ export class HooksService {
         }
       }
 
-      const algoanAccounts: Account[] | undefined = await this.fetchAccountsAndTransactions(
+      const enrichedConnections: EnrichedConnection[] | undefined = await this.fetchAccountsAndTransactions(
         permanentToken,
         payload,
         serviceAccount.config as ClientConfig,
@@ -291,7 +291,7 @@ export class HooksService {
         await this.aggregator.deleteUser(newUserId, permanentToken, serviceAccount.config as ClientConfig);
       }
 
-      if (algoanAccounts === undefined) {
+      if (enrichedConnections === undefined) {
         return;
       }
 
@@ -307,7 +307,8 @@ export class HooksService {
        * Patch the analysis with the accounts and transactions
        */
       await this.algoanAnalysisService.updateAnalysis(payload.customerId, payload.analysisId, {
-        accounts: algoanAccounts,
+        connections: enrichedConnections,
+        format: 'BUDGET_INSIGHT_V2_0',
       });
       this.logger.debug({
         message: `Analysis "${payload.analysisId}" patched`,
@@ -342,7 +343,7 @@ export class HooksService {
     permanentToken: string,
     payload: BanksDetailsRequiredDTO,
     serviceAccountConfig?: ClientConfig,
-  ): Promise<Account[] | undefined> {
+  ): Promise<EnrichedConnection[] | undefined> {
     /**
      * 2. Fetch user active connections
      */
@@ -443,37 +444,34 @@ export class HooksService {
       }
     }
 
-    const algoanAccounts: Account[] = mapBudgetInsightAccount(
+    const enrichedConnections: EnrichedConnection[] = mapBudgetInsightAccount(
       uniqueAccounts,
-      this.aggregator,
       connections,
       connectionsInfo,
-      serviceAccountConfig,
     );
 
     /**
      * For each account, get and format transactions
      */
-    for (const account of algoanAccounts) {
+    for (const connection of enrichedConnections) {
       const transactions: BudgetInsightTransaction[] = await this.aggregator.getTransactions(
         permanentToken,
-        Number(account.aggregator.id),
+        Number(connection.accounts[0].id),
         serviceAccountConfig,
       );
       this.logger.debug({
-        message: `Transactions retrieved from BI for analysis "${payload.analysisId}" and account "${account.aggregator.id}"`,
+        message: `Transactions retrieved from BI for analysis "${payload.analysisId}" and account "${connection.accounts[0].id}"`,
         transactions,
       });
-      account.transactions = await mapBudgetInsightTransactions(
+      connection.accounts[0].transactions = await mapBudgetInsightTransactions(
         transactions,
-        account,
         permanentToken,
         this.aggregator,
         serviceAccountConfig,
       );
     }
 
-    return algoanAccounts;
+    return enrichedConnections;
   }
 
   /**

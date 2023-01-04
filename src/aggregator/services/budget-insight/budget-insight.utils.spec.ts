@@ -1,7 +1,6 @@
 import { BanksUserTransactionType as TransactionType } from '@algoan/rest';
 import { Test, TestingModule } from '@nestjs/testing';
-import { AccountLoanType, AccountOwnership, AccountType, AccountUsage } from '../../../algoan/dto/analysis.enum';
-import { Account as AnalysisAccount, AccountTransactions } from '../../../algoan/dto/analysis.inputs';
+import { AccountTransactions } from '../../../algoan/dto/analysis.inputs';
 import { AggregatorModule } from '../../aggregator.module';
 import { mockCategory } from '../../interfaces/budget-insight-mock';
 import {
@@ -16,6 +15,10 @@ import {
   Connection,
   TransactionType as BiTransactionType,
 } from '../../interfaces/budget-insight.interface';
+import {
+  EnrichedBudgetInsightTransaction,
+  EnrichedConnection,
+} from '../../interfaces/enriched-budget-insight.interface';
 import { AggregatorService } from '../aggregator.service';
 import { mapBudgetInsightAccount, mapBudgetInsightTransactions } from './budget-insight.utils';
 
@@ -112,74 +115,97 @@ describe('BudgetInsightUtils', () => {
         company_name: 'mockCompanyName',
       },
     ];
-    const expectedAccounts: AnalysisAccount[] = [
+    const expectedConnections: EnrichedConnection[] = [
       {
-        balance: -10000,
-        balanceDate: '2011-10-05T14:48:00.000Z',
-        bank: {
-          id: '2',
-          name: 'bank-name',
-          logoUrl: 'https://fake-budget-insights.com/2.0/logos/example-uuid-thumbnail@2x.png',
-        },
-        coming: 0,
-        currency: 'USD',
-        bic: 'bic',
-        iban: 'iban',
-        details: {
-          loan: {
-            amount: 250,
-            endDate: '2011-10-05T14:48:00.000Z',
-            startDate: '2011-09-05T14:48:00.000Z',
-            interestRate: 1.1,
-            payment: 5,
-            remainingCapital: -10000,
-            duration: 72,
-            type: AccountLoanType.OTHER,
-            insuranceLabel: 'PE',
+        id: 32,
+        id_user: 2,
+        id_connector: 3,
+        last_update: '',
+        state: null,
+        active: true,
+        connector: { id: 2, uuid: 'example-uuid', name: 'bank-name' },
+        created: budgetInsightConnections[0].created,
+        next_try: budgetInsightConnections[0].next_try,
+        accounts: [
+          {
+            id: 1,
+            id_connection: 32,
+            id_user: 33,
+            id_source: 34,
+            id_parent: 35,
+            number: 'mockNumber',
+            original_name: 'loan',
+            coming: 0,
+            last_update: '2011-10-05T14:48:00.000Z',
+            balance: -10000,
+            currency: { id: 'USD' },
+            bic: 'bic',
+            iban: 'iban',
+            name: 'account-name',
+            type: BIAccountType.LOAN,
+            usage: BIUsageType.PRIVATE,
+            ownership: BankAccountOwnership.CO_OWNER,
+            disabled: false,
+            company_name: 'mockCompanyName',
+            loan: {
+              total_amount: 250,
+              id_account: 'loan-account-id',
+              maturity_date: '2011-10-05T14:48:00.000Z',
+              rate: 1.1,
+              next_payment_amount: 5,
+              subscription_date: '2011-09-05T14:48:00.000Z',
+              duration: 72,
+              insurance_label: 'PE',
+              type: BIAccountType.LOAN,
+            },
           },
-          savings: undefined,
-        },
-        name: 'account-name',
-        number: 'mockNumber',
-        type: AccountType.LOAN,
-        usage: AccountUsage.PERSONAL,
-        ownership: AccountOwnership.CO_HOLDER,
-        owners: [{ name: 'M. JOHN DOE' }],
-        aggregator: {
-          id: '1',
+        ],
+        information: {
+          owner: { company_name: 'Algoan', job: 'Developer', job_start_date: '2020-09-01', name: 'M. JOHN DOE' },
         },
       },
       {
-        balance: 100,
-        balanceDate: '2020-10-05T14:48:00.000Z',
-        bank: {
-          id: '2',
-          name: 'bank-name',
-          logoUrl: 'https://fake-budget-insights.com/2.0/logos/example-uuid-thumbnail@2x.png',
+        id: 32,
+        id_user: 2,
+        id_connector: 3,
+        last_update: '',
+        state: null,
+        active: true,
+        connector: { id: 2, uuid: 'example-uuid', name: 'bank-name' },
+        created: budgetInsightConnections[0].created,
+        next_try: budgetInsightConnections[0].next_try,
+        accounts: [
+          {
+            id: 9,
+            id_connection: 32,
+            id_user: 28,
+            id_source: 29,
+            id_parent: 210,
+            number: 'mockNumber',
+            original_name: 'card',
+            coming: 120,
+            last_update: '2020-10-05T14:48:00.000Z',
+            balance: 100,
+            currency: { id: 'USD' },
+            bic: 'bic',
+            iban: 'iban',
+            name: 'account-name',
+            type: BIAccountType.CARD,
+            usage: BIUsageType.PRIVATE,
+            ownership: null,
+            disabled: false,
+            company_name: 'mockCompanyName',
+          },
+        ],
+        information: {
+          owner: { company_name: 'Algoan', job: 'Developer', job_start_date: '2020-09-01', name: 'M. JOHN DOE' },
         },
-        coming: 120,
-        currency: 'USD',
-        bic: 'bic',
-        iban: 'iban',
-        name: 'account-name',
-        number: 'mockNumber',
-        aggregator: {
-          id: '9',
-        },
-        details: {
-          loan: undefined,
-          savings: undefined,
-        },
-        type: AccountType.CREDIT_CARD,
-        usage: AccountUsage.PERSONAL,
-        ownership: undefined,
-        owners: [{ name: 'M. JOHN DOE' }],
       },
     ];
 
-    expect(
-      mapBudgetInsightAccount(budgetInsightAccounts, aggregatorService, budgetInsightConnections, ownerInfo),
-    ).toEqual(expectedAccounts);
+    expect(mapBudgetInsightAccount(budgetInsightAccounts, budgetInsightConnections, ownerInfo)).toEqual(
+      expectedConnections,
+    );
   });
 
   it('should map the budget insight connections to analysis (no owner, no connector)', () => {
@@ -252,72 +278,89 @@ describe('BudgetInsightUtils', () => {
         company_name: 'mockCompanyName',
       },
     ];
-    const expectedAccounts: AnalysisAccount[] = [
+    const expectedConnections: EnrichedConnection[] = [
       {
-        balance: -10000,
-        balanceDate: '2011-10-05T14:48:00.000Z',
-        bank: {
-          id: undefined,
-          name: undefined,
-        },
-        coming: undefined,
-        currency: 'USD',
-        bic: 'bic',
-        iban: undefined,
-        details: {
-          loan: {
-            amount: 250,
-            endDate: '2011-10-05T14:48:00.000Z',
-            startDate: '2011-09-05T14:48:00.000Z',
-            interestRate: 1.1,
-            payment: 5,
-            remainingCapital: -10000,
-            duration: 72,
-            type: AccountLoanType.OTHER,
-            insuranceLabel: 'PE',
+        id: 32,
+        id_user: 2,
+        id_connector: 3,
+        last_update: '',
+        state: null,
+        active: true,
+        created: budgetInsightConnections[0].created,
+        next_try: budgetInsightConnections[0].next_try,
+        accounts: [
+          {
+            id: 1,
+            id_connection: 32,
+            id_user: 33,
+            id_source: 34,
+            id_parent: 35,
+            number: 'mockNumber',
+            original_name: 'loan',
+            coming: null,
+            last_update: '2011-10-05T14:48:00.000Z',
+            balance: -10000,
+            currency: { id: 'USD' },
+            bic: 'bic',
+            iban: null,
+            name: 'account-name',
+            type: 'unknown' as BIAccountType,
+            usage: 'UNKNOWN' as BIUsageType,
+            ownership: 'foo' as unknown as BankAccountOwnership,
+            disabled: false,
+            company_name: 'mockCompanyName',
+            loan: {
+              total_amount: 250,
+              id_account: 'loan-account-id',
+              maturity_date: '2011-10-05T14:48:00.000Z',
+              rate: 1.1,
+              next_payment_amount: 5,
+              subscription_date: '2011-09-05T14:48:00.000Z',
+              duration: 72,
+              insurance_label: 'PE',
+              type: BIAccountType.LOAN,
+            },
           },
-          savings: undefined,
-        },
-        name: 'account-name',
-        number: 'mockNumber',
-        type: AccountType.UNKNOWN,
-        usage: AccountUsage.UNKNOWN,
-        ownership: AccountOwnership.OTHER,
-        owners: undefined,
-        aggregator: {
-          id: '1',
-        },
+        ],
       },
       {
-        balance: 100,
-        balanceDate: '2020-10-05T14:48:00.000Z',
-        bank: {
-          id: undefined,
-          name: undefined,
-        },
-        coming: 120,
-        currency: 'USD',
-        bic: 'bic',
-        iban: 'iban',
-        name: 'account-name',
-        number: 'mockNumber',
-        aggregator: {
-          id: '9',
-        },
-        details: {
-          loan: undefined,
-          savings: undefined,
-        },
-        type: AccountType.CREDIT_CARD,
-        usage: AccountUsage.PERSONAL,
-        ownership: AccountOwnership.ATTORNEY,
-        owners: undefined,
+        id: 32,
+        id_user: 2,
+        id_connector: 3,
+        last_update: '',
+        state: null,
+        active: true,
+        created: budgetInsightConnections[0].created,
+        next_try: budgetInsightConnections[0].next_try,
+        accounts: [
+          {
+            id: 9,
+            id_connection: 32,
+            id_user: 28,
+            id_source: 29,
+            id_parent: 210,
+            number: 'mockNumber',
+            original_name: 'card',
+            coming: 120,
+            last_update: '2020-10-05T14:48:00.000Z',
+            balance: 100,
+            currency: { id: 'USD' },
+            bic: 'bic',
+            iban: 'iban',
+            name: 'account-name',
+            type: BIAccountType.CARD,
+            usage: BIUsageType.PRIVATE,
+            ownership: BankAccountOwnership.ATTORNEY,
+            disabled: false,
+            company_name: 'mockCompanyName',
+          },
+        ],
       },
     ];
 
-    expect(
-      mapBudgetInsightAccount(budgetInsightAccounts, aggregatorService, budgetInsightConnections, ownerInfo),
-    ).toEqual(expectedAccounts);
+    expect(mapBudgetInsightAccount(budgetInsightAccounts, budgetInsightConnections, ownerInfo)).toEqual(
+      expectedConnections,
+    );
   });
 
   it('should map the budget insight transactions to analysis', async () => {
@@ -339,28 +382,29 @@ describe('BudgetInsightUtils', () => {
         coming: false,
       },
     ];
-    const expectedTransaction: AccountTransactions[] = [
+    const expectedTransaction: EnrichedBudgetInsightTransaction[] = [
       {
-        amount: 1,
-        aggregator: {
-          id: 'id',
-          category: 'mockCategoryName',
-          type: TransactionType.ATM,
-        },
-        dates: {
-          bookedAt: '2010-01-15T12:55:00.000Z',
-          debitedAt: '2010-01-15T12:55:00.000Z',
-        },
-        description: 'original_wording',
-        isComing: false,
-        currency: 'USD',
+        type: BiTransactionType.WITHDRAWAL,
+        id_category: 20,
+        original_wording: 'original_wording',
+        wording: 'wording',
+        card: 'card',
+        simplified_wording: 'simplifiedWording',
+        value: 1,
+        id_account: 9,
+        id: 'id',
+        date: '2010-01-15 15:55:00',
+        rdate: '2010-01-15 15:55:00',
+        application_date: 'mockApplicationDate',
+        original_currency: { id: 'USD' },
+        coming: false,
+        category: { name: 'mockCategoryName' },
       },
     ];
 
     const spy = jest.spyOn(aggregatorService, 'getCategory').mockReturnValue(Promise.resolve(mockCategory));
     const mappedTransaction = await mapBudgetInsightTransactions(
       budgetInsightTransactions,
-      { currency: 'EUR' } as unknown as AnalysisAccount,
       'mockAccessToken',
       aggregatorService,
     );
@@ -388,28 +432,29 @@ describe('BudgetInsightUtils', () => {
         coming: false,
       },
     ];
-    const expectedTransaction: AccountTransactions[] = [
+    const expectedTransaction: EnrichedBudgetInsightTransaction[] = [
       {
-        amount: 1,
-        aggregator: {
-          id: 'id',
-          category: 'mockCategoryName',
-          type: TransactionType.ATM,
-        },
-        dates: {
-          bookedAt: '2010-02-15T12:55:00.000Z',
-          debitedAt: '2010-01-15T12:55:00.000Z',
-        },
-        description: 'original_wording',
-        currency: 'USD',
-        isComing: false,
+        type: BiTransactionType.WITHDRAWAL,
+        id_category: 20,
+        original_wording: 'original_wording',
+        wording: 'wording',
+        card: 'card',
+        simplified_wording: 'simplifiedWording',
+        value: 1,
+        id_account: 9,
+        id: 'id',
+        date: '2010-01-15 15:55:00',
+        rdate: '2010-02-15 15:55:00',
+        application_date: 'mockApplicationDate',
+        original_currency: { id: 'USD' },
+        coming: false,
+        category: { name: 'mockCategoryName' },
       },
     ];
 
     const spy = jest.spyOn(aggregatorService, 'getCategory').mockReturnValue(Promise.resolve(mockCategory));
     const mappedTransaction = await mapBudgetInsightTransactions(
       budgetInsightTransactions,
-      { currency: 'USD' } as unknown as AnalysisAccount,
       'mockAccessToken',
       aggregatorService,
     );
@@ -437,28 +482,29 @@ describe('BudgetInsightUtils', () => {
         coming: false,
       },
     ];
-    const expectedTransaction: AccountTransactions[] = [
+    const expectedTransaction: EnrichedBudgetInsightTransaction[] = [
       {
-        amount: 1,
-        aggregator: {
-          id: 'id',
-          type: TransactionType.ATM,
-          category: 'mockCategoryName',
-        },
-        dates: {
-          bookedAt: '2010-02-15T12:55:00.000Z',
-          debitedAt: '2010-01-15T12:55:00.000Z',
-        },
-        description: 'original_wording',
-        isComing: false,
-        currency: 'EUR',
+        type: BiTransactionType.WITHDRAWAL,
+        id_category: 20,
+        original_wording: 'original_wording',
+        wording: 'wording',
+        card: 'card',
+        simplified_wording: 'simplifiedWording',
+        value: 1,
+        id_account: 9,
+        id: 'id',
+        date: '2010-01-15 15:55:00',
+        rdate: '2010-02-15 15:55:00',
+        application_date: 'mockApplicationDate',
+        original_currency: null,
+        coming: false,
+        category: { name: 'mockCategoryName' },
       },
     ];
 
     const spy = jest.spyOn(aggregatorService, 'getCategory').mockReturnValue(Promise.resolve(mockCategory));
     const mappedTransaction = await mapBudgetInsightTransactions(
       budgetInsightTransactions,
-      { currency: 'EUR' } as unknown as AnalysisAccount,
       'mockAccessToken',
       aggregatorService,
     );
@@ -486,21 +532,23 @@ describe('BudgetInsightUtils', () => {
         coming: false,
       },
     ];
-    const expectedTransaction: AccountTransactions[] = [
+    const expectedTransaction: EnrichedBudgetInsightTransaction[] = [
       {
-        amount: 1,
-        aggregator: {
-          id: 'id',
-          type: TransactionType.OTHER,
-          category: 'UNKNOWN',
-        },
-        dates: {
-          bookedAt: undefined,
-          debitedAt: undefined,
-        },
-        description: 'original_wording',
-        isComing: false,
-        currency: 'EUR',
+        type: 'UNKNOWN' as unknown as BiTransactionType,
+        id_category: 20,
+        original_wording: 'original_wording',
+        wording: 'wording',
+        card: 'card',
+        simplified_wording: 'simplifiedWording',
+        value: 1,
+        id_account: 9,
+        id: 'id',
+        date: undefined as unknown as string,
+        rdate: undefined as unknown as string,
+        application_date: 'mockApplicationDate',
+        original_currency: null,
+        coming: false,
+        category: {},
       },
     ];
 
@@ -509,7 +557,6 @@ describe('BudgetInsightUtils', () => {
       .mockReturnValue(Promise.resolve(undefined as unknown as BudgetInsightCategory));
     const mappedTransaction = await mapBudgetInsightTransactions(
       budgetInsightTransactions,
-      { currency: 'EUR' } as unknown as AnalysisAccount,
       'mockAccessToken',
       aggregatorService,
     );
