@@ -381,7 +381,7 @@ export const mockBankDetailsRequiredAPIModeNoConnectionSync = (): nock.Scope => 
       status: 'ERROR',
       error: {
         code: 'INTERNAL_ERROR',
-        message: 'An error occured when fetching data from the aggregator',
+        message: 'An error occurred when fetching data from the aggregator',
       },
     })
     .reply(HttpStatus.OK)
