@@ -34,6 +34,14 @@ export const onApplicationStart = (): nock.Scope => {
       expires_in: 3000,
       refresh_expires_in: 10000,
     })
+    .post('/v2/oauth/token')
+    .times(2)
+    .reply(HttpStatus.OK, {
+      access_token: 'token',
+      refresh_token: 'refresh_token',
+      expires_in: 3000,
+      refresh_expires_in: 10000,
+    })
     .get('/v1/service-accounts')
     .reply(HttpStatus.OK, [
       {
@@ -42,6 +50,26 @@ export const onApplicationStart = (): nock.Scope => {
         id: 'id1',
       },
     ])
+    .get('/v2/service-accounts?limit=1000')
+    .reply(HttpStatus.OK, {
+      resources: [
+        {
+          clientId: 'client1',
+          clientSecret: 'secret',
+          id: 'id1',
+        },
+      ],
+    })
+    .get(`/v2/service-accounts?filter=${JSON.stringify({ _id: 'serviceAccountId' })}`)
+    .reply(HttpStatus.OK, {
+      resources: [
+        {
+          clientId: 'client1',
+          clientSecret: 'secret',
+          id: 'id1',
+        },
+      ],
+    })
     .get(`/v1/subscriptions?filter=${JSON.stringify({ eventName: { $in: config.eventList } })}`)
     .reply(HttpStatus.OK, [])
     .post('/v1/subscriptions')

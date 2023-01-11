@@ -20,7 +20,7 @@ export class AlgoanServiceAcountService {
       clientSecret: this.config.algoan.clientSecret,
     },
     {
-      version: 1,
+      version: this.config.algoan.version,
     },
   );
 

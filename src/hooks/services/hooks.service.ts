@@ -118,7 +118,7 @@ export class HooksService {
           break;
 
         case EventName.SERVICE_ACCOUNT_CREATED:
-          await this.handleServiceAccountCreatedEvent(event.payload as ServiceAccountCreatedDTO, event.subscription);
+          await this.handleServiceAccountCreatedEvent(event.payload as ServiceAccountCreatedDTO);
           break;
 
         case EventName.SERVICE_ACCOUNT_UPDATED:
@@ -351,8 +351,11 @@ export class HooksService {
    * @param payload the new service account id
    * @param subscription
    */
-  public async handleServiceAccountCreatedEvent(payload: ServiceAccountCreatedDTO, subscription: SubscriptionDTO) {
-    await this.algoanService.saveServiceAccount(payload);
+  public async handleServiceAccountCreatedEvent(payload: ServiceAccountCreatedDTO) {
+    // eslint-disable-next-line
+    if (this.config.algoan.version === 2) {
+      await this.algoanService.saveServiceAccount(payload);
+    }
   }
 
   /**
@@ -360,7 +363,10 @@ export class HooksService {
    * @param payload service account update dto
    */
   public async handleServiceAccountUpdatedEvent(payload: ServiceAccountUpdatedDTO) {
-    await this.algoanService.updateServiceAccount(payload);
+    // eslint-disable-next-line
+    if (this.config.algoan.version === 2) {
+      await this.algoanService.updateServiceAccount(payload);
+    }
   }
 
   /**
