@@ -84,7 +84,6 @@ export class HooksService {
     if (!subscription.validateSignature(signature, event.payload as unknown as { [key: string]: string })) {
       throw new UnauthorizedException('Invalid X-Hub-Signature: you cannot call this API');
     }
-
     // Handle the event asynchronously
     void this.dispatchAndHandleWebhook(event, subscription, serviceAccount, aggregationStartDate);
 
@@ -123,7 +122,7 @@ export class HooksService {
           break;
 
         case EventName.SERVICE_ACCOUNT_UPDATED:
-          this.handleServiceAccountUpdatedEvent(event.payload as ServiceAccountUpdatedDTO);
+          await this.handleServiceAccountUpdatedEvent(event.payload as ServiceAccountUpdatedDTO);
           break;
 
         // The default case should never be reached, as the eventName is already checked in the DTO
@@ -353,15 +352,15 @@ export class HooksService {
    * @param subscription
    */
   public async handleServiceAccountCreatedEvent(payload: ServiceAccountCreatedDTO, subscription: SubscriptionDTO) {
-    await this.algoanService.saveServiceAccount(payload, subscription);
+    await this.algoanService.saveServiceAccount(payload);
   }
 
   /**
    * Handles the service_account_updated event
    * @param payload service account update dto
    */
-  public handleServiceAccountUpdatedEvent(payload: ServiceAccountUpdatedDTO) {
-    this.algoanService.updateServiceAccount(payload);
+  public async handleServiceAccountUpdatedEvent(payload: ServiceAccountUpdatedDTO) {
+    await this.algoanService.updateServiceAccount(payload);
   }
 
   /**
@@ -513,7 +512,7 @@ export class HooksService {
    * Gets the Service Account given the event
    */
   public async getServiceAccount(event: EventDTO): Promise<ServiceAccount> {
-    const serviceAccount = this.algoanService.getServiceAccountBySubscriptionId(event.subscription.id);
+    const serviceAccount = this.algoanService.algoanClient.getServiceAccountBySubscriptionId(event.subscription.id);
     if (serviceAccount === undefined) {
       throw new UnauthorizedException(`No service account found for subscription ${event.subscription.id}`);
     }
