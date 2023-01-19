@@ -11,7 +11,11 @@ export const SUBSCRIPTION_ID: string = '1';
 export const EVENT_ID: string = 'event_id';
 export const TMP_CODE: string = 'tmp_code';
 
-type EventType = 'aggregator_link_required' | 'bank_details_required';
+type EventType =
+  | 'aggregator_link_required'
+  | 'bank_details_required'
+  | 'service_account_created'
+  | 'service_account_updated';
 /**
  * Generate a header and a payload to simulate a call to the hook controller
  */

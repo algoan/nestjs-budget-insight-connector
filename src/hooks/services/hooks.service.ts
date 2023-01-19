@@ -1,4 +1,5 @@
-import { EventName, EventStatus, ServiceAccount, Subscription, SubscriptionEvent } from '@algoan/rest';
+/* eslint-disable max-lines */
+import { EventStatus, ServiceAccount, Subscription, SubscriptionEvent } from '@algoan/rest';
 import { Inject, Injectable, Logger, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import * as delay from 'delay';
 import { isEmpty } from 'lodash';
@@ -26,8 +27,16 @@ import { AlgoanCustomerService } from '../../algoan/services/algoan-customer.ser
 import { AlgoanHttpService } from '../../algoan/services/algoan-http.service';
 import { AlgoanService } from '../../algoan/services/algoan.service';
 import { CONFIG } from '../../config/config.module';
-import { AggregatorLinkRequiredDTO, BanksDetailsRequiredDTO, EventDTO } from '../dto';
+import {
+  AggregatorLinkRequiredDTO,
+  BanksDetailsRequiredDTO,
+  EventDTO,
+  ServiceAccountCreatedDTO,
+  ServiceAccountUpdatedDTO,
+  SubscriptionDTO,
+} from '../dto';
 import { joinUserId } from '../helpers/join-user-id.helpers';
+import { EventName } from '../enums/event-name.enum';
 
 /**
  * Hook service
@@ -75,7 +84,6 @@ export class HooksService {
     if (!subscription.validateSignature(signature, event.payload as unknown as { [key: string]: string })) {
       throw new UnauthorizedException('Invalid X-Hub-Signature: you cannot call this API');
     }
-
     // Handle the event asynchronously
     void this.dispatchAndHandleWebhook(event, subscription, serviceAccount, aggregationStartDate);
 
@@ -95,7 +103,6 @@ export class HooksService {
   ): Promise<void> {
     // ACKnowledged event
     const se: SubscriptionEvent = subscription.event(event.id);
-
     try {
       switch (event.subscription.eventName) {
         case EventName.AGGREGATOR_LINK_REQUIRED:
@@ -108,6 +115,14 @@ export class HooksService {
             event.payload as BanksDetailsRequiredDTO,
             aggregationStartDate,
           );
+          break;
+
+        case EventName.SERVICE_ACCOUNT_CREATED:
+          await this.handleServiceAccountCreatedEvent(event.payload as ServiceAccountCreatedDTO);
+          break;
+
+        case EventName.SERVICE_ACCOUNT_UPDATED:
+          await this.handleServiceAccountUpdatedEvent(event.payload as ServiceAccountUpdatedDTO);
           break;
 
         // The default case should never be reached, as the eventName is already checked in the DTO
@@ -329,6 +344,29 @@ export class HooksService {
       });
 
       throw err;
+    }
+  }
+
+  /**
+   * Handles the service_account_created event
+   * @param payload the new service account id
+   * @param subscription
+   */
+  public async handleServiceAccountCreatedEvent(payload: ServiceAccountCreatedDTO) {
+    // eslint-disable-next-line
+    if (this.config.algoan.version === 2) {
+      await this.algoanService.saveServiceAccount(payload);
+    }
+  }
+
+  /**
+   * Handles the service_account_updated event
+   * @param payload service account update dto
+   */
+  public async handleServiceAccountUpdatedEvent(payload: ServiceAccountUpdatedDTO) {
+    // eslint-disable-next-line
+    if (this.config.algoan.version === 2) {
+      await this.algoanService.updateServiceAccount(payload);
     }
   }
 

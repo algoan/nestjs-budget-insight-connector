@@ -1,10 +1,11 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { Algoan } from '@algoan/rest';
 import { config } from 'node-config-ts';
 
 import { CONFIG } from '../../config/config.module';
 
 import { AlgoanService } from './algoan.service';
+import { AlgoanServiceAcountService } from './algoan-service-account.service';
+import { Algoan } from '@algoan/rest';
 
 describe('AlgoanService', () => {
   let algoanService: AlgoanService;
@@ -17,6 +18,7 @@ describe('AlgoanService', () => {
           provide: CONFIG,
           useValue: config,
         },
+        AlgoanServiceAcountService,
       ],
     }).compile();
 
@@ -43,6 +45,7 @@ describe('AlgoanService', () => {
             eventList: [],
           },
         },
+        AlgoanServiceAcountService,
       ],
     }).compile();
 

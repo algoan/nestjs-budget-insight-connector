@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ContextIdFactory } from '@nestjs/core';
-import { EventName } from '@algoan/rest';
+import { EventName } from '../enums/event-name.enum';
 
 import { EventDTO } from '../dto/event.dto';
 import { AggregatorModule } from '../../aggregator/aggregator.module';

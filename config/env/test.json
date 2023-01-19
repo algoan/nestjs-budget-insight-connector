@@ -2,7 +2,12 @@
   "algoan": {
     "baseUrl": "https://api.test.algoan.com",
     "clientId": "a",
-    "clientSecret": "b"
+    "clientSecret": "b",
+    "version": 1,
+    "username": "username",
+    "password": "password",
+    "debug": false,
+    "loggerOptions": {} 
   },
   "budgetInsight": {
     "url": "https://fake-budget-insights.com/2.0",
@@ -15,7 +20,9 @@
   "targetUrl": "https://test",
   "eventList": [
     "aggregator_link_required",
-    "bank_details_required"
+    "bank_details_required",
+    "service_account_created",
+    "service_account_updated"
   ],
   "restHooksSecret": "a",
   "port": 8080

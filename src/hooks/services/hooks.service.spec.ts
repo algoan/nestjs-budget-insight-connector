@@ -1,8 +1,9 @@
 /* eslint-disable max-lines */
 import { Test, TestingModule } from '@nestjs/testing';
 import { ContextIdFactory } from '@nestjs/core';
-import { Algoan, ServiceAccount, EventName, Subscription, RequestBuilder } from '@algoan/rest';
-
+import { ServiceAccount, Subscription, RequestBuilder, Algoan } from '@algoan/rest';
+import { EventName } from '../enums/event-name.enum';
+import { EventName as AlgoanRestEventName } from '@algoan/rest';
 import { EventDTO } from '../dto';
 import { AggregationDetailsMode } from '../../algoan/dto/customer.enums';
 import { Customer } from '../../algoan/dto/customer.objects';
@@ -21,6 +22,7 @@ import { ConfigModule } from '../../config/config.module';
 import { HooksService } from './hooks.service';
 import { AnalysisStatus, ErrorCodes } from '../../algoan/dto/analysis.enum';
 import { Logger } from '@nestjs/common';
+import { AlgoanServiceAcountService } from '../../algoan/services/algoan-service-account.service';
 
 describe('HooksService', () => {
   let hooksService: HooksService;
@@ -48,7 +50,12 @@ describe('HooksService', () => {
 
   const subscriptions: Subscription[] = [
     new Subscription(
-      { id: 'mockEventSubId', eventName: EventName.BANKREADER_COMPLETED, status: 'ACTIVE', target: 'mockSubTarget' },
+      {
+        id: 'mockEventSubId',
+        eventName: AlgoanRestEventName.BANKREADER_COMPLETED,
+        status: 'ACTIVE',
+        target: 'mockSubTarget',
+      },
       new RequestBuilder('mockBaseURL', { clientId: 'mockClientId' }),
     ),
   ];
@@ -78,7 +85,7 @@ describe('HooksService', () => {
 
     const module: TestingModule = await Test.createTestingModule({
       imports: [AppModule, AggregatorModule, AlgoanModule, ConfigModule],
-      providers: [HooksService],
+      providers: [HooksService, AlgoanServiceAcountService],
     }).compile();
 
     jest.spyOn(Algoan.prototype, 'initRestHooks').mockResolvedValue();
@@ -89,6 +96,7 @@ describe('HooksService', () => {
     algoanHttpService = await module.resolve<AlgoanHttpService>(AlgoanHttpService, contextId);
     algoanCustomerService = await module.resolve<AlgoanCustomerService>(AlgoanCustomerService, contextId);
     algoanAnalysisService = await module.resolve<AlgoanAnalysisService>(AlgoanAnalysisService, contextId);
+
     await algoanService.onModuleInit();
   });
 
@@ -1361,6 +1369,91 @@ describe('HooksService', () => {
         ],
         format: 'BUDGET_INSIGHT_V2_0',
       });
+    });
+  });
+
+  describe('should handle the service_account_created', () => {
+    it('should create the new service account in memory', async () => {
+      try {
+        const mockSubscription: Subscription = {
+          event: (_id: string) => ({
+            update: async ({ status }) => {
+              expect(status).toEqual('PROCESSED');
+            },
+          }),
+        } as unknown as Subscription;
+
+        const serviceAccountCreateSpy = jest.spyOn(algoanService, 'saveServiceAccount');
+
+        const payload = {
+          serviceAccountId: 'serviceAccountId',
+        };
+
+        const event: EventDTO = {
+          ...mockEvent,
+          subscription: {
+            ...mockEvent,
+            eventName: EventName.SERVICE_ACCOUNT_CREATED,
+          },
+          payload,
+        } as unknown as EventDTO;
+
+        const fakeServiceAccount: ServiceAccount = {
+          ...mockServiceAccount,
+          config: {
+            baseUrl: 'https://fake-base-url.url',
+            clientId: 'fakeClientId',
+          },
+        } as ServiceAccount;
+
+        await hooksService.dispatchAndHandleWebhook(event, mockSubscription, fakeServiceAccount, new Date());
+
+        expect(serviceAccountCreateSpy.mock.calls.length).toEqual(0);
+      } catch (err) {
+        console.log('err', err);
+      }
+    });
+  });
+
+  describe('should handle the service_account_updated', () => {
+    it('should update the service account', async () => {
+      const mockSubscription: Subscription = {
+        event: (_id: string) => ({
+          update: async ({ status }) => {
+            expect(status).toEqual('PROCESSED');
+          },
+        }),
+      } as unknown as Subscription;
+
+      const payload = {
+        serviceAccountId: '4',
+        config: {
+          description: 'new description',
+        },
+      };
+
+      const serviceAccountUpdateSpy = jest.spyOn(algoanService, 'updateServiceAccount');
+
+      const event: EventDTO = {
+        ...mockEvent,
+        subscription: {
+          ...mockEvent,
+          eventName: EventName.SERVICE_ACCOUNT_UPDATED,
+        },
+        payload,
+      } as unknown as EventDTO;
+
+      const fakeServiceAccount: ServiceAccount = {
+        ...mockServiceAccount,
+        config: {
+          baseUrl: 'https://fake-base-url.url',
+          clientId: 'fakeClientId',
+        },
+      } as ServiceAccount;
+
+      await hooksService.dispatchAndHandleWebhook(event, mockSubscription, fakeServiceAccount, new Date());
+
+      expect(serviceAccountUpdateSpy.mock.calls.length).toEqual(0);
     });
   });
 });

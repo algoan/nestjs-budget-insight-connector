@@ -25,7 +25,7 @@ export class AlgoanHttpService {
         clientSecret,
       },
       {
-        version: 1, // Should be 2
+        version: this.config.algoan.version,
       },
     );
   }
