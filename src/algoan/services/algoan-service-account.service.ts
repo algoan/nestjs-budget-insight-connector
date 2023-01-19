@@ -45,7 +45,7 @@ export class AlgoanServiceAcountService {
   }
 
   /**
-   * Find a service account by if
+   * Find a service account by id
    */
   public async findById(id: string): Promise<ServiceAccount | undefined> {
     const path: string = `/${this.apiVersion}/service-accounts?filter=${JSON.stringify({ _id: id })}`;
