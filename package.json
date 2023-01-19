@@ -1,6 +1,6 @@
 {
   "name": "@algoan/nestjs-budget-insight-connector",
-  "version": "2.18.0",
+  "version": "2.19.0",
   "description": "Budget Insight connector for Algoan",
   "author": "ccoeurderoy",
   "license": "UNLICENSED",
