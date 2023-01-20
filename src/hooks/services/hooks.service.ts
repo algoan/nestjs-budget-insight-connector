@@ -63,29 +63,33 @@ export class HooksService {
    * @param signature Signature headers, to check if the call is from Algoan
    */
   public async handleWebhook(event: EventDTO, signature: string): Promise<void> {
-    const aggregationStartDate: Date = new Date();
-    const serviceAccount = await this.getServiceAccount(event);
+    if (event.subscription.eventName === EventName.SERVICE_ACCOUNT_CREATED) {
+      await this.handleServiceAccountCreatedEvent(event.payload as ServiceAccountCreatedDTO);
+    } else {
+      const aggregationStartDate: Date = new Date();
+      const serviceAccount = await this.getServiceAccount(event);
 
-    const subscription: Subscription | undefined = serviceAccount.subscriptions.find(
-      (sub: Subscription) => sub.id === event.subscription.id,
-    );
+      const subscription: Subscription | undefined = serviceAccount.subscriptions.find(
+        (sub: Subscription) => sub.id === event.subscription.id,
+      );
 
-    /**
-     * NOTE: this statement is impossible to cover
-     * L.57: we are looking for a service account with the subscription id provided by the event
-     * To do this, we loop into the subscriptions array. If we do not find the subscription,
-     * a 401 error is sent. So necessarily, subscription is defined.
-     * TODO: return SA and subscription above. This statement is just a typed-check.
-     */
-    if (subscription === undefined) {
-      return;
+      /**
+       * NOTE: this statement is impossible to cover
+       * L.57: we are looking for a service account with the subscription id provided by the event
+       * To do this, we loop into the subscriptions array. If we do not find the subscription,
+       * a 401 error is sent. So necessarily, subscription is defined.
+       * TODO: return SA and subscription above. This statement is just a typed-check.
+       */
+      if (subscription === undefined) {
+        return;
+      }
+
+      if (!subscription.validateSignature(signature, event.payload as unknown as { [key: string]: string })) {
+        throw new UnauthorizedException('Invalid X-Hub-Signature: you cannot call this API');
+      }
+      // Handle the event asynchronously
+      void this.dispatchAndHandleWebhook(event, subscription, serviceAccount, aggregationStartDate);
     }
-
-    if (!subscription.validateSignature(signature, event.payload as unknown as { [key: string]: string })) {
-      throw new UnauthorizedException('Invalid X-Hub-Signature: you cannot call this API');
-    }
-    // Handle the event asynchronously
-    void this.dispatchAndHandleWebhook(event, subscription, serviceAccount, aggregationStartDate);
 
     return;
   }
@@ -115,10 +119,6 @@ export class HooksService {
             event.payload as BanksDetailsRequiredDTO,
             aggregationStartDate,
           );
-          break;
-
-        case EventName.SERVICE_ACCOUNT_CREATED:
-          await this.handleServiceAccountCreatedEvent(event.payload as ServiceAccountCreatedDTO);
           break;
 
         case EventName.SERVICE_ACCOUNT_UPDATED:
