@@ -26,7 +26,8 @@ export type EnrichedAccount = BudgetInsightAccount & { transactions?: EnrichedBu
  *
  * Connection with a matching connector and information data with the account list
  */
-export type EnrichedConnection = Partial<Connection> & {
+export type EnrichedConnection = Partial<Omit<Connection, 'connector'>> & {
+  connector?: Partial<Connection['connector']> & { logoUrl?: string };
   accounts: EnrichedAccount[];
   information?: BudgetInsightOwner;
 };

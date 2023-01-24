@@ -20,15 +20,19 @@ import {
  */
 export const mapBudgetInsightAccount = (
   accounts: BudgetInsightAccount[],
+  aggregator: AggregatorService,
   connections?: Connection[],
   connectionsInfo?: { [key: string]: BudgetInsightOwner },
+  clientConfig?: ClientConfig,
 ): EnrichedConnection[] =>
   accounts.map((acc: BudgetInsightAccount): EnrichedConnection => {
     const connection: Connection | undefined = connections?.find((con) => con.id === acc.id_connection);
     const information: BudgetInsightOwner | undefined = get(connectionsInfo, `${connection?.id}`);
+    const logoUrl: string | undefined = aggregator.getBankLogoUrl(connection, clientConfig);
 
     return {
       ...connection,
+      connector: { ...connection?.connector, logoUrl },
       accounts: [acc],
       information,
     };
