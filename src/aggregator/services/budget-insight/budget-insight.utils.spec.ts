@@ -123,7 +123,12 @@ describe('BudgetInsightUtils', () => {
         last_update: '',
         state: null,
         active: true,
-        connector: { id: 2, uuid: 'example-uuid', name: 'bank-name' },
+        connector: {
+          id: 2,
+          uuid: 'example-uuid',
+          name: 'bank-name',
+          logoUrl: 'https://fake-budget-insights.com/2.0/logos/example-uuid-thumbnail@2x.png',
+        },
         created: budgetInsightConnections[0].created,
         next_try: budgetInsightConnections[0].next_try,
         accounts: [
@@ -171,7 +176,12 @@ describe('BudgetInsightUtils', () => {
         last_update: '',
         state: null,
         active: true,
-        connector: { id: 2, uuid: 'example-uuid', name: 'bank-name' },
+        connector: {
+          id: 2,
+          uuid: 'example-uuid',
+          name: 'bank-name',
+          logoUrl: 'https://fake-budget-insights.com/2.0/logos/example-uuid-thumbnail@2x.png',
+        },
         created: budgetInsightConnections[0].created,
         next_try: budgetInsightConnections[0].next_try,
         accounts: [
@@ -203,9 +213,9 @@ describe('BudgetInsightUtils', () => {
       },
     ];
 
-    expect(mapBudgetInsightAccount(budgetInsightAccounts, budgetInsightConnections, ownerInfo)).toEqual(
-      expectedConnections,
-    );
+    expect(
+      mapBudgetInsightAccount(budgetInsightAccounts, aggregatorService, budgetInsightConnections, ownerInfo),
+    ).toEqual(expectedConnections);
   });
 
   it('should map the budget insight connections to analysis (no owner, no connector)', () => {
@@ -322,6 +332,9 @@ describe('BudgetInsightUtils', () => {
             },
           },
         ],
+        connector: {
+          logoUrl: undefined,
+        },
       },
       {
         id: 32,
@@ -355,12 +368,15 @@ describe('BudgetInsightUtils', () => {
             company_name: 'mockCompanyName',
           },
         ],
+        connector: {
+          logoUrl: undefined,
+        },
       },
     ];
 
-    expect(mapBudgetInsightAccount(budgetInsightAccounts, budgetInsightConnections, ownerInfo)).toEqual(
-      expectedConnections,
-    );
+    expect(
+      mapBudgetInsightAccount(budgetInsightAccounts, aggregatorService, budgetInsightConnections, ownerInfo),
+    ).toEqual(expectedConnections);
   });
 
   it('should map the budget insight transactions to analysis', async () => {

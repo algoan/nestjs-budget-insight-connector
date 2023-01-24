@@ -484,8 +484,10 @@ export class HooksService {
 
     const enrichedConnections: EnrichedConnection[] = mapBudgetInsightAccount(
       uniqueAccounts,
+      this.aggregator,
       connections,
       connectionsInfo,
+      serviceAccountConfig,
     );
 
     /**

@@ -609,6 +609,10 @@ describe('HooksService', () => {
                 ],
               },
             ],
+            connector: {
+              logoUrl: undefined,
+            },
+            information: undefined,
           },
         ],
         format: 'BUDGET_INSIGHT_V2_0',
@@ -719,6 +723,10 @@ describe('HooksService', () => {
                 ],
               },
             ],
+            connector: {
+              logoUrl: undefined,
+            },
+            information: undefined,
           },
         ],
         format: 'BUDGET_INSIGHT_V2_0',
@@ -841,6 +849,10 @@ describe('HooksService', () => {
                 ],
               },
             ],
+            connector: {
+              logoUrl: undefined,
+            },
+            information: undefined,
           },
         ],
         format: 'BUDGET_INSIGHT_V2_0',
@@ -964,6 +976,10 @@ describe('HooksService', () => {
                 ],
               },
             ],
+            connector: {
+              logoUrl: undefined,
+            },
+            information: undefined,
           },
         ],
         format: 'BUDGET_INSIGHT_V2_0',
@@ -1083,6 +1099,10 @@ describe('HooksService', () => {
                 ],
               },
             ],
+            connector: {
+              logoUrl: undefined,
+            },
+            information: undefined,
           },
           {
             accounts: [
@@ -1127,6 +1147,10 @@ describe('HooksService', () => {
                 ],
               },
             ],
+            connector: {
+              logoUrl: undefined,
+            },
+            information: undefined,
           },
         ],
         format: 'BUDGET_INSIGHT_V2_0',
@@ -1246,6 +1270,10 @@ describe('HooksService', () => {
                 ],
               },
             ],
+            connector: {
+              logoUrl: undefined,
+            },
+            information: undefined,
           },
         ],
         format: 'BUDGET_INSIGHT_V2_0',
@@ -1365,6 +1393,10 @@ describe('HooksService', () => {
                 ],
               },
             ],
+            connector: {
+              logoUrl: undefined,
+            },
+            information: undefined,
           },
         ],
         format: 'BUDGET_INSIGHT_V2_0',
