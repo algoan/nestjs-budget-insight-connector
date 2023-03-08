@@ -1,5 +1,11 @@
 /* eslint-disable max-lines */
-import { EventStatus, ServiceAccount, Subscription, SubscriptionEvent } from '@algoan/rest';
+import {
+  EventStatus,
+  ServiceAccount,
+  Subscription,
+  SubscriptionEvent,
+  EventName as AlgoanRestEventName,
+} from '@algoan/rest';
 import { Inject, Injectable, Logger, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import * as delay from 'delay';
 import { isEmpty } from 'lodash';
@@ -518,7 +524,18 @@ export class HooksService {
    * Gets the Service Account given the event
    */
   public async getServiceAccount(event: EventDTO): Promise<ServiceAccount> {
-    const serviceAccount = this.algoanService.algoanClient.getServiceAccountBySubscriptionId(event.subscription.id);
+    let serviceAccount = this.algoanService.algoanClient.getServiceAccountBySubscriptionId(event.subscription.id);
+    // eslint-disable-next-line no-magic-numbers
+    if (serviceAccount === undefined && this.config.algoan.version === 2) {
+      // Update the service accounts list. If a service account is created, only one instance of the
+      // connector is notified though the webhook. the other instances need to update their service account list also
+      await this.algoanService.initRestHooks(
+        this.config.targetUrl,
+        this.config.eventList as AlgoanRestEventName[],
+        this.config.restHooksSecret,
+      );
+      serviceAccount = this.algoanService.algoanClient.getServiceAccountBySubscriptionId(event.subscription.id);
+    }
     if (serviceAccount === undefined) {
       throw new UnauthorizedException(`No service account found for subscription ${event.subscription.id}`);
     }
