@@ -461,7 +461,7 @@ describe('HooksService', () => {
         status: AnalysisStatus.ERROR,
         error: {
           code: ErrorCodes.INTERNAL_ERROR,
-          message: `An error occurred when fetching data from the aggregator`,
+          message: `An error occurred on the aggregator connector`,
         },
       });
     });
@@ -1402,48 +1402,226 @@ describe('HooksService', () => {
         format: 'BUDGET_INSIGHT_V2_0',
       });
     });
+
+    it('should patch the analysis with an aggregator error ', async () => {
+      const mockSubscription: Subscription = {
+        event: (_id: string) => ({
+          update: async ({ status }) => {
+            expect(status).toEqual('ERROR');
+          },
+        }),
+      } as unknown as Subscription;
+
+      const spyGetCustomer = jest.spyOn(algoanCustomerService, 'getCustomerById').mockReturnValue(
+        Promise.resolve({
+          id: 'mockCustomerId',
+          aggregationDetails: { mode: AggregationDetailsMode.API, token: 'fakeToken' },
+        } as unknown as Customer),
+      );
+
+      const connectionSpy = jest.spyOn(aggregatorService, 'getConnections').mockReturnValue(
+        Promise.reject({
+          request: {
+            host: 'https://test-sandbox.biapi.pro/2.0/',
+          },
+        }),
+      );
+
+      const analysisSpy = jest
+        .spyOn(algoanAnalysisService, 'updateAnalysis')
+        .mockReturnValue(Promise.resolve({} as unknown as Analysis));
+
+      const event: EventDTO = {
+        ...mockEvent,
+        subscription: {
+          ...mockEvent,
+          eventName: EventName.BANK_DETAILS_REQUIRED,
+        },
+        payload: { customerId: 'mockCustomerId', analysisId: 'mockAnalysisId', temporaryCode: 'mockTempCode' },
+      } as unknown as EventDTO;
+
+      const fakeServiceAccount: ServiceAccount = {
+        ...mockServiceAccount,
+        config: {
+          baseUrl: 'https://fake-base-url.url',
+          clientId: 'fakeClientId',
+        },
+      } as ServiceAccount;
+
+      await hooksService.dispatchAndHandleWebhook(event, mockSubscription, fakeServiceAccount, new Date());
+
+      const saConfig = {
+        baseUrl: 'https://fake-base-url.url',
+        clientId: 'fakeClientId',
+      };
+
+      expect(spyHttpService).toBeCalled();
+      expect(spyGetCustomer).toBeCalledWith('mockCustomerId');
+      expect(connectionSpy).toBeCalledWith('fakeToken', saConfig);
+      expect(analysisSpy).toBeCalledWith('mockCustomerId', 'mockAnalysisId', {
+        status: AnalysisStatus.ERROR,
+        error: {
+          code: ErrorCodes.INTERNAL_ERROR,
+          message: `An error occurred when fetching data from the aggregator`,
+        },
+      });
+    });
+
+    it('should patch the analysis with an algoan API error', async () => {
+      const mockSubscription: Subscription = {
+        event: (_id: string) => ({
+          update: async ({ status }) => {
+            expect(status).toEqual('ERROR');
+          },
+        }),
+      } as unknown as Subscription;
+
+      const spyGetCustomer = jest.spyOn(algoanCustomerService, 'getCustomerById').mockReturnValue(
+        Promise.resolve({
+          id: 'mockCustomerId',
+          aggregationDetails: { mode: AggregationDetailsMode.API, token: 'fakeToken' },
+        } as unknown as Customer),
+      );
+
+      const connectionSpy = jest
+        .spyOn(aggregatorService, 'getConnections')
+        .mockReturnValue(Promise.resolve([{ ...connection, state: ConnectionErrorState.WRONGPASS }]));
+      const accountSpy = jest.spyOn(aggregatorService, 'getAccounts').mockResolvedValue([mockAccount]);
+      const userInfoSpy = jest.spyOn(aggregatorService, 'getInfo').mockResolvedValue({ owner: { name: 'JOHN DOE' } });
+      const transactionSpy = jest.spyOn(aggregatorService, 'getTransactions').mockResolvedValue([mockTransaction]);
+      const categorySpy = jest.spyOn(aggregatorService, 'getCategory').mockResolvedValue(mockCategory);
+      const analysisSpy = jest.spyOn(algoanAnalysisService, 'updateAnalysis').mockReturnValueOnce(
+        Promise.reject({
+          request: {
+            host: 'api.algoan.com',
+          },
+        }),
+      );
+
+      const event: EventDTO = {
+        ...mockEvent,
+        subscription: {
+          ...mockEvent,
+          eventName: EventName.BANK_DETAILS_REQUIRED,
+        },
+        payload: { customerId: 'mockCustomerId', analysisId: 'mockAnalysisId', temporaryCode: 'mockTempCode' },
+      } as unknown as EventDTO;
+
+      const fakeServiceAccount: ServiceAccount = {
+        ...mockServiceAccount,
+        config: {
+          baseUrl: 'https://fake-base-url.url',
+          clientId: 'fakeClientId',
+        },
+      } as ServiceAccount;
+
+      await hooksService.dispatchAndHandleWebhook(event, mockSubscription, fakeServiceAccount, new Date());
+
+      const saConfig = {
+        baseUrl: 'https://fake-base-url.url',
+        clientId: 'fakeClientId',
+      };
+
+      expect(spyHttpService).toBeCalled();
+      expect(spyGetCustomer).toBeCalledWith('mockCustomerId');
+      expect(connectionSpy).toBeCalledWith('fakeToken', saConfig);
+      expect(accountSpy).toBeCalledWith('fakeToken', saConfig);
+      expect(userInfoSpy).toBeCalledWith('fakeToken', '4', saConfig);
+      expect(userInfoSpy).toBeCalledTimes(1);
+      expect(transactionSpy).toBeCalledWith('fakeToken', 1, saConfig);
+      expect(categorySpy).toBeCalledWith('fakeToken', mockTransaction.id_category, saConfig);
+      expect(analysisSpy.mock.calls.length).toEqual(2);
+      expect(analysisSpy.mock.calls[0]).toEqual([
+        'mockCustomerId',
+        'mockAnalysisId',
+        {
+          connections: [
+            {
+              accounts: [
+                {
+                  id: 1,
+                  id_connection: 2,
+                  id_user: 3,
+                  id_source: 4,
+                  id_parent: 5,
+                  number: 'mockNumber',
+                  original_name: 'mockOrginalName',
+                  coming: 0,
+                  currency: { id: 'id1' },
+                  balance: 100,
+                  name: 'mockName',
+                  last_update: '2011-10-05T14:48:00.000Z',
+                  type: 'checking',
+                  iban: 'mockIban',
+                  bic: 'mockBic',
+                  disabled: false,
+                  company_name: 'mockCompany',
+                  usage: 'PRIV',
+                  ownership: 'owner',
+                  transactions: [
+                    {
+                      id_account: 5,
+                      id: 'mockId',
+                      application_date: 'mockApplicationDate',
+                      date: 'mockDate',
+                      rdate: 'mockRDate',
+                      simplified_wording: 'mockSimplifiedWording',
+                      value: 50,
+                      card: 'mockCard',
+                      wording: 'mockWording',
+                      id_category: 10,
+                      type: 'bank',
+                      original_wording: 'mockOriginalWording',
+                      original_currency: { id: 'USD' },
+                      coming: false,
+                      category: { name: 'mockCategoryName' },
+                    },
+                  ],
+                },
+              ],
+              connector: {
+                logoUrl: undefined,
+              },
+              information: undefined,
+            },
+          ],
+          format: 'BUDGET_INSIGHT_V2_0',
+        },
+      ]);
+      expect(analysisSpy.mock.calls[1]).toEqual([
+        'mockCustomerId',
+        'mockAnalysisId',
+        {
+          status: AnalysisStatus.ERROR,
+          error: {
+            code: ErrorCodes.INTERNAL_ERROR,
+            message: `An error occurred on calling Algoan API`,
+          },
+        },
+      ]);
+    });
   });
 
   describe('should handle the service_account_created', () => {
     it('should create the new service account in memory', async () => {
-      try {
-        const mockSubscription: Subscription = {
-          event: (_id: string) => ({
-            update: async ({ status }) => {
-              expect(status).toEqual('PROCESSED');
-            },
-          }),
-        } as unknown as Subscription;
+      const serviceAccountCreateSpy = jest.spyOn(algoanService, 'saveServiceAccount');
 
-        const serviceAccountCreateSpy = jest.spyOn(algoanService, 'saveServiceAccount');
+      const payload = {
+        serviceAccountId: 'serviceAccountId',
+      };
 
-        const payload = {
-          serviceAccountId: 'serviceAccountId',
-        };
-
-        const event: EventDTO = {
+      const event: EventDTO = {
+        ...mockEvent,
+        subscription: {
           ...mockEvent,
-          subscription: {
-            ...mockEvent,
-            eventName: EventName.SERVICE_ACCOUNT_CREATED,
-          },
-          payload,
-        } as unknown as EventDTO;
+          eventName: EventName.SERVICE_ACCOUNT_CREATED,
+        },
+        payload,
+      } as unknown as EventDTO;
 
-        const fakeServiceAccount: ServiceAccount = {
-          ...mockServiceAccount,
-          config: {
-            baseUrl: 'https://fake-base-url.url',
-            clientId: 'fakeClientId',
-          },
-        } as ServiceAccount;
+      await hooksService.handleWebhook(event, 'signature');
 
-        await hooksService.dispatchAndHandleWebhook(event, mockSubscription, fakeServiceAccount, new Date());
-
-        expect(serviceAccountCreateSpy.mock.calls.length).toEqual(0);
-      } catch (err) {
-        console.log('err', err);
-      }
+      expect(serviceAccountCreateSpy.mock.calls.length).toEqual(0);
     });
   });
 

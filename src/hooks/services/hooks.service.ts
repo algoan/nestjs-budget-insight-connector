@@ -334,7 +334,14 @@ export class HooksService {
       this.logger.debug({
         message: `Analysis "${payload.analysisId}" patched`,
       });
-    } catch (err) {
+    } catch (err: unknown) {
+      const host = (err as { request?: { host: string } }).request?.host;
+      let message = 'An error occurred on the aggregator connector';
+      if (host !== undefined) {
+        message = host.includes('algoan')
+          ? 'An error occurred on calling Algoan API'
+          : 'An error occurred when fetching data from the aggregator';
+      }
       this.logger.debug({
         message: `An error occurred when fetching data from the aggregator for analysis id ${payload.analysisId} and customer id ${payload.customerId}`,
         error: err,
@@ -345,7 +352,7 @@ export class HooksService {
         status: AnalysisStatus.ERROR,
         error: {
           code: ErrorCodes.INTERNAL_ERROR,
-          message: `An error occurred when fetching data from the aggregator`,
+          message,
         },
       });
 
