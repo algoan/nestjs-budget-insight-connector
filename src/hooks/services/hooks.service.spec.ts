@@ -865,6 +865,85 @@ describe('HooksService', () => {
       });
     });
 
+    it('should not fetch bank details the connections are in error (after timeout)', async () => {
+      const connectionSync: Connection = {
+        id: 5,
+        id_user: 6,
+        id_connector: 5,
+        state: 'sync' as ConnectionErrorState,
+        active: true,
+        created: null,
+        next_try: null,
+        last_update: null,
+        error_message: 'OTP required',
+      };
+
+      const mockSubscription: Subscription = {
+        event: (_id: string) => ({
+          update: async ({ status }) => {
+            expect(status).toEqual('ERROR');
+          },
+        }),
+      } as unknown as Subscription;
+
+      const spyGetCustomer = jest.spyOn(algoanCustomerService, 'getCustomerById').mockReturnValue(
+        Promise.resolve({
+          id: 'mockCustomerId',
+          userId: 'mockCustomerUserId',
+          aggregationDetails: { mode: AggregationDetailsMode.API, token: 'fakeToken' },
+        } as unknown as Customer),
+      );
+
+      const connectionSpy = jest
+        .spyOn(aggregatorService, 'getConnections')
+        .mockReturnValue(Promise.resolve([connectionSync]));
+
+      const analysisSpy = jest
+        .spyOn(algoanAnalysisService, 'updateAnalysis')
+        .mockReturnValue(Promise.resolve({} as unknown as Analysis));
+      const warnLoggerSpy = jest.spyOn(Logger.prototype, 'warn');
+      const event: EventDTO = {
+        ...mockEvent,
+        subscription: {
+          ...mockEvent,
+          eventName: EventName.BANK_DETAILS_REQUIRED,
+        },
+        payload: { customerId: 'mockCustomerId', analysisId: 'mockAnalysisId', temporaryCode: 'mockTempCode' },
+      } as unknown as EventDTO;
+
+      const fakeServiceAccount: ServiceAccount = {
+        ...mockServiceAccount,
+        config: {
+          baseUrl: 'https://fake-base-url.url',
+          clientId: 'fakeClientId',
+        },
+      } as ServiceAccount;
+
+      await hooksService.dispatchAndHandleWebhook(event, mockSubscription, fakeServiceAccount, new Date());
+
+      const saConfig = {
+        baseUrl: 'https://fake-base-url.url',
+        clientId: 'fakeClientId',
+      };
+
+      expect(spyHttpService).toBeCalled();
+      expect(spyGetCustomer).toBeCalledWith('mockCustomerId');
+      expect(connectionSpy).toBeCalledWith('fakeToken', saConfig);
+      expect(analysisSpy).toBeCalledWith('mockCustomerId', 'mockAnalysisId', {
+        status: AnalysisStatus.ERROR,
+        error: {
+          code: ErrorCodes.INTERNAL_ERROR,
+          message: `An error occurred while synchronizing data by the aggregator :OTP required`,
+        },
+      });
+      expect(warnLoggerSpy).toBeCalledWith({
+        connections: [connectionSync],
+        customerId: 'mockCustomerId',
+        message: 'Synchronization failed after a timeout',
+        timeout: 0.01,
+      });
+    });
+
     it('without token in the customer but a userId in the customer - duplicated fetched accounts', async () => {
       const mockSubscription: Subscription = {
         event: (_id: string) => ({
@@ -1462,7 +1541,7 @@ describe('HooksService', () => {
         status: AnalysisStatus.ERROR,
         error: {
           code: ErrorCodes.INTERNAL_ERROR,
-          message: `An error occurred when fetching data from the aggregator`,
+          message: `An error occurred while fetching data from the aggregator`,
         },
       });
     });
@@ -1595,7 +1674,7 @@ describe('HooksService', () => {
           status: AnalysisStatus.ERROR,
           error: {
             code: ErrorCodes.INTERNAL_ERROR,
-            message: `An error occurred on calling Algoan API`,
+            message: `An error occurred while calling Algoan APIs`,
           },
         },
       ]);

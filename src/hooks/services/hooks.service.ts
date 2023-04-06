@@ -334,13 +334,17 @@ export class HooksService {
       this.logger.debug({
         message: `Analysis "${payload.analysisId}" patched`,
       });
-    } catch (err: unknown) {
+    } catch (err) {
       const host = (err as { request?: { host: string } }).request?.host;
       let message = 'An error occurred on the aggregator connector';
       if (host !== undefined) {
         message = host.includes('algoan')
-          ? 'An error occurred on calling Algoan API'
-          : 'An error occurred when fetching data from the aggregator';
+          ? 'An error occurred while calling Algoan APIs'
+          : 'An error occurred while fetching data from the aggregator';
+      }
+      const errorMessage = (err as { message?: string }).message;
+      if (errorMessage?.includes('An error occurred while synchronizing data by the aggregator') === true) {
+        message = errorMessage;
       }
       this.logger.debug({
         message: `An error occurred when fetching data from the aggregator for analysis id ${payload.analysisId} and customer id ${payload.customerId}`,
@@ -438,7 +442,14 @@ export class HooksService {
        * Continue the process if there is at least a finished connection
        */
       if (connections.findIndex((connection) => connection.state === null && connection.last_update !== null) < 0) {
-        const err = new Error('Synchronization failed');
+        let errorMessage = 'An error occurred while synchronizing data by the aggregator';
+        const errorConnection: Connection | undefined = connections.find(
+          (connection) => connection.error_message !== null && connection.error_message !== undefined,
+        );
+        if (errorConnection !== undefined) {
+          errorMessage = `${errorMessage} :${errorConnection.error_message as string}`;
+        }
+        const err = new Error(errorMessage);
         throw err;
       }
     }
