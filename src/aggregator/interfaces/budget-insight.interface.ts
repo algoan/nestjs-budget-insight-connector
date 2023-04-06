@@ -36,6 +36,7 @@ export interface Connection {
   created: Date | null;
   next_try: Date | null;
   connector?: Bank;
+  error_message?: string | null;
 }
 
 /**
