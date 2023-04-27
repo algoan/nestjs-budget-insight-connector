@@ -183,7 +183,7 @@ export class HooksService {
     switch (customer.aggregationDetails?.mode) {
       case AggregationDetailsMode.REDIRECT:
         /** Generate the redirect url */
-        const redirectCallbackUrl: string | undefined = customer.aggregationDetails.callbackUrl;
+        const redirectCallbackUrl: string | undefined = customer.aggregationDetails.callbackUrl?.split('?')[0];
         this.logger.debug(`Found customer with id ${customer.id} and callbackUrl ${redirectCallbackUrl}`);
 
         if (redirectCallbackUrl === undefined) {
@@ -195,7 +195,7 @@ export class HooksService {
 
       case AggregationDetailsMode.IFRAME:
         /** Generate the redirect url */
-        const iframeCallbackUrl: string | undefined = customer.aggregationDetails.callbackUrl;
+        const iframeCallbackUrl: string | undefined = customer.aggregationDetails.callbackUrl?.split('?')[0];
         this.logger.debug(`Found customer with id ${customer.id} and callbackUrl ${iframeCallbackUrl}`);
 
         if (iframeCallbackUrl === undefined) {
