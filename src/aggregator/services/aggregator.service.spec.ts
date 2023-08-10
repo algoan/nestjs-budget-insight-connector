@@ -3,7 +3,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AlgoanModule } from '../../algoan/algoan.module';
 import { AppModule } from '../../app.module';
 import { Connection } from '../interfaces/budget-insight.interface';
-import { mockAccount, mockTransaction, mockCategory } from '../interfaces/budget-insight-mock';
+import { mockAccount, mockTransaction, mockCategory, mockAccountOwnerships } from '../interfaces/budget-insight-mock';
 import { AggregatorService } from './aggregator.service';
 import { BudgetInsightClient, ClientConfig } from './budget-insight/budget-insight.client';
 
@@ -153,5 +153,13 @@ describe('AggregatorService', () => {
     await service.getCategory(token, categoryId);
 
     expect(spy).toBeCalledWith(token, categoryId, undefined);
+  });
+
+  it('should get the account ownerships', async () => {
+    const spy = jest.spyOn(client, 'fetchAccountOwnerships').mockReturnValue(Promise.resolve(mockAccountOwnerships));
+    const token = 'token';
+    await service.getAccountOwnerships(token);
+
+    expect(spy).toBeCalledWith(token, undefined);
   });
 });

@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import {
+  AccountOwnership,
   BudgetInsightAccount,
   BudgetInsightCategory,
   BudgetInsightOwner,
@@ -119,6 +120,15 @@ export class AggregatorService {
     clientConfig?: ClientConfig,
   ): Promise<BudgetInsightCategory> {
     return this.budgetInsightClient.fetchCategory(token, categoryId, clientConfig);
+  }
+
+  /**
+   * Get account ownerships
+   * @param token
+   * @param clientConfig
+   */
+  public async getAccountOwnerships(token: string, clientConfig?: ClientConfig): Promise<AccountOwnership[]> {
+    return this.budgetInsightClient.fetchAccountOwnerships(token, clientConfig);
   }
 
   /**

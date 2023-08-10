@@ -1,4 +1,6 @@
 import {
+  AccountOwnership,
+  AccountPartyRole,
   AccountType,
   BankAccountOwnership,
   BankAccountUsage,
@@ -57,3 +59,24 @@ export const mockCategory: BudgetInsightCategory = {
   refundable: false,
   id_logo: 20,
 };
+
+export const mockAccountOwnerships: AccountOwnership[] = [
+  {
+    id_account: 351,
+    id_connection: 1,
+    id_user: 0,
+    id_connector_source: 0,
+    name: 'Saving account 01',
+    usage: BankAccountUsage.PRIVATE,
+    identifications: null,
+    parties: [
+      {
+        role: AccountPartyRole.HOLDER,
+        identity: {
+          is_user: true,
+          full_name: 'Jean Pierre',
+        },
+      },
+    ],
+  },
+];

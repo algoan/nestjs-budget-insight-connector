@@ -14,7 +14,12 @@ import {
   AccountWrapper,
   ConnectionWrapper,
 } from '../../interfaces/budget-insight.interface';
-import { mockAccount, mockTransaction, mockCategory } from '../../interfaces/budget-insight-mock';
+import {
+  mockAccount,
+  mockTransaction,
+  mockCategory,
+  mockAccountOwnerships,
+} from '../../interfaces/budget-insight-mock';
 import { ClientConfig } from './budget-insight.client';
 import { config } from 'node-config-ts';
 
@@ -347,6 +352,22 @@ describe('BudgetInsightClient', () => {
       headers: {
         ...headers.headers,
         Authorization: `Bearer ${permanentToken}`,
+      },
+    });
+  });
+
+  it('should get the account ownerships', async () => {
+    result.data = mockAccountOwnerships;
+    const token = 'token';
+    const spy = jest.spyOn(httpService, 'get').mockImplementationOnce(() => of(result));
+
+    const ownerships = await service.fetchAccountOwnerships(token);
+
+    expect(ownerships).toEqual(mockAccountOwnerships);
+    expect(spy).toHaveBeenCalledWith('https://fake-budget-insights.com/2.0/users/me/account_ownerships', {
+      headers: {
+        ...headers.headers,
+        Authorization: `Bearer ${token}`,
       },
     });
   });

@@ -299,3 +299,65 @@ export interface User {
   signin: Date | string;
   platform: string;
 }
+
+/**
+ * Response of GET account ownerships
+ * https://docs.powens.com/api-reference/products/data-aggregation/account-ownerships#list-account-ownerships
+ */
+export interface AccountOwnership {
+  id_account: number;
+  id_connection: number;
+  id_user: number;
+  id_connector_source: number;
+  name: string | null;
+  usage: BankAccountUsage | null;
+  identifications: Identification[] | null;
+  parties: Party[] | null;
+}
+
+/**
+ * AccountSchemaName enum
+ */
+export enum AccountSchemeName {
+  IBAN = 'iban',
+  BBAN = 'bban',
+  SORT_CODE_ACCOUNT_NUMBER = 'sort_code_account_number',
+}
+
+/**
+ * Ownership's identification
+ */
+export interface Identification {
+  scheme_name: AccountSchemeName;
+  identification: string;
+}
+
+/**
+ * AccountPartyRole enum
+ */
+export enum AccountPartyRole {
+  HOLDER = 'holder',
+  CO_HOLDER = 'co_holder',
+  ATTORNEY = 'attorney',
+  CUSTODIAN_FOR_MINOR = 'custodian_for_minor',
+  LEGAL_GUARDIAN = 'legal_guardian',
+  NOMINEE = 'nominee',
+  SUCCESSOR_ON_DEATH = 'successor_on_death',
+  TRUSTEE = 'trustee',
+}
+
+/**
+ * Account ownership party
+ */
+export interface Party {
+  role: AccountPartyRole;
+  identity: IdentityParty;
+}
+
+/**
+ * Identity party
+ */
+export interface IdentityParty {
+  is_user: boolean | null;
+  full_name: string;
+}
