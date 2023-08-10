@@ -12,6 +12,7 @@ import { isEmpty } from 'lodash';
 import * as moment from 'moment';
 import { Config } from 'node-config-ts';
 import {
+  AccountOwnership,
   BudgetInsightAccount,
   BudgetInsightOwner,
   BudgetInsightTransaction,
@@ -39,7 +40,6 @@ import {
   EventDTO,
   ServiceAccountCreatedDTO,
   ServiceAccountUpdatedDTO,
-  SubscriptionDTO,
 } from '../dto';
 import { joinUserId } from '../helpers/join-user-id.helpers';
 import { EventName } from '../enums/event-name.enum';
@@ -316,6 +316,11 @@ export class HooksService {
         return;
       }
 
+      const accountOwnerships: AccountOwnership[] = await this.aggregator.getAccountOwnerships(
+        permanentToken,
+        serviceAccount.config as ClientConfig,
+      );
+
       const aggregationDuration: number = new Date().getTime() - aggregationStartDate.getTime();
 
       this.logger.log({
@@ -329,6 +334,7 @@ export class HooksService {
        */
       await this.algoanAnalysisService.updateAnalysis(payload.customerId, payload.analysisId, {
         connections: enrichedConnections,
+        accountOwnerships,
         format: 'BUDGET_INSIGHT_V2_0',
       });
       this.logger.debug({

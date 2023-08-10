@@ -1,12 +1,6 @@
 import { EnrichedConnection } from '../../aggregator/interfaces/enriched-budget-insight.interface';
-import {
-  AccountType,
-  AccountUsage,
-  AccountSavingType,
-  AccountLoanType,
-  AnalysisStatus,
-  AccountOwnership,
-} from './analysis.enum';
+import { AccountOwnership } from '../../aggregator/interfaces/budget-insight.interface';
+import { AccountType, AccountUsage, AccountSavingType, AccountLoanType, AnalysisStatus } from './analysis.enum';
 import { AnalysisError } from './analysis.objects';
 
 /**
@@ -19,6 +13,7 @@ export type AnalysisUpdateInput =
     }
   | {
       connections?: EnrichedConnection[];
+      accountOwnerships?: AccountOwnership[];
       format: 'BUDGET_INSIGHT_V2_0';
     }
   | {
