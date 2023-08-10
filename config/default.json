@@ -17,7 +17,8 @@
     "waitingTime": 1000,
     "apiVersion": "2.0",
     "ignoredConnectionStates": ["wrongpass", "bug", "passwordExpired", "websiteUnavailable"],
-    "paginationLimit": 20
+    "paginationLimit": 20,
+    "enableAccountOwnerships": false
   },
   "targetUrl": "http://localhost:8080/hooks",
   "eventList": [
