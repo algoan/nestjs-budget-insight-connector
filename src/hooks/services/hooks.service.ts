@@ -495,24 +495,11 @@ export class HooksService {
     /**
      * 3.b. Get personal information from every connection
      */
-    const connectionsInfo: { [key: string]: BudgetInsightOwner } = {};
-    if (!this.config.budgetInsight.enableAccountOwnerships) {
-      for (const connection of connections) {
-        try {
-          connectionsInfo[connection.id] = await this.aggregator.getInfo(
-            permanentToken,
-            `${connection.id}`,
-            serviceAccountConfig,
-          );
-        } catch (err) {
-          this.logger.warn({
-            message: `Unable to get user personal information`,
-            error: err,
-            connection,
-          });
-        }
-      }
-    }
+    const connectionsInfo: { [key: string]: BudgetInsightOwner } = await this.getConnectionsInfo(
+      connections,
+      permanentToken,
+      serviceAccountConfig,
+    );
 
     const enrichedConnections: EnrichedConnection[] = mapBudgetInsightAccount(
       accounts,
@@ -544,6 +531,36 @@ export class HooksService {
     }
 
     return enrichedConnections;
+  }
+
+  /**
+   * Get personal information from every connection
+   * @param connections
+   * @param token
+   * @param clientConfig
+   * @private
+   */
+  private async getConnectionsInfo(
+    connections: Connection[],
+    token: string,
+    clientConfig?: ClientConfig,
+  ): Promise<{ [key: string]: BudgetInsightOwner }> {
+    const connectionsInfo: { [key: string]: BudgetInsightOwner } = {};
+    if (!this.config.budgetInsight.enableAccountOwnerships) {
+      for (const connection of connections) {
+        try {
+          connectionsInfo[connection.id] = await this.aggregator.getInfo(token, `${connection.id}`, clientConfig);
+        } catch (err) {
+          this.logger.warn({
+            message: `Unable to get user personal information`,
+            error: err,
+            connection,
+          });
+        }
+      }
+    }
+
+    return connectionsInfo;
   }
 
   /**
