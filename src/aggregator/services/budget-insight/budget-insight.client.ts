@@ -343,11 +343,11 @@ export class BudgetInsightClient {
   public async fetchAccountOwnerships(token: string, clientConfig?: ClientConfig): Promise<AccountOwnership[]> {
     const baseUrl: string = this.getClientConfig(clientConfig).baseUrl;
     const url: string = `${baseUrl}/users/me/account_ownerships`;
-    const response: AxiosResponse<AccountOwnership[]> = await this.toPromise(
+    const response: AxiosResponse<{ account_ownerships: AccountOwnership[] }> = await this.toPromise(
       this.httpService.get(url, this.setHeaders(token)),
     );
 
-    return response.data;
+    return response.data.account_ownerships;
   }
 
   /**

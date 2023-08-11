@@ -357,7 +357,7 @@ describe('BudgetInsightClient', () => {
   });
 
   it('should get the account ownerships', async () => {
-    result.data = mockAccountOwnerships;
+    result.data = { account_ownerships: mockAccountOwnerships };
     const token = 'token';
     const spy = jest.spyOn(httpService, 'get').mockImplementationOnce(() => of(result));
 
