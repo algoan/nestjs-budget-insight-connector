@@ -9,7 +9,13 @@ import { AggregationDetailsMode } from '../../algoan/dto/customer.enums';
 import { Customer } from '../../algoan/dto/customer.objects';
 import { Analysis } from '../../algoan/dto/analysis.objects';
 import { AggregatorModule } from '../../aggregator/aggregator.module';
-import { mockAccount, mockTransaction, mockCategory } from '../../aggregator/interfaces/budget-insight-mock';
+import { config } from 'node-config-ts';
+import {
+  mockAccount,
+  mockTransaction,
+  mockCategory,
+  mockAccountOwnerships,
+} from '../../aggregator/interfaces/budget-insight-mock';
 import { Connection, ConnectionErrorState } from '../../aggregator/interfaces/budget-insight.interface';
 import { AggregatorService } from '../../aggregator/services/aggregator.service';
 import { AlgoanModule } from '../../algoan/algoan.module';
@@ -642,6 +648,9 @@ describe('HooksService', () => {
       const userInfoSpy = jest.spyOn(aggregatorService, 'getInfo').mockResolvedValue({ owner: { name: 'JOHN DOE' } });
       const transactionSpy = jest.spyOn(aggregatorService, 'getTransactions').mockResolvedValue([mockTransaction]);
       const categorySpy = jest.spyOn(aggregatorService, 'getCategory').mockResolvedValue(mockCategory);
+      const accountOwnershipsSpy = jest
+        .spyOn(aggregatorService, 'getAccountOwnerships')
+        .mockResolvedValue(mockAccountOwnerships);
       const analysisSpy = jest
         .spyOn(algoanAnalysisService, 'updateAnalysis')
         .mockReturnValue(Promise.resolve({} as unknown as Analysis));
@@ -678,6 +687,7 @@ describe('HooksService', () => {
       expect(userInfoSpy).toBeCalledTimes(1);
       expect(transactionSpy).toBeCalledWith('fakeToken', 1, saConfig);
       expect(categorySpy).toBeCalledWith('fakeToken', mockTransaction.id_category, saConfig);
+      expect(accountOwnershipsSpy).toBeCalledTimes(0);
       expect(analysisSpy).toBeCalledWith('mockCustomerId', 'mockAnalysisId', {
         connections: [
           {
@@ -731,6 +741,127 @@ describe('HooksService', () => {
         ],
         format: 'BUDGET_INSIGHT_V2_0',
       });
+    });
+
+    it('should fetch bank details - account ownerships enabled', async () => {
+      config.budgetInsight.enableAccountOwnerships = true;
+      const mockSubscription: Subscription = {
+        event: (_id: string) => ({
+          update: async ({ status }) => {
+            expect(status).toEqual('PROCESSED');
+          },
+        }),
+      } as unknown as Subscription;
+
+      const spyGetCustomer = jest.spyOn(algoanCustomerService, 'getCustomerById').mockReturnValue(
+        Promise.resolve({
+          id: 'mockCustomerId',
+          aggregationDetails: { mode: AggregationDetailsMode.API, token: 'fakeToken' },
+        } as unknown as Customer),
+      );
+
+      const connectionSpy = jest
+        .spyOn(aggregatorService, 'getConnections')
+        .mockReturnValue(Promise.resolve([{ ...connection, state: ConnectionErrorState.WRONGPASS }]));
+      const accountSpy = jest.spyOn(aggregatorService, 'getAccounts').mockResolvedValue([mockAccount]);
+      const userInfoSpy = jest.spyOn(aggregatorService, 'getInfo').mockResolvedValue({ owner: { name: 'JOHN DOE' } });
+      const transactionSpy = jest.spyOn(aggregatorService, 'getTransactions').mockResolvedValue([mockTransaction]);
+      const categorySpy = jest.spyOn(aggregatorService, 'getCategory').mockResolvedValue(mockCategory);
+      const accountOwnershipsSpy = jest
+        .spyOn(aggregatorService, 'getAccountOwnerships')
+        .mockResolvedValue(mockAccountOwnerships);
+      const analysisSpy = jest
+        .spyOn(algoanAnalysisService, 'updateAnalysis')
+        .mockReturnValue(Promise.resolve({} as unknown as Analysis));
+
+      const event: EventDTO = {
+        ...mockEvent,
+        subscription: {
+          ...mockEvent,
+          eventName: EventName.BANK_DETAILS_REQUIRED,
+        },
+        payload: { customerId: 'mockCustomerId', analysisId: 'mockAnalysisId', temporaryCode: 'mockTempCode' },
+      } as unknown as EventDTO;
+
+      const fakeServiceAccount: ServiceAccount = {
+        ...mockServiceAccount,
+        config: {
+          baseUrl: 'https://fake-base-url.url',
+          clientId: 'fakeClientId',
+        },
+      } as ServiceAccount;
+
+      await hooksService.dispatchAndHandleWebhook(event, mockSubscription, fakeServiceAccount, new Date());
+
+      const saConfig = {
+        baseUrl: 'https://fake-base-url.url',
+        clientId: 'fakeClientId',
+      };
+
+      expect(spyHttpService).toBeCalled();
+      expect(spyGetCustomer).toBeCalledWith('mockCustomerId');
+      expect(connectionSpy).toBeCalledWith('fakeToken', saConfig);
+      expect(accountSpy).toBeCalledWith('fakeToken', saConfig);
+      expect(userInfoSpy).toBeCalledTimes(0);
+      expect(transactionSpy).toBeCalledWith('fakeToken', 1, saConfig);
+      expect(categorySpy).toBeCalledWith('fakeToken', mockTransaction.id_category, saConfig);
+      expect(accountOwnershipsSpy).toBeCalledWith('fakeToken', saConfig);
+      expect(analysisSpy).toBeCalledWith('mockCustomerId', 'mockAnalysisId', {
+        connections: [
+          {
+            accounts: [
+              {
+                id: 1,
+                id_connection: 2,
+                id_user: 3,
+                id_source: 4,
+                id_parent: 5,
+                number: 'mockNumber',
+                original_name: 'mockOrginalName',
+                coming: 0,
+                currency: { id: 'id1' },
+                balance: 100,
+                name: 'mockName',
+                last_update: '2011-10-05T14:48:00.000Z',
+                type: 'checking',
+                iban: 'mockIban',
+                bic: 'mockBic',
+                disabled: false,
+                company_name: 'mockCompany',
+                usage: 'PRIV',
+                ownership: 'owner',
+                transactions: [
+                  {
+                    id_account: 5,
+                    id: 'mockId',
+                    application_date: 'mockApplicationDate',
+                    date: 'mockDate',
+                    rdate: 'mockRDate',
+                    simplified_wording: 'mockSimplifiedWording',
+                    value: 50,
+                    card: 'mockCard',
+                    wording: 'mockWording',
+                    id_category: 10,
+                    type: 'bank',
+                    original_wording: 'mockOriginalWording',
+                    original_currency: { id: 'USD' },
+                    coming: false,
+                    category: { name: 'mockCategoryName' },
+                  },
+                ],
+              },
+            ],
+            connector: {
+              logoUrl: undefined,
+            },
+            information: undefined,
+          },
+        ],
+        accountOwnerships: mockAccountOwnerships,
+        format: 'BUDGET_INSIGHT_V2_0',
+      });
+
+      config.budgetInsight.enableAccountOwnerships = false;
     });
 
     it('should fetch bank details if there is at least a finished connection with a warning (after timeout)', async () => {

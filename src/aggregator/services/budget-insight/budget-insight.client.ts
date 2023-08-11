@@ -21,6 +21,7 @@ import {
   BudgetInsightOwner,
   AccessTokenResponse,
   AuthJWTokenResponse,
+  AccountOwnership,
 } from '../../interfaces/budget-insight.interface';
 const DEFAULT_NUMBER_OF_MONTHS: number = 5;
 /**
@@ -331,6 +332,22 @@ export class BudgetInsightClient {
     );
 
     return resp.data;
+  }
+
+  /**
+   * Fetch the account ownerships
+   * https://docs.powens.com/api-reference/products/data-aggregation/account-ownerships#list-account-ownerships
+   * @param token the user token
+   * @param clientConfig the client config
+   */
+  public async fetchAccountOwnerships(token: string, clientConfig?: ClientConfig): Promise<AccountOwnership[]> {
+    const baseUrl: string = this.getClientConfig(clientConfig).baseUrl;
+    const url: string = `${baseUrl}/users/me/account_ownerships`;
+    const response: AxiosResponse<AccountOwnership[]> = await this.toPromise(
+      this.httpService.get(url, this.setHeaders(token)),
+    );
+
+    return response.data;
   }
 
   /**
