@@ -307,6 +307,11 @@ export class HooksService {
         serviceAccount.config as ClientConfig,
       );
 
+      const accountOwnerships: AccountOwnership[] | undefined = await this.getAccountOwnerships(
+        permanentToken,
+        serviceAccount.config as ClientConfig,
+      );
+
       // We remove the user if deleteUsers is set to true
       if ((serviceAccount.config as ClientConfig)?.deleteUsers === true && newUserId !== undefined) {
         await this.aggregator.deleteUser(newUserId, permanentToken, serviceAccount.config as ClientConfig);
@@ -315,11 +320,6 @@ export class HooksService {
       if (enrichedConnections === undefined) {
         return;
       }
-
-      const accountOwnerships: AccountOwnership[] | undefined = await this.getAccountOwnerships(
-        permanentToken,
-        serviceAccount.config as ClientConfig,
-      );
 
       const aggregationDuration: number = new Date().getTime() - aggregationStartDate.getTime();
 
@@ -384,7 +384,16 @@ export class HooksService {
       return undefined;
     }
 
-    return this.aggregator.getAccountOwnerships(token, clientConfig);
+    try {
+      return this.aggregator.getAccountOwnerships(token, clientConfig);
+    } catch (err) {
+      this.logger.warn({
+        message: `Unable to get account ownerships`,
+        error: (err as { stack: string }).stack as string,
+      });
+
+      return [];
+    }
   }
 
   /**
