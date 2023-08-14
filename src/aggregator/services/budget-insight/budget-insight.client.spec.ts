@@ -71,7 +71,7 @@ describe('BudgetInsightClient', () => {
     );
   });
 
-  it('create and returns a new anonymous user', async () => {
+  it('create and return a new anonymous user', async () => {
     const user: AnonymousUser = {
       auth_token: 'eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9',
       type: 'permanent',
