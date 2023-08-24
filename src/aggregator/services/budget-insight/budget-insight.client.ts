@@ -34,6 +34,7 @@ export interface ClientConfig {
   nbOfMonths?: number;
   language?: string;
   deleteUsers?: boolean;
+  enableAccountOwnerships?: boolean;
 }
 
 /**

@@ -380,7 +380,7 @@ export class HooksService {
     token: string,
     clientConfig: ClientConfig,
   ): Promise<AccountOwnership[] | undefined> {
-    if (!this.config.budgetInsight.enableAccountOwnerships) {
+    if (clientConfig.enableAccountOwnerships !== true) {
       return undefined;
     }
 
@@ -555,7 +555,7 @@ export class HooksService {
     clientConfig?: ClientConfig,
   ): Promise<{ [key: string]: BudgetInsightOwner }> {
     const connectionsInfo: { [key: string]: BudgetInsightOwner } = {};
-    if (!this.config.budgetInsight.enableAccountOwnerships) {
+    if (clientConfig?.enableAccountOwnerships !== true) {
       for (const connection of connections) {
         try {
           connectionsInfo[connection.id] = await this.aggregator.getInfo(token, `${connection.id}`, clientConfig);
