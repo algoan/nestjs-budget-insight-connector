@@ -744,7 +744,6 @@ describe('HooksService', () => {
     });
 
     it('should fetch bank details - account ownerships enabled', async () => {
-      config.budgetInsight.enableAccountOwnerships = true;
       const mockSubscription: Subscription = {
         event: (_id: string) => ({
           update: async ({ status }) => {
@@ -788,6 +787,7 @@ describe('HooksService', () => {
         config: {
           baseUrl: 'https://fake-base-url.url',
           clientId: 'fakeClientId',
+          enableAccountOwnerships: true,
         },
       } as ServiceAccount;
 
@@ -796,6 +796,7 @@ describe('HooksService', () => {
       const saConfig = {
         baseUrl: 'https://fake-base-url.url',
         clientId: 'fakeClientId',
+        enableAccountOwnerships: true,
       };
 
       expect(spyHttpService).toBeCalled();
@@ -860,8 +861,6 @@ describe('HooksService', () => {
         accountOwnerships: mockAccountOwnerships,
         format: 'BUDGET_INSIGHT_V2_0',
       });
-
-      config.budgetInsight.enableAccountOwnerships = false;
     });
 
     it('should fetch bank details if there is at least a finished connection with a warning (after timeout)', async () => {
