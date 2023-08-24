@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ContextIdFactory } from '@nestjs/core';
 import { EventName } from '../enums/event-name.enum';
 
-import { EventDTO } from '../dto/event.dto';
+import { EventDTO } from '../dto';
 import { AggregatorModule } from '../../aggregator/aggregator.module';
 import { AlgoanModule } from '../../algoan/algoan.module';
 import { AppModule } from '../../app.module';
