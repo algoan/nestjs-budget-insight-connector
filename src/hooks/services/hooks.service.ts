@@ -498,7 +498,7 @@ export class HooksService {
     const accounts: BudgetInsightAccount[] = await this.aggregator.getAccounts(permanentToken, serviceAccountConfig);
     this.logger.debug({
       message: `Budget Insight accounts retrieved for customer "${payload.customerId}"`,
-      accounts,
+      accountsNb: accounts.length,
     });
 
     /**
